@@ -1,0 +1,40 @@
+name: roots_calendar
+description: Roots Calendar — Celtic Tree Calendar (Beth-Luis-Nion) with local event storage and Google Calendar sync.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Database
+  drift: ^2.18.0
+  sqlite3_flutter_libs: ^0.5.0
+  path_provider: ^2.1.0
+  path: ^1.9.0
+
+  # Google Calendar
+  google_sign_in: ^6.2.0
+  googleapis: ^12.0.0
+  http: ^1.2.0
+
+  # Utilities
+  uuid: ^4.4.0
+  intl: ^0.19.0
+
+  # UI
+  google_fonts: ^6.2.0
+  provider: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  drift_dev: ^2.18.0
+  build_runner: ^2.4.0
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

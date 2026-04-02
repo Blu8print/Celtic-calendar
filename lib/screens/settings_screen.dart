@@ -1,0 +1,315 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+
+import '../engine/celtic_calendar.dart';
+import '../services/google_calendar_service.dart';
+import '../theme/app_theme.dart';
+
+/// Settings screen: Google account, sync status, and calendar system selector.
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bg,
+      appBar: AppBar(
+        title: Text(
+          'Settings',
+          style: AppTextStyles.cinzelDeco(size: 16, color: AppColors.gold),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        children: const [
+          _GoogleAccountSection(),
+          SizedBox(height: 24),
+          _CalendarSystemSection(),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Google account & sync ────────────────────────────────────────────────────
+
+class _GoogleAccountSection extends StatelessWidget {
+  const _GoogleAccountSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<GoogleCalendarService>(
+      builder: (context, gcal, _) {
+        return _Section(
+          title: 'Google Calendar',
+          children: [
+            if (!gcal.isSignedIn) ...[
+              Text(
+                'Sign in to sync events with your Google Calendar.\n'
+                'No data passes through any intermediate server.',
+                style: AppTextStyles.imFell(size: 13, color: AppColors.muted),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: gcal.signIn,
+                icon: const Icon(Icons.login, size: 16),
+                label: const Text('Sign in with Google'),
+              ),
+            ] else ...[
+              _InfoRow(label: 'Signed in as', value: gcal.userEmail ?? ''),
+              const SizedBox(height: 12),
+              const Divider(color: AppColors.border, height: 1),
+              const SizedBox(height: 12),
+
+              // ── Sync status rows ─────────────────────────────────────────
+              _InfoRow(
+                label: 'Last synced',
+                value: _relativeTime(gcal.lastSyncTime),
+              ),
+              const SizedBox(height: 6),
+              _InfoRow(
+                label: 'Imported',
+                value: gcal.lastSyncTime == null
+                    ? '—'
+                    : '${gcal.lastSyncCount} event${gcal.lastSyncCount == 1 ? '' : 's'} this sync',
+              ),
+              const SizedBox(height: 14),
+
+              // ── Sync action ──────────────────────────────────────────────
+              if (gcal.isSyncing)
+                Row(
+                  children: [
+                    const SizedBox(
+                      height: 14,
+                      width: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 1.5,
+                        color: AppColors.gold,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Syncing with Google Calendar…',
+                      style: AppTextStyles.cinzel(size: 12, color: AppColors.muted),
+                    ),
+                  ],
+                )
+              else
+                ElevatedButton.icon(
+                  onPressed: () => gcal.syncYear(celticYearOf(DateTime.now())),
+                  icon: const Icon(Icons.sync, size: 16),
+                  label: const Text('Sync now'),
+                ),
+
+              if (gcal.lastError != null) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withValues(alpha: 0.08),
+                    border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.error_outline, size: 14, color: Colors.redAccent),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          gcal.lastError!,
+                          style: AppTextStyles.imFell(size: 11, color: Colors.redAccent),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 14),
+              TextButton(
+                onPressed: gcal.signOut,
+                child: Text(
+                  'Sign out',
+                  style: AppTextStyles.cinzel(size: 12, color: Colors.redAccent.shade100),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  static final _timeFmt = DateFormat('d MMM \'at\' HH:mm');
+
+  String _relativeTime(DateTime? dt) {
+    if (dt == null) return 'Never';
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inSeconds < 60) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+    final today = DateTime(now.year, now.month, now.day);
+    final syncDay = DateTime(dt.year, dt.month, dt.day);
+    if (syncDay == today) return 'Today at ${DateFormat('HH:mm').format(dt)}';
+    return _timeFmt.format(dt);
+  }
+}
+
+// ─── Calendar system selector (UI stub) ──────────────────────────────────────
+
+// TODO: Implement actual IFC and other calendar system switching.
+//       Each system should implement a CalendarSystem interface (see engine/).
+class _CalendarSystemSection extends StatelessWidget {
+  const _CalendarSystemSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return _Section(
+      title: 'Calendar System',
+      children: [
+        _SystemChip(
+          label: 'Celtic Tree (Beth-Luis-Nion)',
+          isSelected: true,
+          onTap: () {},
+        ),
+        const SizedBox(height: 6),
+        _SystemChip(
+          label: 'International Fixed Calendar',
+          isSelected: false,
+          onTap: () => _showComingSoon(context, 'International Fixed Calendar'),
+        ),
+        const SizedBox(height: 6),
+        _SystemChip(
+          label: 'Holocene Calendar',
+          isSelected: false,
+          onTap: () => _showComingSoon(context, 'Holocene Calendar'),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Additional calendar systems coming in a future release.',
+          style: AppTextStyles.imFell(size: 11, color: AppColors.dim, italic: true),
+        ),
+      ],
+    );
+  }
+
+  void _showComingSoon(BuildContext context, String name) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppColors.surface2,
+        content: Text(
+          '$name — coming soon',
+          style: AppTextStyles.imFell(size: 13, color: AppColors.text),
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          side: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(6),
+        ),
+      ),
+    );
+  }
+}
+
+class _SystemChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SystemChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.surface2 : AppColors.surface,
+          border: Border.all(
+            color: isSelected ? AppColors.gold : AppColors.border,
+          ),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+              size: 16,
+              color: isSelected ? AppColors.gold : AppColors.dim,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: AppTextStyles.cinzel(
+                size: 13,
+                color: isSelected ? AppColors.gold : AppColors.muted,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Shared layout helpers ────────────────────────────────────────────────────
+
+class _Section extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  const _Section({required this.title, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title.toUpperCase(),
+          style: AppTextStyles.cinzel(
+            size: 11,
+            color: AppColors.muted,
+            letterSpacing: 2,
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Divider(color: AppColors.border, height: 1),
+        const SizedBox(height: 12),
+        ...children,
+      ],
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _InfoRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(label, style: AppTextStyles.cinzel(size: 12, color: AppColors.dim)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: AppTextStyles.imFell(size: 13, color: AppColors.text),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+}
