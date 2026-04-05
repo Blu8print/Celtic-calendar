@@ -186,7 +186,7 @@ class GoogleCalendarService extends ChangeNotifier {
         );
         // Process and upsert each page immediately to avoid accumulating
         // the full year of events in memory before writing.
-        for (final gcEvent in result.items ?? []) {
+        for (final gcal.Event gcEvent in result.items ?? const <gcal.Event>[]) {
           final googleId = gcEvent.id;
           if (googleId == null) continue;
           final date = _eventDate(gcEvent);

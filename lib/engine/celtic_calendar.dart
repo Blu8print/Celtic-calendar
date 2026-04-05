@@ -123,10 +123,13 @@ bool isLeapDay(DateTime date) {
 
 /// Converts a Gregorian [date] to a [CelticDate].
 CelticDate gregorianToCeltic(DateTime date) {
-  final d = DateTime(date.year, date.month, date.day);
-  final cy = celticYearOf(d);
-  final ys = yearStart(cy);
-  final offset = d.difference(ys).inDays;
+  // Normalize both dates to UTC midnight to avoid DST-induced off-by-one errors.
+  // In DST timezones, local midnight in summer vs winter gives a fractional
+  // day difference; .inDays truncates, shifting the Celtic date by 1 day.
+  final dUtc  = DateTime.utc(date.year, date.month, date.day);
+  final cy    = celticYearOf(date);
+  final ysUtc = DateTime.utc(cy, 12, 24);
+  final offset = dUtc.difference(ysUtc).inDays;
 
   if (offset == 365 && isCelticLeapYear(cy)) {
     return CelticDate(celticYear: cy, isLeapDay: true);

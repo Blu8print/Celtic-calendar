@@ -271,8 +271,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   // ─── Event helpers ────────────────────────────────────────────────────────────
 
-  Set<int> _daysWithEvents(List<Event> evs) =>
-      evs.map((e) => e.celticDay).whereType<int>().toSet();
+  Map<int, Color> _daysWithEvents(List<Event> evs) {
+    final map = <int, Color>{};
+    for (final e in evs) {
+      final day = e.celticDay;
+      if (day != null && !map.containsKey(day)) {
+        try {
+          map[day] = Color(int.parse('FF${e.color.replaceAll('#', '')}', radix: 16));
+        } catch (_) {
+          map[day] = AppColors.dark.gold;
+        }
+      }
+    }
+    return map;
+  }
 
   // ─── Build ────────────────────────────────────────────────────────────────────
 

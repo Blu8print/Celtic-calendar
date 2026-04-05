@@ -50,7 +50,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _date = DateTime(widget.date.year, widget.date.month, widget.date.day);
+    final _loc = widget.date.toLocal();
+    _date = DateTime(_loc.year, _loc.month, _loc.day);
     if (widget.openAddForm) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _openEventForm(context.read<EventsDao>());
@@ -597,7 +598,7 @@ class _EventFormState extends State<_EventForm> {
     setState(() => _saving = true);
 
     final celticDate = gregorianToCeltic(_selectedDate);
-    final dayNorm    = _selectedDate;
+    final dayNorm    = DateTime.utc(_selectedDate.year, _selectedDate.month, _selectedDate.day);
 
     final sm  = _startTime == null
         ? null

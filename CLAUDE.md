@@ -256,6 +256,10 @@ The `c = context.colors` shortcut only exists inside `build()`. Methods like `_p
 that are called outside a build context must use `AppColors.dark.xxx` (or another static
 fallback) — not `c.xxx`.
 
+
+### Dalight savings
+The fix solves a Daylight Saving Time (DST) bug where the Celtic date shifts by one day when the clocks "spring forward."The ProblemThe Bug: In the Netherlands, the switch from Winter (UTC+1) to Summer (UTC+2) makes a "24-hour" day look like 23 hours to the computer.The Result: The app truncates "0.95 days" to 0, causing the Celtic calendar to lag behind the real date.The Fix: UTC NormalizationInstead of calculating the time difference using local clocks, we convert both dates to UTC Midnight before subtracting them.Strip Timezones: Convert Local Date $\rightarrow$ UTC Date.Strip DST: Convert Year Start $\rightarrow$ UTC Year Start.Perfect Math: In UTC, every day is exactly 24 hours. The difference is always a whole number (e.g., exactly 102.0 instead of 101.95).Why it worksBy using DateTime.utc(year, month, day), the app ignores the "lost" or "extra" hours from DST and simply counts the sunrises. Your calendar will now stay perfectly synced year-round, anywhere in the world.
+
 ---
 
 ## Important constraints

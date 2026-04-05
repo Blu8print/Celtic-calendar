@@ -11,8 +11,8 @@ class DayGrid extends StatelessWidget {
   final int celticYear;
   final int month;
 
-  /// Celtic day numbers (1-28) that have at least one event — shown with a dot.
-  final Set<int> daysWithEvents;
+  /// Map of Celtic day number → event color for days that have at least one event.
+  final Map<int, Color> daysWithEvents;
 
   /// Full month events (unfiltered) — used for the upcoming events list.
   final List<Event> events;
@@ -32,7 +32,7 @@ class DayGrid extends StatelessWidget {
     super.key,
     required this.celticYear,
     required this.month,
-    this.daysWithEvents = const {},
+    this.daysWithEvents = const <int, Color>{},
     this.events = const [],
     this.onDayTap,
     this.onDayLongPress,
@@ -88,12 +88,12 @@ class DayGrid extends StatelessWidget {
             final isToday = date.year == today.year &&
                 date.month == today.month &&
                 date.day == today.day;
-            final hasEvent = daysWithEvents.contains(celticDay);
+            final eventColor = daysWithEvents[celticDay];
             return _DayCell(
               celticDay: celticDay,
               gregDate: date,
               isToday: isToday,
-              hasEvent: hasEvent,
+              eventColor: eventColor,
               onTap: () => onDayTap?.call(date),
               onLongPress: () => onDayLongPress?.call(date),
             );
@@ -221,7 +221,7 @@ class _DayCell extends StatelessWidget {
   final int celticDay;
   final DateTime gregDate;
   final bool isToday;
-  final bool hasEvent;
+  final Color? eventColor;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
@@ -229,7 +229,7 @@ class _DayCell extends StatelessWidget {
     required this.celticDay,
     required this.gregDate,
     required this.isToday,
-    required this.hasEvent,
+    this.eventColor,
     this.onTap,
     this.onLongPress,
   });
@@ -266,7 +266,7 @@ class _DayCell extends StatelessWidget {
             Container(
               width: 5, height: 5,
               decoration: BoxDecoration(
-                color: hasEvent ? c.muted : Colors.transparent,
+                color: eventColor ?? Colors.transparent,
                 shape: BoxShape.circle,
               ),
             ),
