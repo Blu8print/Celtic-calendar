@@ -45,6 +45,20 @@ class Events extends Table {
   BoolColumn get syncedToGoogle =>
       boolean().withDefault(const Constant(false))();
 
+  /// Minutes from midnight for the start time (e.g. 9*60 = 540 → 09:00).
+  /// Null means the event is all-day.
+  IntColumn get startMinutes => integer().nullable()();
+
+  /// Duration in minutes (e.g. 60 = 1 hour). Null when all-day.
+  IntColumn get durationMinutes => integer().nullable()();
+
+  /// JSON-encoded list of attendee email strings.
+  /// e.g. '["alice@example.com","bob@example.com"]'. Null = no attendees.
+  TextColumn get attendees => text().nullable()();
+
+  /// Free-text location string. Null = no location.
+  TextColumn get location => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -56,7 +70,27 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.database.customStatement(
+          'ALTER TABLE events ADD COLUMN start_minutes INTEGER',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE events ADD COLUMN duration_minutes INTEGER',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE events ADD COLUMN attendees TEXT',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE events ADD COLUMN location TEXT',
+        );
+      }
+    },
+  );
 }
 
 LazyDatabase _openConnection() {

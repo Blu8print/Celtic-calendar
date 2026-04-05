@@ -190,19 +190,42 @@ class GoogleCalendarService extends ChangeNotifier {
       final celtic = gregorianToCeltic(date);
       fetchedIds.add(googleId);
 
+      // Extract start time / duration for timed events.
+      int? startMinutes;
+      int? durationMinutes;
+      if (gcEvent.start?.dateTime != null) {
+        final s = gcEvent.start!.dateTime!.toLocal();
+        startMinutes = s.hour * 60 + s.minute;
+        final e = gcEvent.end?.dateTime?.toLocal();
+        if (e != null) durationMinutes = e.difference(s).inMinutes;
+      }
+
+      // Attendees — exclude self to avoid resending your own invite.
+      String? attendees;
+      final att = gcEvent.attendees
+          ?.where((a) => a.self != true)
+          .map((a) => a.email ?? '')
+          .where((e) => e.isNotEmpty)
+          .toList();
+      if (att != null && att.isNotEmpty) attendees = jsonEncode(att);
+
       final companion = EventsCompanion(
-        id:             Value(_uuid.v4()),
-        celticYear:     Value(celtic.celticYear),
-        celticMonth:    Value(celtic.month),
-        celticDay:      Value(celtic.day),
-        title:          Value(gcEvent.summary ?? '(no title)'),
-        description:    Value(gcEvent.description ?? ''),
-        color:          Value(_gcalColorToHex(gcEvent.colorId)),
-        gregorianDate:  Value(date),
-        createdAt:      Value(gcEvent.created?.toLocal() ?? DateTime.now()),
-        updatedAt:      Value(gcEvent.updated?.toLocal() ?? DateTime.now()),
-        googleEventId:  Value(googleId),
-        syncedToGoogle: const Value(true),
+        id:               Value(_uuid.v4()),
+        celticYear:       Value(celtic.celticYear),
+        celticMonth:      Value(celtic.month),
+        celticDay:        Value(celtic.day),
+        title:            Value(gcEvent.summary ?? '(no title)'),
+        description:      Value(gcEvent.description ?? ''),
+        color:            Value(_gcalColorToHex(gcEvent.colorId)),
+        gregorianDate:    Value(date),
+        createdAt:        Value(gcEvent.created?.toLocal() ?? DateTime.now()),
+        updatedAt:        Value(gcEvent.updated?.toLocal() ?? DateTime.now()),
+        googleEventId:    Value(googleId),
+        syncedToGoogle:   const Value(true),
+        startMinutes:     Value(startMinutes),
+        durationMinutes:  Value(durationMinutes),
+        attendees:        Value(attendees),
+        location:         Value(gcEvent.location),
       );
 
       await _dao.upsertGoogleEvent(companion);
@@ -219,18 +242,36 @@ class GoogleCalendarService extends ChangeNotifier {
     final api = await _calendarApi();
     if (api == null) return;
 
+    // Build start/end: timed event uses dateTime, all-day uses date.
+    final gcal.EventDateTime startDt;
+    final gcal.EventDateTime endDt;
+    if (event.startMinutes != null) {
+      final start = event.gregorianDate.add(Duration(minutes: event.startMinutes!));
+      final end = start.add(Duration(minutes: event.durationMinutes ?? 60));
+      startDt = gcal.EventDateTime(dateTime: start.toUtc());
+      endDt   = gcal.EventDateTime(dateTime: end.toUtc());
+    } else {
+      startDt = gcal.EventDateTime(date: _dateOnly(event.gregorianDate));
+      endDt   = gcal.EventDateTime(date: _dateOnly(event.gregorianDate.add(const Duration(days: 1))));
+    }
+
+    // Attendees.
+    List<gcal.EventAttendee>? attendees;
+    if (event.attendees != null) {
+      try {
+        final emails = (jsonDecode(event.attendees!) as List).cast<String>();
+        attendees = emails.map((e) => gcal.EventAttendee(email: e)).toList();
+      } catch (_) {}
+    }
+
     final gcalEvent = gcal.Event(
-      summary: event.title,
+      summary:     event.title,
       description: event.description.isEmpty ? null : event.description,
-      start: gcal.EventDateTime(
-        date: _dateOnly(event.gregorianDate),
-        timeZone: 'UTC',
-      ),
-      end: gcal.EventDateTime(
-        date: _dateOnly(event.gregorianDate.add(const Duration(days: 1))),
-        timeZone: 'UTC',
-      ),
-      colorId: _hexToGcalColorId(event.color),
+      location:    event.location,
+      start:       startDt,
+      end:         endDt,
+      colorId:     _hexToGcalColorId(event.color),
+      attendees:   attendees,
     );
 
     try {
@@ -342,17 +383,36 @@ class GoogleCalendarService extends ChangeNotifier {
 
   String _gcalColorToHex(String? colorId) {
     switch (colorId) {
-      case '5': return '#c9a84c';
-      case '2': return '#33b679';
-      case '9': return '#0b8043';
-      default:  return '#c9a84c';
+      case '1':  return '#7986cb'; // Lavender
+      case '2':  return '#33b679'; // Sage
+      case '3':  return '#8e24aa'; // Grape
+      case '4':  return '#e67c73'; // Flamingo
+      case '5':  return '#f6bf26'; // Banana
+      case '6':  return '#f4511e'; // Tangerine
+      case '7':  return '#039be5'; // Peacock
+      case '8':  return '#3f51b5'; // Blueberry
+      case '9':  return '#0b8043'; // Basil
+      case '10': return '#d50000'; // Tomato
+      default:   return '#c9a84c'; // App gold (default)
     }
   }
 
   String? _hexToGcalColorId(String hex) {
-    if (hex.toLowerCase().contains('c9a84c') ||
-        hex.toLowerCase().contains('e8cc88')) return '5';
-    return null;
+    switch (hex.toLowerCase().replaceAll('#', '')) {
+      case '7986cb': return '1';
+      case '33b679': return '2';
+      case '8e24aa': return '3';
+      case 'e67c73': return '4';
+      case 'f6bf26': return '5';
+      case 'c9a84c': return '5'; // App gold → Banana (closest)
+      case 'e8cc88': return '5';
+      case 'f4511e': return '6';
+      case '039be5': return '7';
+      case '3f51b5': return '8';
+      case '0b8043': return '9';
+      case 'd50000': return '10';
+      default: return null;
+    }
   }
 }
 
