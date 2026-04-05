@@ -8,6 +8,7 @@
 ///
 /// Setup: see GOOGLE_SETUP.md - create an iOS OAuth client ID (no SHA-1 needed).
 
+import 'dart:async';
 import 'dart:convert';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart';
@@ -23,9 +24,9 @@ import '../engine/celtic_calendar.dart';
 
 class GoogleCalendarService extends ChangeNotifier {
   // ── OAuth config ────────────────────────────────────────────────────────────
-  // Create an iOS OAuth client in Google Cloud Console (see GOOGLE_SETUP.md).
-  // Client ID: the full string ending in .apps.googleusercontent.com
-  // e.g. 123456789-abcdef.apps.googleusercontent.com
+  // The client ID is intentionally embedded in the app binary — PKCE flows
+  // treat the client ID as public. Security rests on app signing (Android)
+  // and bundle ID (iOS), not client ID secrecy. See GOOGLE_SETUP.md.
   static const _clientId =
       '994680507449-c3pkq1is9vpo7ioohnu5r6j56b4hi3ne.apps.googleusercontent.com';
   static const _redirectUri =
@@ -35,12 +36,15 @@ class GoogleCalendarService extends ChangeNotifier {
   static const _kAccessToken  = 'gcal_access_token';
   static const _kRefreshToken = 'gcal_refresh_token';
   static const _kUserEmail    = 'gcal_user_email';
+  static const _kLastSyncTime = 'gcal_last_sync_time';
   static const _syncCooldown  = Duration(minutes: 15);
 
   final EventsDao _dao;
-  final _uuid    = const Uuid();
-  final _appAuth = const FlutterAppAuth();
-  final _storage = const FlutterSecureStorage();
+  final _uuid      = const Uuid();
+  final _appAuth   = const FlutterAppAuth();
+  final _storage   = const FlutterSecureStorage();
+  // Single persistent client — avoids leaking a connection pool per API call.
+  final _httpClient = http.Client();
 
   String?   _accessToken;
   String?   _refreshToken;
@@ -53,6 +57,12 @@ class GoogleCalendarService extends ChangeNotifier {
 
   GoogleCalendarService(this._dao) {
     _loadStoredTokens();
+  }
+
+  @override
+  void dispose() {
+    _httpClient.close();
+    super.dispose();
   }
 
   // ─── State accessors ───────────────────────────────────────────────────────
@@ -110,6 +120,10 @@ class GoogleCalendarService extends ChangeNotifier {
 
   // ─── Authenticated HTTP client ─────────────────────────────────────────────
 
+  /// Refreshes the access token once and returns a [gcal.CalendarApi] backed
+  /// by the single persistent [_httpClient]. Callers that run a full sync
+  /// should obtain the api once and pass it through — do not call this per
+  /// event to avoid redundant refresh round-trips.
   Future<gcal.CalendarApi?> _calendarApi() async {
     if (_accessToken == null) return null;
 
@@ -136,7 +150,7 @@ class GoogleCalendarService extends ChangeNotifier {
     }
 
     try {
-      return gcal.CalendarApi(_AuthClient(_accessToken!, http.Client()));
+      return gcal.CalendarApi(_AuthClient(_accessToken!, _httpClient));
     } catch (e) {
       _lastError = _humaniseError(e.toString());
       notifyListeners();
@@ -147,16 +161,18 @@ class GoogleCalendarService extends ChangeNotifier {
   // ─── Pull from Google Calendar ─────────────────────────────────────────────
 
   /// Fetches all Google Calendar events for the given Celtic year, upserts
-  /// them into the local DB, and removes any deleted in Google.
+  /// them into the local DB page-by-page, and removes any deleted in Google.
   /// Returns the number of events upserted. Fails silently if offline.
-  Future<int> pullYear(int celticYear) async {
-    final api = await _calendarApi();
+  Future<int> pullYear(int celticYear, [gcal.CalendarApi? api]) async {
+    api ??= await _calendarApi();
     if (api == null) return 0;
 
     final timeMin = DateTime(celticYear, 12, 24).toUtc();
     final timeMax = DateTime(celticYear + 1, 12, 24).toUtc();
 
-    List<gcal.Event> items = [];
+    final fetchedIds = <String>{};
+    int count = 0;
+
     try {
       String? pageToken;
       do {
@@ -168,68 +184,65 @@ class GoogleCalendarService extends ChangeNotifier {
           orderBy: 'startTime',
           pageToken: pageToken,
         );
-        items.addAll(result.items ?? []);
+        // Process and upsert each page immediately to avoid accumulating
+        // the full year of events in memory before writing.
+        for (final gcEvent in result.items ?? []) {
+          final googleId = gcEvent.id;
+          if (googleId == null) continue;
+          final date = _eventDate(gcEvent);
+          if (date == null) continue;
+
+          final celtic = gregorianToCeltic(date);
+          fetchedIds.add(googleId);
+
+          // Extract start time / duration for timed events.
+          int? startMinutes;
+          int? durationMinutes;
+          if (gcEvent.start?.dateTime != null) {
+            final s = gcEvent.start!.dateTime!.toLocal();
+            startMinutes = s.hour * 60 + s.minute;
+            final e = gcEvent.end?.dateTime?.toLocal();
+            if (e != null) durationMinutes = e.difference(s).inMinutes;
+          }
+
+          // Attendees — exclude self to avoid resending your own invite.
+          String? attendees;
+          final att = gcEvent.attendees
+              ?.where((a) => a.self != true)
+              .map((a) => a.email ?? '')
+              .where((e) => e.isNotEmpty)
+              .toList();
+          if (att != null && att.isNotEmpty) attendees = jsonEncode(att);
+
+          final companion = EventsCompanion(
+            id:               Value(_uuid.v4()),
+            celticYear:       Value(celtic.celticYear),
+            celticMonth:      Value(celtic.month),
+            celticDay:        Value(celtic.day),
+            title:            Value(gcEvent.summary ?? '(no title)'),
+            description:      Value(gcEvent.description ?? ''),
+            color:            Value(_gcalColorToHex(gcEvent.colorId)),
+            gregorianDate:    Value(date),
+            createdAt:        Value(gcEvent.created?.toLocal() ?? DateTime.now()),
+            updatedAt:        Value(gcEvent.updated?.toLocal() ?? DateTime.now()),
+            googleEventId:    Value(googleId),
+            syncedToGoogle:   const Value(true),
+            startMinutes:     Value(startMinutes),
+            durationMinutes:  Value(durationMinutes),
+            attendees:        Value(attendees),
+            location:         Value(gcEvent.location),
+          );
+
+          await _dao.upsertGoogleEvent(companion);
+          count++;
+        }
         pageToken = result.nextPageToken;
       } while (pageToken != null);
     } catch (e) {
       debugPrint('Google Calendar pull failed: $e');
       _lastError = _humaniseError(e.toString());
       notifyListeners();
-      return 0;
-    }
-
-    final fetchedIds = <String>{};
-    int count = 0;
-
-    for (final gcEvent in items) {
-      final googleId = gcEvent.id;
-      if (googleId == null) continue;
-      final date = _eventDate(gcEvent);
-      if (date == null) continue;
-
-      final celtic = gregorianToCeltic(date);
-      fetchedIds.add(googleId);
-
-      // Extract start time / duration for timed events.
-      int? startMinutes;
-      int? durationMinutes;
-      if (gcEvent.start?.dateTime != null) {
-        final s = gcEvent.start!.dateTime!.toLocal();
-        startMinutes = s.hour * 60 + s.minute;
-        final e = gcEvent.end?.dateTime?.toLocal();
-        if (e != null) durationMinutes = e.difference(s).inMinutes;
-      }
-
-      // Attendees — exclude self to avoid resending your own invite.
-      String? attendees;
-      final att = gcEvent.attendees
-          ?.where((a) => a.self != true)
-          .map((a) => a.email ?? '')
-          .where((e) => e.isNotEmpty)
-          .toList();
-      if (att != null && att.isNotEmpty) attendees = jsonEncode(att);
-
-      final companion = EventsCompanion(
-        id:               Value(_uuid.v4()),
-        celticYear:       Value(celtic.celticYear),
-        celticMonth:      Value(celtic.month),
-        celticDay:        Value(celtic.day),
-        title:            Value(gcEvent.summary ?? '(no title)'),
-        description:      Value(gcEvent.description ?? ''),
-        color:            Value(_gcalColorToHex(gcEvent.colorId)),
-        gregorianDate:    Value(date),
-        createdAt:        Value(gcEvent.created?.toLocal() ?? DateTime.now()),
-        updatedAt:        Value(gcEvent.updated?.toLocal() ?? DateTime.now()),
-        googleEventId:    Value(googleId),
-        syncedToGoogle:   const Value(true),
-        startMinutes:     Value(startMinutes),
-        durationMinutes:  Value(durationMinutes),
-        attendees:        Value(attendees),
-        location:         Value(gcEvent.location),
-      );
-
-      await _dao.upsertGoogleEvent(companion);
-      count++;
+      return count;
     }
 
     await _dao.removeStaleGoogleEvents(celticYear, fetchedIds);
@@ -238,16 +251,21 @@ class GoogleCalendarService extends ChangeNotifier {
 
   // ─── Write to Google Calendar ──────────────────────────────────────────────
 
-  Future<void> pushEvent(Event event) async {
-    final api = await _calendarApi();
+  Future<void> pushEvent(Event event, [gcal.CalendarApi? api]) async {
+    api ??= await _calendarApi();
     if (api == null) return;
 
     // Build start/end: timed event uses dateTime, all-day uses date.
     final gcal.EventDateTime startDt;
     final gcal.EventDateTime endDt;
     if (event.startMinutes != null) {
-      final start = event.gregorianDate.add(Duration(minutes: event.startMinutes!));
-      final end = start.add(Duration(minutes: event.durationMinutes ?? 60));
+      // gregorianDate is stored as UTC midnight of the LOCAL calendar date.
+      // Convert back to local to recover the correct calendar date, then add
+      // wall-clock minutes so the event lands at the right local time.
+      final localDate = event.gregorianDate.toLocal();
+      final localMidnight = DateTime(localDate.year, localDate.month, localDate.day);
+      final start = localMidnight.add(Duration(minutes: event.startMinutes!));
+      final end   = start.add(Duration(minutes: event.durationMinutes ?? 60));
       startDt = gcal.EventDateTime(dateTime: start.toUtc());
       endDt   = gcal.EventDateTime(dateTime: end.toUtc());
     } else {
@@ -261,7 +279,9 @@ class GoogleCalendarService extends ChangeNotifier {
       try {
         final emails = (jsonDecode(event.attendees!) as List).cast<String>();
         attendees = emails.map((e) => gcal.EventAttendee(email: e)).toList();
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('Failed to parse attendees for event ${event.id}: $e');
+      }
     }
 
     final gcalEvent = gcal.Event(
@@ -293,8 +313,12 @@ class GoogleCalendarService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _lastSyncCount = await pullYear(celticYear);
-      await syncPendingEvents();
+      // Obtain API (and refresh token) once for the entire sync cycle.
+      final api = await _calendarApi();
+      if (api != null) {
+        _lastSyncCount = await pullYear(celticYear, api);
+        await syncPendingEvents(api);
+      }
       _lastSyncSuccess = _lastError == null;
     } catch (e) {
       _lastError = _humaniseError(e.toString());
@@ -302,6 +326,11 @@ class GoogleCalendarService extends ChangeNotifier {
     } finally {
       _isSyncing = false;
       _lastSyncTime = DateTime.now();
+      // Persist so the cooldown survives app restarts.
+      await _storage.write(
+        key: _kLastSyncTime,
+        value: _lastSyncTime!.millisecondsSinceEpoch.toString(),
+      );
       notifyListeners();
     }
   }
@@ -316,10 +345,10 @@ class GoogleCalendarService extends ChangeNotifier {
     await syncYear(celticYear);
   }
 
-  Future<void> syncPendingEvents() async {
+  Future<void> syncPendingEvents([gcal.CalendarApi? api]) async {
     final unsynced = await _dao.getUnsyncedEvents();
     for (final event in unsynced) {
-      await pushEvent(event);
+      await pushEvent(event, api);
     }
   }
 
@@ -329,6 +358,11 @@ class GoogleCalendarService extends ChangeNotifier {
     _accessToken  = await _storage.read(key: _kAccessToken);
     _refreshToken = await _storage.read(key: _kRefreshToken);
     _userEmail    = await _storage.read(key: _kUserEmail);
+    final rawMs   = await _storage.read(key: _kLastSyncTime);
+    if (rawMs != null) {
+      final ms = int.tryParse(rawMs);
+      if (ms != null) _lastSyncTime = DateTime.fromMillisecondsSinceEpoch(ms);
+    }
     if (_accessToken != null) notifyListeners();
   }
 
@@ -364,6 +398,9 @@ class GoogleCalendarService extends ChangeNotifier {
     if (lower.contains('socketexception') || lower.contains('network') ||
         lower.contains('host lookup') || lower.contains('connection refused')) {
       return 'No internet connection. Will retry on next sync.';
+    }
+    if (lower.contains('timeoutexception') || lower.contains('timed out')) {
+      return 'Request timed out. Check your connection and try again.';
     }
     if (lower.contains('null check operator')) {
       return 'Authentication failed. Please sign out and sign in again.';
@@ -429,12 +466,18 @@ class _AuthClient extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {
     request.headers['Authorization'] = 'Bearer $_accessToken';
-    return _inner.send(request);
+    return _inner.send(request).timeout(
+      const Duration(seconds: 30),
+      onTimeout: () => throw TimeoutException(
+        'Google Calendar request timed out after 30 s',
+      ),
+    );
   }
 
   @override
   void close() {
-    _inner.close();
+    // Do NOT close _inner here — it is the shared _httpClient owned by
+    // GoogleCalendarService and must outlive individual API calls.
     super.close();
   }
 }
