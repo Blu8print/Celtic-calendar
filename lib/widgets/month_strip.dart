@@ -4,13 +4,9 @@ import '../engine/celtic_calendar.dart';
 import '../theme/app_theme.dart';
 
 /// Horizontal scrollable strip of all 13 months + Year Day chip.
-///
-/// Active month chip is highlighted and scrolled into view.
 class MonthStrip extends StatefulWidget {
-  /// Currently active month (1-13), or null for Year Day.
   final int? activeMonth;
   final int celticYear;
-
   final void Function(int? month) onMonthSelected;
 
   const MonthStrip({
@@ -43,7 +39,6 @@ class _MonthStripState extends State<MonthStrip> {
   }
 
   void _scrollToActive() {
-    // Each chip is approximately 50px wide with 4px gap.
     const chipWidth = 50.0 + 4.0;
     final index = widget.activeMonth == null ? 13 : (widget.activeMonth! - 1);
     final offset = index * chipWidth;
@@ -74,7 +69,7 @@ class _MonthStripState extends State<MonthStrip> {
         controller: _scroll,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(vertical: 2),
-        itemCount: 14, // 13 months + Year Day
+        itemCount: 14,
         separatorBuilder: (_, __) => const SizedBox(width: 4),
         itemBuilder: (context, index) {
           if (index < 13) {
@@ -92,7 +87,6 @@ class _MonthStripState extends State<MonthStrip> {
               onTap: () => widget.onMonthSelected(mo.number),
             );
           } else {
-            // Year Day chip
             final isActive = widget.activeMonth == null;
             final hasToday = todayCelticYear == widget.celticYear &&
                 (todayInfo.isYearDay || todayInfo.isLeapDay);
@@ -127,13 +121,14 @@ class _StripChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color borderColor;
+    final c = context.colors;
+    final Color borderColor;
     if (isActive) {
-      borderColor = AppColors.gold;
+      borderColor = c.gold;
     } else if (hasToday) {
-      borderColor = AppColors.muted;
+      borderColor = c.muted;
     } else {
-      borderColor = AppColors.border;
+      borderColor = c.border;
     }
 
     return GestureDetector(
@@ -142,7 +137,7 @@ class _StripChip extends StatelessWidget {
         duration: const Duration(milliseconds: 120),
         width: 50,
         decoration: BoxDecoration(
-          color: isActive ? AppColors.surface2 : AppColors.surface,
+          color: isActive ? c.surface2 : c.surface,
           border: Border.all(color: borderColor),
           borderRadius: BorderRadius.circular(5),
         ),
@@ -152,17 +147,14 @@ class _StripChip extends StatelessWidget {
           children: [
             Text(
               number,
-              style: AppTextStyles.cinzel(
-                size: 9,
-                color: AppColors.dim,
-              ),
+              style: AppTextStyles.cinzel(size: 9, color: c.dim),
             ),
             const SizedBox(height: 2),
             Text(
               name,
               style: AppTextStyles.cinzel(
                 size: 11,
-                color: isActive ? AppColors.gold : AppColors.text,
+                color: isActive ? c.gold : c.text,
               ),
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,

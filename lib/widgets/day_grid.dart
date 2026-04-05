@@ -4,9 +4,6 @@ import '../engine/celtic_calendar.dart';
 import '../theme/app_theme.dart';
 
 /// 7-column × 4-row grid of the 28 days in a Celtic month.
-///
-/// All months in a given Celtic year start on the same weekday
-/// (because 28 = 4 × 7), so the weekday header is the same for every month.
 class DayGrid extends StatelessWidget {
   final int celticYear;
   final int month;
@@ -17,7 +14,6 @@ class DayGrid extends StatelessWidget {
   /// Called when a day cell is tapped. Receives the Gregorian [DateTime] of that cell.
   final void Function(DateTime date)? onDayTap;
 
-  // 2-letter abbreviations, will be rotated to match year-start weekday.
   static const _weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
   const DayGrid({
@@ -30,16 +26,15 @@ class DayGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final dates = gregorianDatesForMonth(celticYear, month);
-    final startDow = monthStartWeekday(celticYear); // 0=Sun…6=Sat
+    final startDow = monthStartWeekday(celticYear);
     final today = DateTime.now();
 
-    // Rotate weekday headers to align day 1 with the correct column.
     final headers = List.generate(7, (i) => _weekdays[(startDow + i) % 7]);
 
     return Column(
       children: [
-        // Weekday header row
         Row(
           children: headers
               .map(
@@ -49,10 +44,7 @@ class DayGrid extends StatelessWidget {
                     child: Text(
                       wd,
                       textAlign: TextAlign.center,
-                      style: AppTextStyles.cinzel(
-                        size: 9,
-                        color: AppColors.dim,
-                      ),
+                      style: AppTextStyles.cinzel(size: 9, color: c.dim),
                     ),
                   ),
                 ),
@@ -60,7 +52,6 @@ class DayGrid extends StatelessWidget {
               .toList(),
         ),
         const SizedBox(height: 6),
-        // Day cells — 28 days in 4 rows of 7
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -91,8 +82,6 @@ class DayGrid extends StatelessWidget {
   }
 }
 
-// ─── Day cell ─────────────────────────────────────────────────────────────────
-
 class _DayCell extends StatelessWidget {
   final int celticDay;
   final bool isToday;
@@ -108,16 +97,15 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
         decoration: BoxDecoration(
-          color: isToday ? AppColors.todayBg : Colors.transparent,
+          color: isToday ? c.todayBg : Colors.transparent,
           borderRadius: BorderRadius.circular(4),
-          border: isToday
-              ? Border.all(color: AppColors.gold, width: 1)
-              : null,
+          border: isToday ? Border.all(color: c.gold, width: 1) : null,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -126,16 +114,15 @@ class _DayCell extends StatelessWidget {
               '$celticDay',
               style: AppTextStyles.cinzel(
                 size: 13,
-                color: isToday ? AppColors.gold2 : AppColors.text,
+                color: isToday ? c.gold2 : c.text,
               ),
             ),
             const SizedBox(height: 2),
-            // Gold dot for days with events; invisible placeholder otherwise.
             Container(
               width: 4,
               height: 4,
               decoration: BoxDecoration(
-                color: hasEvent ? AppColors.gold : Colors.transparent,
+                color: hasEvent ? c.gold : Colors.transparent,
                 shape: BoxShape.circle,
               ),
             ),

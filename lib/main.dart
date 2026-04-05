@@ -7,6 +7,7 @@ import 'engine/celtic_calendar.dart';
 import 'screens/calendar_screen.dart';
 import 'services/google_calendar_service.dart';
 import 'theme/app_theme.dart';
+import 'theme/theme_notifier.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,7 +34,6 @@ class _RootsCalendarAppState extends State<RootsCalendarApp>
     super.initState();
     _gcal = GoogleCalendarService(widget.db.eventsDao);
     WidgetsBinding.instance.addObserver(this);
-    // Initial sync fires once after the first frame.
     WidgetsBinding.instance.addPostFrameCallback(
         (_) => _gcal.backgroundSync(celticYearOf(DateTime.now())));
   }
@@ -48,7 +48,7 @@ class _RootsCalendarAppState extends State<RootsCalendarApp>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _gcal.backgroundSync(celticYearOf(DateTime.now())); // fire-and-forget
+      _gcal.backgroundSync(celticYearOf(DateTime.now()));
     }
   }
 
@@ -56,18 +56,25 @@ class _RootsCalendarAppState extends State<RootsCalendarApp>
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Database and DAO
         Provider<AppDatabase>(create: (_) => widget.db),
         Provider<EventsDao>(create: (_) => widget.db.eventsDao),
-
-        // Google Calendar service — ChangeNotifier so UI reacts to sign-in state.
         ChangeNotifierProvider<GoogleCalendarService>.value(value: _gcal),
+        ChangeNotifierProvider<ThemeNotifier>(create: (_) => ThemeNotifier()),
+        // AppColors is derived from ThemeNotifier — rebuilds when theme changes.
+        ProxyProvider<ThemeNotifier, AppColors>(
+          update: (_, notifier, __) =>
+              notifier.isLight ? AppColors.light : AppColors.dark,
+        ),
       ],
-      child: MaterialApp(
-        title: 'Roots Calendar',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.dark,
-        home: const CalendarScreen(),
+      child: Consumer<ThemeNotifier>(
+        builder: (context, notifier, _) => MaterialApp(
+          title: 'Roots Calendar',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: notifier.isLight ? ThemeMode.light : ThemeMode.dark,
+          home: const CalendarScreen(),
+        ),
       ),
     );
   }

@@ -131,6 +131,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
+    final appBarIconColor = Theme.of(context).appBarTheme.iconTheme?.color ?? c.gold;
+    final appBarTitleColor = Theme.of(context).appBarTheme.titleTextStyle?.color ?? c.gold2;
     final dao = context.read<EventsDao>();
 
     // Stream for the currently viewed month. Key forces a clean rebuild
@@ -140,25 +143,25 @@ class _CalendarScreenState extends State<CalendarScreen> {
         : dao.watchYearDayEvents(_curYear);
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: c.bg,
       appBar: AppBar(
         title: Column(
           children: [
             Text(
               'Celtic Tree Calendar',
               style: AppTextStyles.cinzelDeco(
-                  size: 14, color: AppColors.gold, letterSpacing: 3),
+                  size: 14, color: appBarTitleColor, letterSpacing: 3),
             ),
             Text(
               'Beth-Luis-Nion · 13 months of 28 days',
               style: AppTextStyles.imFell(
-                  size: 11, color: AppColors.dim, italic: true),
+                  size: 11, color: c.dim, italic: true),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_outlined, color: AppColors.gold),
+            icon: Icon(Icons.settings_outlined, color: appBarIconColor),
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -261,6 +264,7 @@ class _YearNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -269,7 +273,7 @@ class _YearNav extends StatelessWidget {
         Text(
           'Celtic Year $celticYear – ${celticYear + 1}',
           style: AppTextStyles.cinzel(
-              size: 12, color: AppColors.muted, letterSpacing: 2),
+              size: 12, color: c.muted, letterSpacing: 2),
         ),
         const SizedBox(width: 12),
         _NavButton(label: '►', onTap: onNext),
@@ -297,6 +301,7 @@ class _MonthNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Row(
       children: [
         Expanded(
@@ -311,7 +316,7 @@ class _MonthNav extends StatelessWidget {
               Text(
                 position,
                 style: AppTextStyles.cinzel(
-                    size: 11, color: AppColors.dim, letterSpacing: 0.8),
+                    size: 11, color: c.dim, letterSpacing: 0.8),
               ),
               const SizedBox(height: 4),
               _TodayButton(onTap: onToday),
@@ -338,16 +343,17 @@ class _NavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: c.border),
           borderRadius: BorderRadius.circular(3),
         ),
         child: Text(label,
-            style: AppTextStyles.cinzel(size: 14, color: AppColors.gold)),
+            style: AppTextStyles.cinzel(size: 14, color: c.gold)),
       ),
     );
   }
@@ -366,18 +372,19 @@ class _MNavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: c.border),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(
           label,
           style: AppTextStyles.cinzel(
-              size: 11, color: AppColors.muted, letterSpacing: 0.8),
+              size: 11, color: c.muted, letterSpacing: 0.8),
           textAlign: alignRight ? TextAlign.right : TextAlign.left,
           overflow: TextOverflow.ellipsis,
         ),
@@ -393,18 +400,19 @@ class _TodayButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.dim),
+          border: Border.all(color: c.dim),
           borderRadius: BorderRadius.circular(3),
         ),
         child: Text(
           '☽ Today',
           style: AppTextStyles.cinzel(
-              size: 10, color: AppColors.dim, letterSpacing: 1),
+              size: 10, color: c.dim, letterSpacing: 1),
         ),
       ),
     );

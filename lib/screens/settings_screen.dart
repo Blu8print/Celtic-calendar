@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../engine/celtic_calendar.dart';
 import '../services/google_calendar_service.dart';
+import '../theme/theme_notifier.dart';
 import '../theme/app_theme.dart';
 
 /// Settings screen: Google account, sync status, and calendar system selector.
@@ -12,18 +13,21 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: c.bg,
       appBar: AppBar(
         title: Text(
           'Settings',
-          style: AppTextStyles.cinzelDeco(size: 16, color: AppColors.gold),
+          style: AppTextStyles.cinzelDeco(size: 16, color: c.gold),
         ),
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: const [
           _GoogleAccountSection(),
+          SizedBox(height: 24),
+          _AppearanceSection(),
           SizedBox(height: 24),
           _CalendarSystemSection(),
         ],
@@ -41,6 +45,7 @@ class _GoogleAccountSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<GoogleCalendarService>(
       builder: (context, gcal, _) {
+        final c = context.colors;
         return _Section(
           title: 'Google Calendar',
           children: [
@@ -48,7 +53,7 @@ class _GoogleAccountSection extends StatelessWidget {
               Text(
                 'Sign in to sync events with your Google Calendar.\n'
                 'No data passes through any intermediate server.',
-                style: AppTextStyles.imFell(size: 13, color: AppColors.muted),
+                style: AppTextStyles.imFell(size: 13, color: c.muted),
               ),
               const SizedBox(height: 12),
               ElevatedButton.icon(
@@ -83,7 +88,7 @@ class _GoogleAccountSection extends StatelessWidget {
             ] else ...[
               _InfoRow(label: 'Signed in as', value: gcal.userEmail ?? ''),
               const SizedBox(height: 12),
-              const Divider(color: AppColors.border, height: 1),
+              Divider(color: c.border, height: 1),
               const SizedBox(height: 12),
 
               // ── Connection status badge ───────────────────────────────────
@@ -98,18 +103,18 @@ class _GoogleAccountSection extends StatelessWidget {
               if (gcal.isSyncing)
                 Row(
                   children: [
-                    const SizedBox(
+                    SizedBox(
                       height: 14,
                       width: 14,
                       child: CircularProgressIndicator(
                         strokeWidth: 1.5,
-                        color: AppColors.gold,
+                        color: c.gold,
                       ),
                     ),
                     const SizedBox(width: 10),
                     Text(
                       'Syncing with Google Calendar…',
-                      style: AppTextStyles.cinzel(size: 12, color: AppColors.muted),
+                      style: AppTextStyles.cinzel(size: 12, color: c.muted),
                     ),
                   ],
                 )
@@ -185,11 +190,12 @@ class _SyncStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final Color dotColor;
     final String label;
 
     if (gcal.lastSyncSuccess == null) {
-      dotColor = AppColors.dim;
+      dotColor = c.dim;
       label = 'Never synced';
     } else if (gcal.lastSyncSuccess == true) {
       dotColor = const Color(0xff4caf72); // forest green
@@ -212,7 +218,7 @@ class _SyncStatusBadge extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: AppTextStyles.cinzel(size: 12, color: AppColors.text),
+            style: AppTextStyles.cinzel(size: 12, color: c.text),
           ),
         ),
       ],
@@ -227,18 +233,99 @@ class _CelticYearScope extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final now = DateTime.now();
     final year = celticYearOf(now);
     final start = year;      // Dec 24 of this year
     final end = year + 1;    // Dec 23 of next year
     return Text(
       'Syncing Celtic year $year  (Dec 24 $start – Dec 23 $end)',
-      style: AppTextStyles.imFell(size: 11, color: AppColors.dim, italic: true),
+      style: AppTextStyles.imFell(size: 11, color: c.dim, italic: true),
     );
   }
 }
 
 // ─── Calendar system selector (UI stub) ──────────────────────────────────────
+
+
+// --- Appearance (theme toggle) ---
+
+class _AppearanceSection extends StatelessWidget {
+  const _AppearanceSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final notifier = context.watch<ThemeNotifier>();
+    return _Section(
+      title: 'Appearance',
+      children: [
+        Row(
+          children: [
+            _ThemeChip(
+              label: 'Light',
+              icon: Icons.light_mode_outlined,
+              isSelected: notifier.isLight,
+              onTap: () => notifier.setLight(true),
+            ),
+            const SizedBox(width: 10),
+            _ThemeChip(
+              label: 'Dark',
+              icon: Icons.dark_mode_outlined,
+              isSelected: !notifier.isLight,
+              onTap: () => notifier.setLight(false),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Choose the look that suits you best.',
+          style: AppTextStyles.imFell(size: 11, color: c.dim, italic: true),
+        ),
+      ],
+    );
+  }
+}
+
+class _ThemeChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+  const _ThemeChip({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? c.surface2 : c.surface,
+          border: Border.all(color: isSelected ? c.gold : c.border),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: isSelected ? c.gold : c.dim),
+            const SizedBox(width: 6),
+            Text(label,
+                style: AppTextStyles.cinzel(
+                    size: 12, color: isSelected ? c.gold : c.muted)),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 // TODO: Implement actual IFC and other calendar system switching.
 //       Each system should implement a CalendarSystem interface (see engine/).
@@ -247,6 +334,7 @@ class _CalendarSystemSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return _Section(
       title: 'Calendar System',
       children: [
@@ -270,23 +358,24 @@ class _CalendarSystemSection extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           'Additional calendar systems coming in a future release.',
-          style: AppTextStyles.imFell(size: 11, color: AppColors.dim, italic: true),
+          style: AppTextStyles.imFell(size: 11, color: c.dim, italic: true),
         ),
       ],
     );
   }
 
   void _showComingSoon(BuildContext context, String name) {
+    final c = context.read<AppColors>();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: AppColors.surface2,
+        backgroundColor: c.surface2,
         content: Text(
           '$name — coming soon',
-          style: AppTextStyles.imFell(size: 13, color: AppColors.text),
+          style: AppTextStyles.imFell(size: 13, color: c.text),
         ),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          side: const BorderSide(color: AppColors.border),
+          side: BorderSide(color: c.border),
           borderRadius: BorderRadius.circular(6),
         ),
       ),
@@ -307,15 +396,16 @@ class _SystemChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.surface2 : AppColors.surface,
+          color: isSelected ? c.surface2 : c.surface,
           border: Border.all(
-            color: isSelected ? AppColors.gold : AppColors.border,
+            color: isSelected ? c.gold : c.border,
           ),
           borderRadius: BorderRadius.circular(6),
         ),
@@ -324,14 +414,14 @@ class _SystemChip extends StatelessWidget {
             Icon(
               isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
               size: 16,
-              color: isSelected ? AppColors.gold : AppColors.dim,
+              color: isSelected ? c.gold : c.dim,
             ),
             const SizedBox(width: 10),
             Text(
               label,
               style: AppTextStyles.cinzel(
                 size: 13,
-                color: isSelected ? AppColors.gold : AppColors.muted,
+                color: isSelected ? c.gold : c.muted,
               ),
             ),
           ],
@@ -351,6 +441,7 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -358,12 +449,12 @@ class _Section extends StatelessWidget {
           title.toUpperCase(),
           style: AppTextStyles.cinzel(
             size: 11,
-            color: AppColors.muted,
+            color: c.muted,
             letterSpacing: 2,
           ),
         ),
         const SizedBox(height: 4),
-        const Divider(color: AppColors.border, height: 1),
+        Divider(color: c.border, height: 1),
         const SizedBox(height: 12),
         ...children,
       ],
@@ -379,14 +470,15 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Row(
       children: [
-        Text(label, style: AppTextStyles.cinzel(size: 12, color: AppColors.dim)),
+        Text(label, style: AppTextStyles.cinzel(size: 12, color: c.dim)),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             value,
-            style: AppTextStyles.imFell(size: 13, color: AppColors.text),
+            style: AppTextStyles.imFell(size: 13, color: c.text),
             overflow: TextOverflow.ellipsis,
           ),
         ),

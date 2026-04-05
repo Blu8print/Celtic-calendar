@@ -40,6 +40,7 @@ class EventDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final dao = context.read<EventsDao>();
     final celticDate = gregorianToCeltic(date);
     final gFmt = DateFormat('EEEE, d MMMM yyyy');
@@ -57,18 +58,18 @@ class EventDetailScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
+      backgroundColor: c.bg,
       appBar: AppBar(
         title: Column(
           children: [
             Text(
               celticLabel,
-              style: AppTextStyles.cinzel(size: 13, color: AppColors.gold2),
+              style: AppTextStyles.cinzel(size: 13, color: c.gold2),
               overflow: TextOverflow.ellipsis,
             ),
             Text(
               gFmt.format(date),
-              style: AppTextStyles.imFell(size: 11, color: AppColors.muted),
+              style: AppTextStyles.imFell(size: 11, color: c.muted),
             ),
           ],
         ),
@@ -99,13 +100,13 @@ class EventDetailScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showEventForm(context, dao),
-        backgroundColor: AppColors.surface2,
-        foregroundColor: AppColors.gold,
-        label: Text('Add Event', style: AppTextStyles.cinzel(size: 13, color: AppColors.gold)),
-        icon: const Icon(Icons.add, color: AppColors.gold),
+        backgroundColor: c.surface2,
+        foregroundColor: c.gold,
+        label: Text('Add Event', style: AppTextStyles.cinzel(size: 13, color: c.gold)),
+        icon: Icon(Icons.add, color: c.gold),
         elevation: 0,
         shape: RoundedRectangleBorder(
-          side: const BorderSide(color: AppColors.border),
+          side: BorderSide(color: c.border),
           borderRadius: BorderRadius.circular(8),
         ),
       ),
@@ -117,10 +118,11 @@ class EventDetailScreen extends StatelessWidget {
     EventsDao dao, {
     Event? event,
   }) {
+    final c = context.read<AppColors>();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: c.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -149,6 +151,7 @@ class _EventTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final color = _parseColor(event.color);
 
     // Build time range label.
@@ -174,7 +177,7 @@ class _EventTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.surface2,
+        color: c.surface2,
         border: Border(left: BorderSide(color: color, width: 3)),
         borderRadius: BorderRadius.circular(6),
       ),
@@ -190,13 +193,13 @@ class _EventTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     event.title,
-                    style: AppTextStyles.cinzel(size: 14, color: AppColors.cream),
+                    style: AppTextStyles.cinzel(size: 14, color: c.cream),
                   ),
                 ),
                 if (event.googleEventId != null)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 2, right: 4),
-                    child: Icon(Icons.cloud_done_outlined, size: 15, color: AppColors.muted),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2, right: 4),
+                    child: Icon(Icons.cloud_done_outlined, size: 15, color: c.muted),
                   ),
                 _TileIconButton(icon: Icons.edit_outlined, onTap: onEdit),
                 _TileIconButton(icon: Icons.delete_outline, onTap: () => _confirmDelete(context)),
@@ -210,7 +213,7 @@ class _EventTile extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   event.description,
-                  style: AppTextStyles.imFell(size: 12, color: AppColors.muted),
+                  style: AppTextStyles.imFell(size: 12, color: c.muted),
                 ),
               ),
             // Location.
@@ -229,16 +232,17 @@ class _EventTile extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context) {
+    final c = context.read<AppColors>();
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Text('Delete event?', style: AppTextStyles.cinzel(size: 15, color: AppColors.cream)),
+        backgroundColor: c.surface,
+        title: Text('Delete event?', style: AppTextStyles.cinzel(size: 15, color: c.cream)),
         content: Text(event.title, style: AppTextStyles.imFell(size: 13)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: AppTextStyles.cinzel(size: 12, color: AppColors.muted)),
+            child: Text('Cancel', style: AppTextStyles.cinzel(size: 12, color: c.muted)),
           ),
           TextButton(
             onPressed: () {
@@ -256,7 +260,7 @@ class _EventTile extends StatelessWidget {
     try {
       return Color(int.parse('FF${hex.replaceAll('#', '')}', radix: 16));
     } catch (_) {
-      return AppColors.gold;
+      return AppColors.dark.gold;
     }
   }
 }
@@ -269,11 +273,12 @@ class _TileIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return GestureDetector(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        child: Icon(icon, size: 18, color: AppColors.muted),
+        child: Icon(icon, size: 18, color: c.muted),
       ),
     );
   }
@@ -287,13 +292,14 @@ class _TileDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Row(
         children: [
-          Icon(icon, size: 13, color: AppColors.muted),
+          Icon(icon, size: 13, color: c.muted),
           const SizedBox(width: 5),
-          Text(text, style: AppTextStyles.cinzel(size: 11, color: AppColors.muted)),
+          Text(text, style: AppTextStyles.cinzel(size: 11, color: c.muted)),
         ],
       ),
     );
@@ -307,16 +313,17 @@ class _LocationDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Row(
         children: [
-          const Icon(Icons.place_outlined, size: 13, color: AppColors.muted),
+          Icon(Icons.place_outlined, size: 13, color: c.muted),
           const SizedBox(width: 5),
           Expanded(
             child: Text(
               location,
-              style: AppTextStyles.imFell(size: 12, color: AppColors.muted),
+              style: AppTextStyles.imFell(size: 12, color: c.muted),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -327,9 +334,9 @@ class _LocationDetail extends StatelessWidget {
               );
               await launchUrl(uri, mode: LaunchMode.externalApplication);
             },
-            child: const Padding(
-              padding: EdgeInsets.only(left: 6),
-              child: Icon(Icons.open_in_new, size: 13, color: AppColors.gold),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 6),
+              child: Icon(Icons.open_in_new, size: 13, color: c.gold),
             ),
           ),
         ],
@@ -400,16 +407,17 @@ class _EventFormState extends State<_EventForm> {
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   Future<void> _pickTime(BuildContext context) async {
+    final c = context.read<AppColors>();
     final picked = await showTimePicker(
       context: context,
       initialTime: _startTime ?? TimeOfDay.now(),
       builder: (ctx, child) => Theme(
         data: ThemeData.dark().copyWith(
-          colorScheme: const ColorScheme.dark(
-            primary: AppColors.gold,
-            onPrimary: AppColors.bg,
-            surface: AppColors.surface2,
-            onSurface: AppColors.cream,
+          colorScheme: ColorScheme.dark(
+            primary: c.gold,
+            onPrimary: c.bg,
+            surface: c.surface2,
+            onSurface: c.cream,
           ),
         ),
         child: child!,
@@ -476,6 +484,7 @@ class _EventFormState extends State<_EventForm> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final isEdit = widget.existing != null;
 
     // Compute end time for display.
@@ -497,7 +506,7 @@ class _EventFormState extends State<_EventForm> {
           // ── Header ──────────────────────────────────────────────────────
           Text(
             isEdit ? 'Edit Event' : 'New Event',
-            style: AppTextStyles.cinzelDeco(size: 16, color: AppColors.gold),
+            style: AppTextStyles.cinzelDeco(size: 16, color: c.gold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -505,7 +514,7 @@ class _EventFormState extends State<_EventForm> {
           // ── Title ───────────────────────────────────────────────────────
           TextField(
             controller: _titleCtrl,
-            style: AppTextStyles.cinzel(size: 14, color: AppColors.cream),
+            style: AppTextStyles.cinzel(size: 14, color: c.cream),
             decoration: const InputDecoration(labelText: 'Title'),
             textCapitalization: TextCapitalization.sentences,
             autofocus: true,
@@ -543,11 +552,11 @@ class _EventFormState extends State<_EventForm> {
           _FormLabel('Location'),
           TextField(
             controller: _locationCtrl,
-            style: AppTextStyles.imFell(size: 13, color: AppColors.cream),
+            style: AppTextStyles.imFell(size: 13, color: c.cream),
             decoration: InputDecoration(
               hintText: 'Add location',
-              hintStyle: AppTextStyles.imFell(size: 13, color: AppColors.dim),
-              prefixIcon: const Icon(Icons.place_outlined, size: 18, color: AppColors.muted),
+              hintStyle: AppTextStyles.imFell(size: 13, color: c.dim),
+              prefixIcon: Icon(Icons.place_outlined, size: 18, color: c.muted),
             ),
             textCapitalization: TextCapitalization.sentences,
           ),
@@ -560,11 +569,11 @@ class _EventFormState extends State<_EventForm> {
               Expanded(
                 child: TextField(
                   controller: _emailCtrl,
-                  style: AppTextStyles.imFell(size: 13, color: AppColors.cream),
+                  style: AppTextStyles.imFell(size: 13, color: c.cream),
                   decoration: InputDecoration(
                     hintText: 'Email address',
-                    hintStyle: AppTextStyles.imFell(size: 13, color: AppColors.dim),
-                    prefixIcon: const Icon(Icons.person_add_outlined, size: 18, color: AppColors.muted),
+                    hintStyle: AppTextStyles.imFell(size: 13, color: c.dim),
+                    prefixIcon: Icon(Icons.person_add_outlined, size: 18, color: c.muted),
                   ),
                   keyboardType: TextInputType.emailAddress,
                   onSubmitted: (_) => _addAttendee(),
@@ -573,7 +582,7 @@ class _EventFormState extends State<_EventForm> {
               const SizedBox(width: 8),
               TextButton(
                 onPressed: _addAttendee,
-                child: Text('Add', style: AppTextStyles.cinzel(size: 13, color: AppColors.gold)),
+                child: Text('Add', style: AppTextStyles.cinzel(size: 13, color: c.gold)),
               ),
             ],
           ),
@@ -605,11 +614,11 @@ class _EventFormState extends State<_EventForm> {
             const SizedBox(height: 10),
             Row(
               children: [
-                const Icon(Icons.cloud_done_outlined, size: 14, color: AppColors.muted),
+                Icon(Icons.cloud_done_outlined, size: 14, color: c.muted),
                 const SizedBox(width: 6),
                 Text(
                   'Will sync to Google Calendar',
-                  style: AppTextStyles.cinzel(size: 11, color: AppColors.dim),
+                  style: AppTextStyles.cinzel(size: 11, color: c.dim),
                 ),
               ],
             ),
@@ -620,9 +629,9 @@ class _EventFormState extends State<_EventForm> {
           ElevatedButton(
             onPressed: _saving ? null : _save,
             child: _saving
-                ? const SizedBox(
+                ? SizedBox(
                     height: 18, width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold),
+                    child: CircularProgressIndicator(strokeWidth: 2, color: c.gold),
                   )
                 : Text(isEdit ? 'Save Changes' : 'Add Event'),
           ),
@@ -640,11 +649,12 @@ class _FormLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Text(
         text.toUpperCase(),
-        style: AppTextStyles.cinzel(size: 10, color: AppColors.muted, letterSpacing: 1.5),
+        style: AppTextStyles.cinzel(size: 10, color: c.muted, letterSpacing: 1.5),
       ),
     );
   }
@@ -659,18 +669,19 @@ class _TimeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     if (startTime == null) {
       return GestureDetector(
         onTap: onTap,
         child: Row(
           children: [
-            const Icon(Icons.access_time, size: 18, color: AppColors.muted),
+            Icon(Icons.access_time, size: 18, color: c.muted),
             const SizedBox(width: 10),
-            Text('All day', style: AppTextStyles.cinzel(size: 13, color: AppColors.muted)),
+            Text('All day', style: AppTextStyles.cinzel(size: 13, color: c.muted)),
             const SizedBox(width: 6),
             Text(
               '(tap to set time)',
-              style: AppTextStyles.imFell(size: 11, color: AppColors.dim, italic: true),
+              style: AppTextStyles.imFell(size: 11, color: c.dim, italic: true),
             ),
           ],
         ),
@@ -679,19 +690,19 @@ class _TimeRow extends StatelessWidget {
 
     return Row(
       children: [
-        const Icon(Icons.access_time, size: 18, color: AppColors.gold),
+        Icon(Icons.access_time, size: 18, color: c.gold),
         const SizedBox(width: 10),
         GestureDetector(
           onTap: onTap,
           child: Text(
             startTime!.format(context),
-            style: AppTextStyles.cinzel(size: 14, color: AppColors.cream),
+            style: AppTextStyles.cinzel(size: 14, color: c.cream),
           ),
         ),
         const SizedBox(width: 10),
         GestureDetector(
           onTap: onClear,
-          child: const Icon(Icons.close, size: 16, color: AppColors.muted),
+          child: Icon(Icons.close, size: 16, color: c.muted),
         ),
       ],
     );
@@ -711,17 +722,18 @@ class _DurationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Row(
       children: [
-        const Icon(Icons.timer_outlined, size: 18, color: AppColors.muted),
+        Icon(Icons.timer_outlined, size: 18, color: c.muted),
         const SizedBox(width: 10),
         DropdownButton<int>(
           value: _kDurations.any((d) => d.$1 == durationMinutes)
               ? durationMinutes
               : _kDurations.first.$1,
-          dropdownColor: AppColors.surface2,
+          dropdownColor: c.surface2,
           underline: const SizedBox(),
-          style: AppTextStyles.cinzel(size: 13, color: AppColors.cream),
+          style: AppTextStyles.cinzel(size: 13, color: c.cream),
           items: _kDurations
               .map((d) => DropdownMenuItem(value: d.$1, child: Text(d.$2)))
               .toList(),
@@ -730,7 +742,7 @@ class _DurationRow extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           '→ ends ${endTime.format(context)}',
-          style: AppTextStyles.imFell(size: 12, color: AppColors.muted),
+          style: AppTextStyles.imFell(size: 12, color: c.muted),
         ),
       ],
     );
@@ -745,21 +757,22 @@ class _AttendeeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.surface2,
-        border: Border.all(color: AppColors.border),
+        color: c.surface2,
+        border: Border.all(color: c.border),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(email, style: AppTextStyles.imFell(size: 12, color: AppColors.text)),
+          Text(email, style: AppTextStyles.imFell(size: 12, color: c.text)),
           const SizedBox(width: 5),
           GestureDetector(
             onTap: onRemove,
-            child: const Icon(Icons.close, size: 14, color: AppColors.dim),
+            child: Icon(Icons.close, size: 14, color: c.dim),
           ),
         ],
       ),
@@ -809,15 +822,16 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Padding(
       padding: const EdgeInsets.only(top: 60),
       child: Column(
         children: [
-          Text('☽', style: AppTextStyles.cinzel(size: 40, color: AppColors.dim)),
+          Text('☽', style: AppTextStyles.cinzel(size: 40, color: c.dim)),
           const SizedBox(height: 12),
           Text(
             'No events on this day',
-            style: AppTextStyles.imFell(size: 14, color: AppColors.muted, italic: true),
+            style: AppTextStyles.imFell(size: 14, color: c.muted, italic: true),
           ),
         ],
       ),

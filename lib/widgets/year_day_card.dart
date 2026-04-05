@@ -17,6 +17,7 @@ class YearDayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final yd = yearDayDate(celticYear);
     final today = DateTime.now();
     final isToday = yd.year == today.year &&
@@ -31,9 +32,9 @@ class YearDayCard extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
-            color: AppColors.yearDayBg,
+            color: c.yearDayBg,
             border: Border.all(
-              color: isToday ? AppColors.ydGoldBorder : AppColors.ydBorder,
+              color: isToday ? c.ydGoldBorder : c.ydBorder,
               width: isToday ? 1.5 : 1,
             ),
             borderRadius: BorderRadius.circular(8),
@@ -45,7 +46,7 @@ class YearDayCard extends StatelessWidget {
                 '☽  YEAR AND A DAY  ☾',
                 style: AppTextStyles.cinzel(
                   size: 15,
-                  color: AppColors.ydTitle,
+                  color: c.ydTitle,
                   letterSpacing: 2,
                 ),
                 textAlign: TextAlign.center,
@@ -53,7 +54,7 @@ class YearDayCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 fmt.format(yd),
-                style: AppTextStyles.imFell(size: 12, color: AppColors.ydGreg),
+                style: AppTextStyles.imFell(size: 12, color: c.ydGreg),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
@@ -63,7 +64,7 @@ class YearDayCard extends StatelessWidget {
                 'A time for rest, reflection, and passage.',
                 style: AppTextStyles.imFell(
                   size: 13,
-                  color: AppColors.ydDesc,
+                  color: c.ydDesc,
                   italic: true,
                 ),
                 textAlign: TextAlign.center,

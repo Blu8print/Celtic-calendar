@@ -4,9 +4,6 @@ import 'package:intl/intl.dart';
 import '../engine/celtic_calendar.dart';
 import '../theme/app_theme.dart';
 
-// ─── Data model ───────────────────────────────────────────────────────────────
-
-/// A single upcoming event shown in the header panel.
 class UpcomingEvent {
   final int celticDay;
   final DateTime gregorianDate;
@@ -19,23 +16,10 @@ class UpcomingEvent {
   });
 }
 
-// ─── MonthCard ────────────────────────────────────────────────────────────────
-
-/// Split-layout month header:
-///   Left  — month position, Celtic name, tree, keyword, Gregorian date range.
-///   Right — "Upcoming" label + up to 3 upcoming event cards.
-///
-/// Handles both regular months and the Year Day (upcomingEvents is ignored
-/// when [month] is null).
 class MonthCard extends StatelessWidget {
-  /// Month number 1-13, or null for Year Day.
   final int? month;
   final int celticYear;
-
-  /// Next (up to) 3 events from today onwards in this month.
   final List<UpcomingEvent> upcomingEvents;
-
-  /// Called when the user taps an event card. Receives the event's Gregorian date.
   final void Function(DateTime date)? onEventTap;
 
   const MonthCard({
@@ -50,12 +34,11 @@ class MonthCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return month == null ? _buildYearDay() : _buildMonth(month!);
+    return month == null ? _buildYearDay(context) : _buildMonth(context, month!);
   }
 
-  // ─── Regular month ─────────────────────────────────────────────────────────
-
-  Widget _buildMonth(int m) {
+  Widget _buildMonth(BuildContext context, int m) {
+    final c = context.colors;
     final mo = celticMonths[m - 1];
     final dates = gregorianDatesForMonth(celticYear, m);
     final dateRange =
@@ -64,7 +47,6 @@ class MonthCard extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Left: month identity ──────────────────────────────────────────────
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -72,7 +54,7 @@ class MonthCard extends StatelessWidget {
               'Month $m of 13',
               style: AppTextStyles.cinzel(
                 size: 11,
-                color: AppColors.muted,
+                color: c.muted,
                 letterSpacing: 2.2,
               ),
             ),
@@ -81,7 +63,7 @@ class MonthCard extends StatelessWidget {
               mo.name,
               style: AppTextStyles.cinzelDeco(
                 size: 28,
-                color: AppColors.gold2,
+                color: c.gold2,
                 letterSpacing: 0.5,
               ),
             ),
@@ -90,7 +72,7 @@ class MonthCard extends StatelessWidget {
               'The ${mo.tree}'.toUpperCase(),
               style: AppTextStyles.cinzel(
                 size: 11,
-                color: AppColors.muted,
+                color: c.muted,
                 letterSpacing: 1.5,
               ),
             ),
@@ -99,24 +81,20 @@ class MonthCard extends StatelessWidget {
               mo.keyword,
               style: AppTextStyles.imFell(
                 size: 11,
-                color: AppColors.text.withValues(alpha: 0.7),
+                color: c.text.withValues(alpha: 0.7),
                 italic: true,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               dateRange,
-              style: AppTextStyles.cinzel(
-                size: 10,
-                color: AppColors.dim,
-              ),
+              style: AppTextStyles.cinzel(size: 10, color: c.dim),
             ),
           ],
         ),
 
         const SizedBox(width: 12),
 
-        // ── Right: upcoming events panel ──────────────────────────────────────
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,7 +104,7 @@ class MonthCard extends StatelessWidget {
                 'UPCOMING',
                 style: AppTextStyles.cinzel(
                   size: 9,
-                  color: AppColors.dim,
+                  color: c.dim,
                   letterSpacing: 1.5,
                 ),
               ),
@@ -136,7 +114,7 @@ class MonthCard extends StatelessWidget {
                   'No events ahead',
                   style: AppTextStyles.imFell(
                     size: 11,
-                    color: AppColors.dim,
+                    color: c.dim,
                     italic: true,
                   ),
                 )
@@ -159,9 +137,8 @@ class MonthCard extends StatelessWidget {
     );
   }
 
-  // ─── Year Day ──────────────────────────────────────────────────────────────
-
-  Widget _buildYearDay() {
+  Widget _buildYearDay(BuildContext context) {
+    final c = context.colors;
     final yd = yearDayDate(celticYear);
 
     return Row(
@@ -174,24 +151,21 @@ class MonthCard extends StatelessWidget {
               'Day out of time',
               style: AppTextStyles.cinzel(
                 size: 11,
-                color: AppColors.muted,
+                color: c.muted,
                 letterSpacing: 2,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               'Year Day',
-              style: AppTextStyles.cinzelDeco(
-                size: 28,
-                color: AppColors.gold2,
-              ),
+              style: AppTextStyles.cinzelDeco(size: 28, color: c.gold2),
             ),
             const SizedBox(height: 2),
             Text(
               'The Nameless Day'.toUpperCase(),
               style: AppTextStyles.cinzel(
                 size: 11,
-                color: AppColors.muted,
+                color: c.muted,
                 letterSpacing: 1.5,
               ),
             ),
@@ -200,24 +174,21 @@ class MonthCard extends StatelessWidget {
               'Between the worlds',
               style: AppTextStyles.imFell(
                 size: 11,
-                color: AppColors.text.withValues(alpha: 0.7),
+                color: c.text.withValues(alpha: 0.7),
                 italic: true,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               _dateFmt.format(yd),
-              style: AppTextStyles.cinzel(size: 10, color: AppColors.dim),
+              style: AppTextStyles.cinzel(size: 10, color: c.dim),
             ),
           ],
         ),
-        // No upcoming panel for Year Day
       ],
     );
   }
 }
-
-// ─── Event card ───────────────────────────────────────────────────────────────
 
 class _EventCard extends StatelessWidget {
   final UpcomingEvent event;
@@ -234,27 +205,23 @@ class _EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = isNearest ? AppColors.gold : AppColors.muted;
+    final c = context.colors;
+    final accentColor = isNearest ? c.gold : c.muted;
 
-    // Flutter does not allow borderRadius with non-uniform border colors.
-    // Solution: uniform outer border + ClipRRect, with a coloured inner strip
-    // on the left acting as the accent bar.
     return GestureDetector(
       onTap: onTap,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(4),
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.surface,
-            border: Border.all(color: AppColors.border),
+            color: c.surface,
+            border: Border.all(color: c.border),
           ),
           child: IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Left accent bar
                 Container(width: 2, color: accentColor),
-                // Content
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(6, 5, 8, 5),
@@ -263,14 +230,12 @@ class _EventCard extends StatelessWidget {
                       children: [
                         Text(
                           'Day ${event.celticDay} · ${_dateFmt.format(event.gregorianDate)}',
-                          style: AppTextStyles.cinzel(
-                              size: 10, color: AppColors.muted),
+                          style: AppTextStyles.cinzel(size: 10, color: c.muted),
                         ),
                         const SizedBox(height: 1),
                         Text(
                           event.title,
-                          style: AppTextStyles.imFell(
-                              size: 12, color: AppColors.text),
+                          style: AppTextStyles.imFell(size: 12, color: c.text),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
