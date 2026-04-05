@@ -495,17 +495,26 @@ class _EventFormState extends State<_EventForm> {
 
   Future<void> _pickTime(BuildContext context) async {
     final c = context.read<AppColors>();
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final base = isLight ? ThemeData.light() : ThemeData.dark();
     final picked = await showTimePicker(
       context: context,
       initialTime: _startTime ?? TimeOfDay.now(),
       builder: (ctx, child) => Theme(
-        data: ThemeData.dark().copyWith(
-          colorScheme: ColorScheme.dark(
-            primary: c.gold,
-            onPrimary: c.bg,
-            surface: c.surface2,
-            onSurface: c.cream,
-          ),
+        data: base.copyWith(
+          colorScheme: isLight
+              ? ColorScheme.light(
+                  primary: c.gold,
+                  onPrimary: Colors.white,
+                  surface: c.surface,
+                  onSurface: c.text,
+                )
+              : ColorScheme.dark(
+                  primary: c.gold,
+                  onPrimary: c.bg,
+                  surface: c.surface2,
+                  onSurface: c.text,
+                ),
         ),
         child: child!,
       ),

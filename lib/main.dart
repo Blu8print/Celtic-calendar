@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'db/database.dart';
@@ -67,14 +68,24 @@ class _RootsCalendarAppState extends State<RootsCalendarApp>
         ),
       ],
       child: Consumer<ThemeNotifier>(
-        builder: (context, notifier, _) => MaterialApp(
-          title: 'Roots Calendar',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
-          darkTheme: AppTheme.dark,
-          themeMode: notifier.isLight ? ThemeMode.light : ThemeMode.dark,
-          home: const CalendarScreen(),
-        ),
+        builder: (context, notifier, _) {
+          final navBarColor = notifier.isLight
+              ? AppColors.light.surface
+              : AppColors.dark.bg;
+          SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+            systemNavigationBarColor: navBarColor,
+            systemNavigationBarIconBrightness:
+                notifier.isLight ? Brightness.dark : Brightness.light,
+          ));
+          return MaterialApp(
+            title: 'Roots Calendar',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: notifier.isLight ? ThemeMode.light : ThemeMode.dark,
+            home: const CalendarScreen(),
+          );
+        },
       ),
     );
   }
