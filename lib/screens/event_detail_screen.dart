@@ -155,6 +155,66 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           borderRadius: BorderRadius.circular(8),
         ),
       ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: c.surface,
+          border: Border(top: BorderSide(color: c.border)),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: SafeArea(
+          top: false,
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.chevron_left),
+                color: c.muted,
+                tooltip: 'Previous day',
+                onPressed: () => setState(
+                    () => _date = _date.subtract(const Duration(days: 1))),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _date,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null && mounted) {
+                      setState(() => _date =
+                          DateTime(picked.year, picked.month, picked.day));
+                    }
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        DateFormat('d MMMM yyyy').format(_date),
+                        style: AppTextStyles.cinzel(size: 12, color: c.text),
+                        textAlign: TextAlign.center,
+                      ),
+                      Text(
+                        'tap to jump',
+                        style: AppTextStyles.imFell(
+                            size: 10, color: c.dim, italic: true),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right),
+                color: c.muted,
+                tooltip: 'Next day',
+                onPressed: () => setState(
+                    () => _date = _date.add(const Duration(days: 1))),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -569,6 +629,10 @@ class _EventFormState extends State<_EventForm> {
         description:     _descCtrl.text.trim(),
         color:           _color,
         updatedAt:       DateTime.now(),
+        gregorianDate:   dayNorm,
+        celticYear:      celticDate.celticYear,
+        celticMonth:     Value(celticDate.month),
+        celticDay:       Value(celticDate.day),
         startMinutes:    Value(sm),
         durationMinutes: Value(dm),
         attendees:       Value(att),

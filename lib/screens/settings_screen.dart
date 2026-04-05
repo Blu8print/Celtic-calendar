@@ -19,8 +19,7 @@ class SettingsScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(
           'Settings',
-          // AppBar is always dark green — cream ensures WCAG AA contrast.
-          style: AppTextStyles.cinzelDeco(size: 16, color: AppColors.dark.cream),
+          style: AppTextStyles.cinzelDeco(size: 16, color: c.text),
         ),
       ),
       body: ListView(

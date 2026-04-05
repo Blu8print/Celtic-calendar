@@ -33,6 +33,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   late int _curWeek;   // 0-3  within the Celtic month
   CalendarView _curView = CalendarView.month;
   GoogleCalendarService? _gcal;
+  String? _lastShownError;
 
   @override
   void initState() {
@@ -59,7 +60,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   void _onGcalChanged() {
     final err = _gcal?.lastError;
-    if (err != null && mounted) {
+    if (err != null && err != _lastShownError && mounted) {
+      _lastShownError = err;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(err),
@@ -67,6 +69,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
+    } else if (err == null) {
+      _lastShownError = null;
     }
   }
 
@@ -212,7 +216,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
   void _setView(CalendarView v) {
     setState(() {
       _curView = v;
-      if (v == CalendarView.week) _curWeek = (_curDay - 1) ~/ 7;
+      if (v == CalendarView.week) {
+        _curWeek = (_curDay - 1) ~/ 7;
+      } else if (v == CalendarView.threeDay) {
+        // Default to today's day if we're in the current month, clamped to ≤26
+        // so that days 27–28 are still reachable in the 3-day window.
+        final tc = gregorianToCeltic(DateTime.now());
+        if (!tc.isYearDay && !tc.isLeapDay &&
+            tc.celticYear == _curYear && tc.month == _curMonth) {
+          _curDay = tc.day!.clamp(1, 26);
+        }
+        _curWeek = (_curDay - 1) ~/ 7;
+      }
     });
   }
 
@@ -331,9 +346,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
             onPressed: () => setState(_jumpToToday),
             style: TextButton.styleFrom(
               foregroundColor: c.muted,
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: const Size(48, 44),
             ),
             child: Text('Today',
                 style: AppTextStyles.cinzel(
@@ -349,7 +363,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       ),
       // ── FAB ─────────────────────────────────────────────────────────────
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _openDay(_fabDate()),
+        onPressed: () => _openDay(_fabDate(), addEvent: true),
         backgroundColor: c.muted,
         foregroundColor: c.surface,
         shape: const CircleBorder(),
@@ -369,83 +383,86 @@ class _CalendarScreenState extends State<CalendarScreen> {
         builder: (context, snapshot) {
           final allEvents = snapshot.data ?? [];
 
-          if (_curMonth == null && !isSchedule) {
-            // Year Day view
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: YearDayCard(
-                celticYear: _curYear,
-                onTap: _openYearDay,
-              ),
+          // Schedule, Day, Week, 3-Day all manage their own scroll —
+          // do not nest them inside a SingleChildScrollView.
+          if (_curView == CalendarView.schedule) {
+            return ScheduleView(
+              celticYear: _curYear,
+              events: allEvents,
+              onEventTap: _openDay,
             );
           }
 
+          if (_curMonth != null) {
+            switch (_curView) {
+              case CalendarView.threeDay:
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+                  child: WeekView(
+                    celticYear: _curYear,
+                    month: _curMonth!,
+                    startDay: _curDay,
+                    nDays: 3,
+                    events: allEvents,
+                    onDayTap: (cd) => setState(() {
+                      _curDay  = cd;
+                      _curView = CalendarView.day;
+                    }),
+                    onEventTap: _openDay,
+                  ),
+                );
+              case CalendarView.week:
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+                  child: WeekView(
+                    celticYear: _curYear,
+                    month: _curMonth!,
+                    startDay: _curWeek * 7 + 1,
+                    nDays: 7,
+                    events: allEvents,
+                    onDayTap: (cd) => setState(() {
+                      _curDay  = cd;
+                      _curView = CalendarView.day;
+                    }),
+                    onEventTap: _openDay,
+                  ),
+                );
+              case CalendarView.day:
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+                  child: DayView(
+                    celticYear: _curYear,
+                    month: _curMonth!,
+                    day: _curDay,
+                    events: allEvents
+                        .where((e) => e.celticDay == _curDay)
+                        .toList(),
+                    onOpenDay: _openDay,
+                  ),
+                );
+              default:
+                break;
+            }
+          }
+
+          // Month and YearDay: content can exceed screen height, use scroll.
           return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                switch (_curView) {
-                  CalendarView.month => _curMonth != null
-                      ? DayGrid(
-                          celticYear: _curYear,
-                          month: _curMonth!,
-                          daysWithEvents: _daysWithEvents(allEvents),
-                          events: allEvents,
-                          onDayTap: _openDay,
-                          onDayLongPress: (d) => _openDay(d, addEvent: true),
-                          onEventTap: _openDay,
-                        )
-                      : YearDayCard(
-                          celticYear: _curYear, onTap: _openYearDay),
-                  CalendarView.threeDay => _curMonth != null
-                      ? WeekView(
-                          celticYear: _curYear,
-                          month: _curMonth!,
-                          startDay: _curDay,
-                          nDays: 3,
-                          events: allEvents,
-                          onDayTap: (cd) => setState(() {
-                            _curDay  = cd;
-                            _curView = CalendarView.day;
-                          }),
-                          onEventTap: _openDay,
-                        )
-                      : YearDayCard(
-                          celticYear: _curYear, onTap: _openYearDay),
-                  CalendarView.week => _curMonth != null
-                      ? WeekView(
-                          celticYear: _curYear,
-                          month: _curMonth!,
-                          startDay: _curWeek * 7 + 1,
-                          nDays: 7,
-                          events: allEvents,
-                          onDayTap: (cd) => setState(() {
-                            _curDay  = cd;
-                            _curView = CalendarView.day;
-                          }),
-                          onEventTap: _openDay,
-                        )
-                      : YearDayCard(
-                          celticYear: _curYear, onTap: _openYearDay),
-                  CalendarView.day => _curMonth != null
-                      ? DayView(
-                          celticYear: _curYear,
-                          month: _curMonth!,
-                          day: _curDay,
-                          events: allEvents
-                              .where((e) => e.celticDay == _curDay)
-                              .toList(),
-                          onOpenDay: _openDay,
-                        )
-                      : YearDayCard(
-                          celticYear: _curYear, onTap: _openYearDay),
-                  CalendarView.schedule => ScheduleView(
-                      celticYear: _curYear,
-                      events: allEvents,
-                      onEventTap: _openDay,
-                    ),
-                },
+                if (_curMonth == null)
+                  YearDayCard(celticYear: _curYear, onTap: _openYearDay)
+                else
+                  DayGrid(
+                    celticYear: _curYear,
+                    month: _curMonth!,
+                    daysWithEvents: _daysWithEvents(allEvents),
+                    events: allEvents,
+                    onDayTap: _openDay,
+                    onDayLongPress: (d) => _openDay(d, addEvent: true),
+                    onEventTap: _openDay,
+                  ),
               ],
             ),
           );
@@ -541,6 +558,7 @@ class _AppDrawer extends StatelessWidget {
                   todayC.month == mo.number;
               return _MonthBtn(
                 mo: mo,
+                celticYear: celticYear,
                 isActive: isActive,
                 containsToday: containsToday,
                 colors: c,
@@ -638,13 +656,17 @@ class _ViewBtn extends StatelessWidget {
 
 class _MonthBtn extends StatelessWidget {
   final CelticMonth mo;
+  final int celticYear;
   final bool isActive;
   final bool containsToday;
   final AppColors colors;
   final VoidCallback onTap;
 
+  static final _fmt = DateFormat('d MMM');
+
   const _MonthBtn({
     required this.mo,
+    required this.celticYear,
     required this.isActive,
     required this.containsToday,
     required this.colors,
@@ -654,6 +676,8 @@ class _MonthBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = colors;
+    final dates = gregorianDatesForMonth(celticYear, mo.number);
+    final range = '${_fmt.format(dates.first)} – ${_fmt.format(dates.last)}';
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -668,18 +692,23 @@ class _MonthBtn extends StatelessWidget {
                   textAlign: TextAlign.right),
             ),
             const SizedBox(width: 10),
-            Text(mo.name,
-                style: AppTextStyles.cinzel(
-                    size: 13,
-                    color: isActive ? c.muted : c.gold2,
-                    weight: isActive ? FontWeight.w700 : FontWeight.w400)),
-            const SizedBox(width: 8),
             Expanded(
-              child: Text(mo.keyword,
-                  style: AppTextStyles.imFell(
-                      size: 11, color: c.dim, italic: true),
-                  overflow: TextOverflow.ellipsis),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(mo.name,
+                      style: AppTextStyles.cinzel(
+                          size: 13,
+                          color: isActive ? c.muted : c.gold2,
+                          weight: isActive ? FontWeight.w700 : FontWeight.w400)),
+                  Text(range,
+                      style: AppTextStyles.cinzel(size: 9, color: c.dim)),
+                ],
+              ),
             ),
+            Text(mo.keyword,
+                style: AppTextStyles.imFell(size: 11, color: c.dim, italic: true)),
+            const SizedBox(width: 6),
             if (containsToday)
               Container(
                 width: 7, height: 7,
