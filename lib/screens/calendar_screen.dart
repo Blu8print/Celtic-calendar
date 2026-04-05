@@ -184,10 +184,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
     });
   }
 
-  void _openDay(DateTime date) {
+  void _openDay(DateTime date, {bool addEvent = false}) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => EventDetailScreen(date: date)),
+      MaterialPageRoute(
+        builder: (_) => EventDetailScreen(date: date, openAddForm: addEvent),
+      ),
     );
   }
 
@@ -359,6 +361,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           daysWithEvents: _daysWithEvents(allEvents),
                           events: allEvents,
                           onDayTap: _openDay,
+                          onDayLongPress: (d) => _openDay(d, addEvent: true),
                           onEventTap: _openDay,
                         )
                       : YearDayCard(

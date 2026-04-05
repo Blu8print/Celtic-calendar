@@ -53,7 +53,7 @@ class AppColors {
     cream:     Color(0xFFEEE0BC),
     muted:     Color(0xFF527048),
     text:      Color(0xFFC0D8B8),
-    dim:       Color(0xFF3A5030),
+    dim:       Color(0xFF6A8A60),
     border:    Color(0xFF1E3019),
     todayBg:   Color(0xFF0D1F0C),
     yearDayBg: Color(0xFF100820),

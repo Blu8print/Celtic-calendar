@@ -35,8 +35,10 @@ const _kDurations = <(int, String)>[
 /// Shows all events for a given day; supports swipe left/right to change day.
 class EventDetailScreen extends StatefulWidget {
   final DateTime date;
+  /// If true, the add-event form opens automatically after the screen mounts.
+  final bool openAddForm;
 
-  const EventDetailScreen({super.key, required this.date});
+  const EventDetailScreen({super.key, required this.date, this.openAddForm = false});
 
   @override
   State<EventDetailScreen> createState() => _EventDetailScreenState();
@@ -49,6 +51,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   void initState() {
     super.initState();
     _date = DateTime(widget.date.year, widget.date.month, widget.date.day);
+    if (widget.openAddForm) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openEventForm(context.read<EventsDao>());
+      });
+    }
   }
 
   String _celticLabel() {

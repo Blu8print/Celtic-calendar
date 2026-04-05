@@ -20,6 +20,9 @@ class DayGrid extends StatelessWidget {
   /// Called when a day cell is tapped. Receives the Gregorian [DateTime].
   final void Function(DateTime date)? onDayTap;
 
+  /// Called when a day cell is long-pressed. Receives the Gregorian [DateTime].
+  final void Function(DateTime date)? onDayLongPress;
+
   /// Called when an event row in the list is tapped.
   final void Function(DateTime date)? onEventTap;
 
@@ -32,6 +35,7 @@ class DayGrid extends StatelessWidget {
     this.daysWithEvents = const {},
     this.events = const [],
     this.onDayTap,
+    this.onDayLongPress,
     this.onEventTap,
   });
 
@@ -91,6 +95,7 @@ class DayGrid extends StatelessWidget {
               isToday: isToday,
               hasEvent: hasEvent,
               onTap: () => onDayTap?.call(date),
+              onLongPress: () => onDayLongPress?.call(date),
             );
           },
         ),
@@ -218,6 +223,7 @@ class _DayCell extends StatelessWidget {
   final bool isToday;
   final bool hasEvent;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   const _DayCell({
     required this.celticDay,
@@ -225,6 +231,7 @@ class _DayCell extends StatelessWidget {
     required this.isToday,
     required this.hasEvent,
     this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -232,6 +239,7 @@ class _DayCell extends StatelessWidget {
     final c = context.colors;
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Container(
         decoration: BoxDecoration(
           color: isToday ? c.todayBg : null,
