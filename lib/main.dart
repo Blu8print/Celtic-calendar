@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'db/database.dart';
 import 'db/events_dao.dart';
 import 'engine/celtic_calendar.dart';
 import 'screens/calendar_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'services/google_calendar_service.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_notifier.dart';
@@ -13,13 +15,16 @@ import 'theme/theme_notifier.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final db = AppDatabase();
-  runApp(RootsCalendarApp(db: db));
+  final prefs = await SharedPreferences.getInstance();
+  final showOnboarding = !(prefs.getBool('onboarding_complete') ?? false);
+  runApp(RootsCalendarApp(db: db, showOnboarding: showOnboarding));
 }
 
 class RootsCalendarApp extends StatefulWidget {
   final AppDatabase db;
+  final bool showOnboarding;
 
-  const RootsCalendarApp({super.key, required this.db});
+  const RootsCalendarApp({super.key, required this.db, this.showOnboarding = false});
 
   @override
   State<RootsCalendarApp> createState() => _RootsCalendarAppState();
@@ -83,7 +88,9 @@ class _RootsCalendarAppState extends State<RootsCalendarApp>
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
             themeMode: notifier.isLight ? ThemeMode.light : ThemeMode.dark,
-            home: const CalendarScreen(),
+            home: widget.showOnboarding
+                ? const OnboardingScreen()
+                : const CalendarScreen(),
           );
         },
       ),

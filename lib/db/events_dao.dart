@@ -10,11 +10,13 @@ class EventsDao extends DatabaseAccessor<AppDatabase> with _$EventsDaoMixin {
 
   /// All events whose [gregorianDate] falls on the given calendar [date].
   Future<List<Event>> getEventsForDay(DateTime date) {
-    final start = DateTime(date.year, date.month, date.day);
+    final start = DateTime.utc(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
     return (select(events)
           ..where(
-            (e) => e.gregorianDate.isBetweenValues(start, end),
+            (e) =>
+                e.gregorianDate.isBiggerOrEqualValue(start) &
+                e.gregorianDate.isSmallerThanValue(end),
           )
           ..orderBy([(e) => OrderingTerm.asc(e.createdAt)]))
         .get();
@@ -68,10 +70,14 @@ class EventsDao extends DatabaseAccessor<AppDatabase> with _$EventsDaoMixin {
 
   /// Watch events for a day (reactive stream).
   Stream<List<Event>> watchEventsForDay(DateTime date) {
-    final start = DateTime(date.year, date.month, date.day);
+    final start = DateTime.utc(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
     return (select(events)
-          ..where((e) => e.gregorianDate.isBetweenValues(start, end))
+          ..where(
+            (e) =>
+                e.gregorianDate.isBiggerOrEqualValue(start) &
+                e.gregorianDate.isSmallerThanValue(end),
+          )
           ..orderBy([(e) => OrderingTerm.asc(e.createdAt)]))
         .watch();
   }

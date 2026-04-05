@@ -373,9 +373,11 @@ class GoogleCalendarService extends ChangeNotifier {
 
   DateTime? _eventDate(gcal.Event gcEvent) {
     final dt = gcEvent.start?.dateTime?.toLocal();
-    if (dt != null) return DateTime(dt.year, dt.month, dt.day);
+    // Use UTC midnight of the LOCAL calendar date so the stored timestamp
+    // never straddles day boundaries regardless of the device timezone.
+    if (dt != null) return DateTime.utc(dt.year, dt.month, dt.day);
     final d = gcEvent.start?.date;
-    if (d != null) return DateTime(d.year, d.month, d.day);
+    if (d != null) return DateTime.utc(d.year, d.month, d.day);
     return null;
   }
 
