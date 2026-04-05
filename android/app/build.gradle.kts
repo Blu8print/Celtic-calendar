@@ -28,6 +28,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Required by flutter_appauth so the OS routes the OAuth redirect back to this app.
+        // Set to the reverse of your iOS client ID, e.g. com.googleusercontent.apps.123456789-abcdef
+        manifestPlaceholders["appAuthRedirectScheme"] = "com.googleusercontent.apps.994680507449-c3pkq1is9vpo7ioohnu5r6j56b4hi3ne"
     }
 
     buildTypes {

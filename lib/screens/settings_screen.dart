@@ -56,24 +56,42 @@ class _GoogleAccountSection extends StatelessWidget {
                 icon: const Icon(Icons.login, size: 16),
                 label: const Text('Sign in with Google'),
               ),
+              if (gcal.lastError != null) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withValues(alpha: 0.08),
+                    border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.error_outline, size: 14, color: Colors.redAccent),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          gcal.lastError!,
+                          style: AppTextStyles.imFell(size: 11, color: Colors.redAccent),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ] else ...[
               _InfoRow(label: 'Signed in as', value: gcal.userEmail ?? ''),
               const SizedBox(height: 12),
               const Divider(color: AppColors.border, height: 1),
               const SizedBox(height: 12),
 
-              // ── Sync status rows ─────────────────────────────────────────
-              _InfoRow(
-                label: 'Last synced',
-                value: _relativeTime(gcal.lastSyncTime),
-              ),
-              const SizedBox(height: 6),
-              _InfoRow(
-                label: 'Imported',
-                value: gcal.lastSyncTime == null
-                    ? '—'
-                    : '${gcal.lastSyncCount} event${gcal.lastSyncCount == 1 ? '' : 's'} this sync',
-              ),
+              // ── Connection status badge ───────────────────────────────────
+              _SyncStatusBadge(gcal: gcal, relativeTime: _relativeTime),
+              const SizedBox(height: 10),
+
+              // ── Celtic year scope ─────────────────────────────────────────
+              _CelticYearScope(),
               const SizedBox(height: 14),
 
               // ── Sync action ──────────────────────────────────────────────
@@ -154,6 +172,69 @@ class _GoogleAccountSection extends StatelessWidget {
     final syncDay = DateTime(dt.year, dt.month, dt.day);
     if (syncDay == today) return 'Today at ${DateFormat('HH:mm').format(dt)}';
     return _timeFmt.format(dt);
+  }
+}
+
+// ─── Sync status badge ────────────────────────────────────────────────────────
+
+class _SyncStatusBadge extends StatelessWidget {
+  final GoogleCalendarService gcal;
+  final String Function(DateTime?) relativeTime;
+
+  const _SyncStatusBadge({required this.gcal, required this.relativeTime});
+
+  @override
+  Widget build(BuildContext context) {
+    final Color dotColor;
+    final String label;
+
+    if (gcal.lastSyncSuccess == null) {
+      dotColor = AppColors.dim;
+      label = 'Never synced';
+    } else if (gcal.lastSyncSuccess == true) {
+      dotColor = const Color(0xff4caf72); // forest green
+      final count = gcal.lastSyncCount;
+      label = 'Connected · ${relativeTime(gcal.lastSyncTime)} · '
+          '$count event${count == 1 ? '' : 's'}';
+    } else {
+      dotColor = Colors.redAccent;
+      label = 'Sync failed · ${relativeTime(gcal.lastSyncTime)}';
+    }
+
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: AppTextStyles.cinzel(size: 12, color: AppColors.text),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Celtic year scope label ──────────────────────────────────────────────────
+
+class _CelticYearScope extends StatelessWidget {
+  const _CelticYearScope();
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final year = celticYearOf(now);
+    final start = year;      // Dec 24 of this year
+    final end = year + 1;    // Dec 23 of next year
+    return Text(
+      'Syncing Celtic year $year  (Dec 24 $start – Dec 23 $end)',
+      style: AppTextStyles.imFell(size: 11, color: AppColors.dim, italic: true),
+    );
   }
 }
 
