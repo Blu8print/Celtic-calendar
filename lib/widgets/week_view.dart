@@ -8,8 +8,8 @@ import '../engine/celtic_calendar.dart';
 import '../theme/app_theme.dart';
 
 const double _kSlotH    = 52.0;
-const int    _kHourStart = 7;
-const int    _kHourEnd   = 22;
+const int    _kHourStart = 0;
+const int    _kHourEnd   = 24;
 const double _kGutterW   = 44.0;
 
 /// N-day time grid view (nDays=7 for week, nDays=3 for 3-day).

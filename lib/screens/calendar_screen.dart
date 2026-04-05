@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../db/database.dart';
 import '../db/events_dao.dart';
 import '../engine/celtic_calendar.dart';
+import '../services/google_calendar_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/day_grid.dart';
 import '../widgets/day_view.dart';
@@ -31,11 +32,42 @@ class _CalendarScreenState extends State<CalendarScreen> {
   late int _curDay;    // 1-28 within the Celtic month
   late int _curWeek;   // 0-3  within the Celtic month
   CalendarView _curView = CalendarView.month;
+  GoogleCalendarService? _gcal;
 
   @override
   void initState() {
     super.initState();
     _jumpToToday();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final gcal = context.read<GoogleCalendarService>();
+    if (gcal != _gcal) {
+      _gcal?.removeListener(_onGcalChanged);
+      _gcal = gcal;
+      _gcal!.addListener(_onGcalChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    _gcal?.removeListener(_onGcalChanged);
+    super.dispose();
+  }
+
+  void _onGcalChanged() {
+    final err = _gcal?.lastError;
+    if (err != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(err),
+          backgroundColor: Colors.red[700],
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _jumpToToday() {
