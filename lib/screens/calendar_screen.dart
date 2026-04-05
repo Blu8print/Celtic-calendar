@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../db/database.dart';
@@ -6,11 +9,14 @@ import '../db/events_dao.dart';
 import '../engine/celtic_calendar.dart';
 import '../theme/app_theme.dart';
 import '../widgets/day_grid.dart';
-import '../widgets/month_card.dart';
-import '../widgets/month_strip.dart';
+import '../widgets/day_view.dart';
+import '../widgets/schedule_view.dart';
+import '../widgets/week_view.dart';
 import '../widgets/year_day_card.dart';
 import 'event_detail_screen.dart';
 import 'settings_screen.dart';
+
+enum CalendarView { month, threeDay, week, day, schedule }
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -21,9 +27,10 @@ class CalendarScreen extends StatefulWidget {
 
 class _CalendarScreenState extends State<CalendarScreen> {
   late int _curYear;
-
-  /// Active month 1-13, or null for Year Day.
-  late int? _curMonth;
+  late int? _curMonth; // 1-13 or null (Year Day)
+  late int _curDay;    // 1-28 within the Celtic month
+  late int _curWeek;   // 0-3  within the Celtic month
+  CalendarView _curView = CalendarView.month;
 
   @override
   void initState() {
@@ -35,40 +42,147 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final today = DateTime.now();
     _curYear = celticYearOf(today);
     final info = gregorianToCeltic(today);
-    _curMonth = (info.isYearDay || info.isLeapDay) ? null : info.month;
+    if (info.isYearDay || info.isLeapDay) {
+      _curMonth = null;
+      _curDay   = 1;
+      _curWeek  = 0;
+    } else {
+      _curMonth = info.month;
+      _curDay   = info.day!;
+      _curWeek  = (_curDay - 1) ~/ 7;
+    }
   }
 
-  // ─── Navigation ─────────────────────────────────────────────────────────────
+  // ─── Navigation ──────────────────────────────────────────────────────────────
 
-  void _prevMonth() {
+  void _prevPeriod() {
     setState(() {
-      if (_curMonth == null) {
-        _curMonth = 13;
-      } else if (_curMonth! > 1) {
-        _curMonth = _curMonth! - 1;
-      } else {
-        _curYear--;
-        _curMonth = 13;
+      switch (_curView) {
+        case CalendarView.month:
+        case CalendarView.schedule:
+          if (_curMonth == null) {
+            _curMonth = 13;
+          } else if (_curMonth! > 1) {
+            _curMonth = _curMonth! - 1;
+          } else {
+            _curYear--;
+            _curMonth = 13;
+          }
+          _curWeek = 0;
+          _curDay  = 1;
+        case CalendarView.week:
+          if (_curMonth == null) return;
+          if (_curWeek > 0) {
+            _curWeek--;
+          } else if (_curMonth! > 1) {
+            _curMonth = _curMonth! - 1;
+            _curWeek  = 3;
+          } else {
+            _curYear--;
+            _curMonth = 13;
+            _curWeek  = 3;
+          }
+          _curDay = _curWeek * 7 + 1;
+        case CalendarView.threeDay:
+          if (_curMonth == null) return;
+          final nd = _curDay - 3;
+          if (nd >= 1) {
+            _curDay = nd;
+          } else if (_curMonth! > 1) {
+            _curMonth = _curMonth! - 1;
+            _curDay   = 28 + nd; // nd is negative
+          } else {
+            _curYear--;
+            _curMonth = 13;
+            _curDay   = 28 + nd;
+          }
+          if (_curDay < 1) _curDay = 1;
+          _curWeek = (_curDay - 1) ~/ 7;
+        case CalendarView.day:
+          if (_curMonth == null) return;
+          if (_curDay > 1) {
+            _curDay--;
+          } else if (_curMonth! > 1) {
+            _curMonth = _curMonth! - 1;
+            _curDay   = 28;
+          } else {
+            _curYear--;
+            _curMonth = 13;
+            _curDay   = 28;
+          }
+          _curWeek = (_curDay - 1) ~/ 7;
       }
     });
   }
 
-  void _nextMonth() {
+  void _nextPeriod() {
     setState(() {
-      if (_curMonth == 13) {
-        _curMonth = null;
-      } else if (_curMonth == null) {
-        _curYear++;
-        _curMonth = 1;
-      } else {
-        _curMonth = _curMonth! + 1;
+      switch (_curView) {
+        case CalendarView.month:
+        case CalendarView.schedule:
+          if (_curMonth == 13) {
+            _curMonth = null;
+          } else if (_curMonth == null) {
+            _curYear++;
+            _curMonth = 1;
+          } else {
+            _curMonth = _curMonth! + 1;
+          }
+          _curWeek = 0;
+          _curDay  = 1;
+        case CalendarView.week:
+          if (_curMonth == null) return;
+          if (_curWeek < 3) {
+            _curWeek++;
+          } else if (_curMonth! < 13) {
+            _curMonth = _curMonth! + 1;
+            _curWeek  = 0;
+          } else {
+            _curMonth = null;
+            _curWeek  = 0;
+          }
+          _curDay = _curWeek * 7 + 1;
+        case CalendarView.threeDay:
+          if (_curMonth == null) return;
+          final nd = _curDay + 3;
+          if (nd <= 28) {
+            _curDay = nd;
+          } else if (_curMonth! < 13) {
+            _curMonth = _curMonth! + 1;
+            _curDay   = 1;
+          } else {
+            _curMonth = null;
+            _curDay   = 1;
+          }
+          _curWeek = (_curDay - 1) ~/ 7;
+        case CalendarView.day:
+          if (_curMonth == null) return;
+          if (_curDay < 28) {
+            _curDay++;
+          } else if (_curMonth! < 13) {
+            _curMonth = _curMonth! + 1;
+            _curDay   = 1;
+          } else {
+            _curMonth = null;
+            _curDay   = 1;
+          }
+          _curWeek = (_curDay - 1) ~/ 7;
       }
     });
   }
 
-  void _prevYear() => setState(() => _curYear--);
-  void _nextYear() => setState(() => _curYear++);
-  void _goToMonth(int? month) => setState(() => _curMonth = month);
+  void _goToMonth(int? month) => setState(() {
+        _curMonth = month;
+        _curWeek  = 0;
+        _curDay   = 1;
+      });
+
+  void _setView(CalendarView v) {
+    setState(() {
+      _curView = v;
+      if (v == CalendarView.week) _curWeek = (_curDay - 1) ~/ 7;
+    });
+  }
 
   void _openDay(DateTime date) {
     Navigator.push(
@@ -79,340 +193,484 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   void _openYearDay() => _openDay(yearDayDate(_curYear));
 
-  // ─── Event data helpers ──────────────────────────────────────────────────────
+  // ─── Label helpers ────────────────────────────────────────────────────────────
 
-  /// Celtic day numbers that have at least one event — drives grid dots.
-  Set<int> _daysWithEvents(List<Event> monthEvents) {
-    return monthEvents
-        .map((e) => e.celticDay)
-        .whereType<int>()
-        .toSet();
+  String get _periodTitle {
+    if (_curMonth == null) return 'Year Day \u00b7 $_curYear';
+    final mo = celticMonths[_curMonth! - 1];
+    switch (_curView) {
+      case CalendarView.month:
+        return '${mo.name} \u00b7 $_curYear\u2013${(_curYear + 1).toString().substring(2)}';
+      case CalendarView.threeDay:
+        final end = math.min(_curDay + 2, 28);
+        return '${mo.name} \u00b7 Days $_curDay\u2013$end';
+      case CalendarView.week:
+        return '${mo.name} \u00b7 Week ${_curWeek + 1}';
+      case CalendarView.day:
+        final d = celticToGregorian(_curYear, _curMonth!, _curDay);
+        return '${mo.name} \u00b7 ${DateFormat('d MMM').format(d)}';
+      case CalendarView.schedule:
+        return 'Schedule \u00b7 $_curYear';
+    }
   }
 
-  /// Up to 3 events on or after today, for the upcoming panel.
-  List<UpcomingEvent> _upcomingEvents(List<Event> monthEvents) {
-    if (_curMonth == null) return const [];
-    final today = DateTime(
-      DateTime.now().year,
-      DateTime.now().month,
-      DateTime.now().day,
-    );
-    return monthEvents
-        .where((e) => !e.gregorianDate.isBefore(today) && e.celticDay != null)
-        .take(3)
-        .map((e) => UpcomingEvent(
-              celticDay: e.celticDay!,
-              gregorianDate: e.gregorianDate,
-              title: e.title,
-            ))
-        .toList();
+  String get _periodKeyword {
+    if (_curMonth == null) return 'Between the worlds';
+    final mo = celticMonths[_curMonth! - 1];
+    return 'The ${mo.tree} \u00b7 ${mo.keyword}';
   }
 
-  // ─── Nav label helpers ───────────────────────────────────────────────────────
+  // ─── Event helpers ────────────────────────────────────────────────────────────
 
-  String get _prevMonthName {
-    if (_curMonth == null) return celticMonths[12].name;
-    if (_curMonth! > 1) return celticMonths[_curMonth! - 2].name;
-    return '';
-  }
+  Set<int> _daysWithEvents(List<Event> evs) =>
+      evs.map((e) => e.celticDay).whereType<int>().toSet();
 
-  String get _nextMonthName {
-    if (_curMonth == 13) return 'Year Day';
-    if (_curMonth == null) return celticMonths[0].name;
-    return celticMonths[_curMonth!].name;
-  }
-
-  String get _monthPosition {
-    if (_curMonth == null) return 'Day out of time';
-    return 'Month $_curMonth of 13';
-  }
-
-  // ─── Build ──────────────────────────────────────────────────────────────────
+  // ─── Build ────────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
-    final appBarIconColor = Theme.of(context).appBarTheme.iconTheme?.color ?? c.gold;
-    final appBarTitleColor = Theme.of(context).appBarTheme.titleTextStyle?.color ?? c.gold2;
+    final c   = context.colors;
     final dao = context.read<EventsDao>();
 
-    // Stream for the currently viewed month. Key forces a clean rebuild
-    // (clears stale data) whenever the user navigates to a different month.
-    final stream = _curMonth != null
-        ? dao.watchEventsForMonth(_curYear, _curMonth!)
-        : dao.watchYearDayEvents(_curYear);
+    final isSchedule = _curView == CalendarView.schedule;
+
+    final stream = isSchedule
+        ? dao.watchEventsForYear(_curYear)
+        : _curMonth != null
+            ? dao.watchEventsForMonth(_curYear, _curMonth!)
+            : dao.watchYearDayEvents(_curYear);
 
     return Scaffold(
       backgroundColor: c.bg,
+      // ── Drawer ──────────────────────────────────────────────────────────
+      drawer: _AppDrawer(
+        celticYear: _curYear,
+        curMonth: _curMonth,
+        curView: _curView,
+        onViewSelected: (v) {
+          Navigator.pop(context);
+          _setView(v);
+        },
+        onMonthSelected: (m) {
+          Navigator.pop(context);
+          _goToMonth(m);
+        },
+        onSettingsTap: () {
+          Navigator.pop(context);
+          Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SettingsScreen()));
+        },
+      ),
+      // ── AppBar ──────────────────────────────────────────────────────────
       appBar: AppBar(
+        backgroundColor: c.surface,
+        elevation: 0.5,
+        shadowColor: c.border,
+        leading: Builder(builder: (ctx) => IconButton(
+          icon: const Icon(Icons.menu),
+          color: c.muted,
+          onPressed: () => Scaffold.of(ctx).openDrawer(),
+          tooltip: 'Menu',
+        )),
         title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Celtic Tree Calendar',
-              style: AppTextStyles.cinzelDeco(
-                  size: 14, color: appBarTitleColor, letterSpacing: 3),
-            ),
-            Text(
-              'Beth-Luis-Nion · 13 months of 28 days',
-              style: AppTextStyles.imFell(
-                  size: 11, color: c.dim, italic: true),
-            ),
+            Text(_periodTitle,
+                style: AppTextStyles.cinzel(
+                    size: 14, weight: FontWeight.w700, color: c.text),
+                overflow: TextOverflow.ellipsis),
+            Text(_periodKeyword,
+                style: AppTextStyles.imFell(
+                    size: 11, color: c.gold, italic: true)),
           ],
         ),
+        centerTitle: false,
         actions: [
           IconButton(
-            icon: Icon(Icons.settings_outlined, color: appBarIconColor),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            icon: const Icon(Icons.chevron_left),
+            color: c.muted,
+            onPressed: _prevPeriod,
+            tooltip: 'Previous',
+          ),
+          TextButton(
+            onPressed: () => setState(_jumpToToday),
+            style: TextButton.styleFrom(
+              foregroundColor: c.muted,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
+            child: Text('Today',
+                style: AppTextStyles.cinzel(
+                    size: 11, color: c.muted, letterSpacing: 0.5)),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            color: c.muted,
+            onPressed: _nextPeriod,
+            tooltip: 'Next',
           ),
         ],
       ),
-      body: GestureDetector(
-        onHorizontalDragEnd: (details) {
-          const threshold = 200.0;
-          final v = details.primaryVelocity ?? 0;
-          if (v < -threshold) _nextMonth();
-          if (v > threshold) _prevMonth();
-        },
-        child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Year navigation
-            _YearNav(
-              celticYear: _curYear,
-              onPrev: _prevYear,
-              onNext: _nextYear,
-            ),
-            const SizedBox(height: 16),
+      // ── Body ────────────────────────────────────────────────────────────
+      body: StreamBuilder<List<Event>>(
+        key: ValueKey(isSchedule ? '$_curYear-schedule' : '$_curYear-$_curMonth'),
+        stream: stream,
+        builder: (context, snapshot) {
+          final allEvents = snapshot.data ?? [];
 
-            // Event-driven section: MonthCard + MonthNav + grid.
-            // StreamBuilder key resets snapshot when navigating months so
-            // stale dots/events from the previous month never flash.
-            StreamBuilder<List<Event>>(
-              key: ValueKey('$_curYear-$_curMonth'),
-              stream: stream,
-              builder: (context, snapshot) {
-                final monthEvents = snapshot.data ?? [];
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    MonthCard(
+          if (_curMonth == null && !isSchedule) {
+            // Year Day view
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: YearDayCard(
+                celticYear: _curYear,
+                onTap: _openYearDay,
+              ),
+            );
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                switch (_curView) {
+                  CalendarView.month => _curMonth != null
+                      ? DayGrid(
+                          celticYear: _curYear,
+                          month: _curMonth!,
+                          daysWithEvents: _daysWithEvents(allEvents),
+                          events: allEvents,
+                          onDayTap: _openDay,
+                          onEventTap: _openDay,
+                        )
+                      : YearDayCard(
+                          celticYear: _curYear, onTap: _openYearDay),
+                  CalendarView.threeDay => _curMonth != null
+                      ? WeekView(
+                          celticYear: _curYear,
+                          month: _curMonth!,
+                          startDay: _curDay,
+                          nDays: 3,
+                          events: allEvents,
+                          onDayTap: (cd) => setState(() {
+                            _curDay  = cd;
+                            _curView = CalendarView.day;
+                          }),
+                          onEventTap: _openDay,
+                        )
+                      : YearDayCard(
+                          celticYear: _curYear, onTap: _openYearDay),
+                  CalendarView.week => _curMonth != null
+                      ? WeekView(
+                          celticYear: _curYear,
+                          month: _curMonth!,
+                          startDay: _curWeek * 7 + 1,
+                          nDays: 7,
+                          events: allEvents,
+                          onDayTap: (cd) => setState(() {
+                            _curDay  = cd;
+                            _curView = CalendarView.day;
+                          }),
+                          onEventTap: _openDay,
+                        )
+                      : YearDayCard(
+                          celticYear: _curYear, onTap: _openYearDay),
+                  CalendarView.day => _curMonth != null
+                      ? DayView(
+                          celticYear: _curYear,
+                          month: _curMonth!,
+                          day: _curDay,
+                          events: allEvents
+                              .where((e) => e.celticDay == _curDay)
+                              .toList(),
+                          onOpenDay: _openDay,
+                        )
+                      : YearDayCard(
+                          celticYear: _curYear, onTap: _openYearDay),
+                  CalendarView.schedule => ScheduleView(
                       celticYear: _curYear,
-                      month: _curMonth,
-                      upcomingEvents: _upcomingEvents(monthEvents),
+                      events: allEvents,
                       onEventTap: _openDay,
                     ),
-                    const SizedBox(height: 14),
-                    _MonthNav(
-                      prevName: _prevMonthName,
-                      nextName: _nextMonthName,
-                      position: _monthPosition,
-                      onPrev: _prevMonth,
-                      onNext: _nextMonth,
-                      onToday: () => setState(_jumpToToday),
-                    ),
-                    const SizedBox(height: 14),
-                    if (_curMonth != null)
-                      DayGrid(
-                        celticYear: _curYear,
-                        month: _curMonth!,
-                        daysWithEvents: _daysWithEvents(monthEvents),
-                        onDayTap: _openDay,
-                      )
-                    else
-                      YearDayCard(
-                        celticYear: _curYear,
-                        onTap: _openYearDay,
-                      ),
-                  ],
-                );
-              },
+                },
+              ],
             ),
-            const SizedBox(height: 16),
-
-            // Month strip (navigation only, no event data needed)
-            MonthStrip(
-              activeMonth: _curMonth,
-              celticYear: _curYear,
-              onMonthSelected: _goToMonth,
-            ),
-          ],
-        ),
-      ),      // SingleChildScrollView
-    ),        // GestureDetector
-  );
-  }
-}
-
-// ─── Sub-widgets ──────────────────────────────────────────────────────────────
-
-
-class _YearNav extends StatelessWidget {
-  final int celticYear;
-  final VoidCallback onPrev;
-  final VoidCallback onNext;
-
-  const _YearNav({
-    required this.celticYear,
-    required this.onPrev,
-    required this.onNext,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _NavButton(label: '◄', onTap: onPrev),
-        const SizedBox(width: 12),
-        Text(
-          'Celtic Year $celticYear – ${celticYear + 1}',
-          style: AppTextStyles.cinzel(
-              size: 12, color: c.muted, letterSpacing: 2),
-        ),
-        const SizedBox(width: 12),
-        _NavButton(label: '►', onTap: onNext),
-      ],
-    );
-  }
-}
-
-class _MonthNav extends StatelessWidget {
-  final String prevName;
-  final String nextName;
-  final String position;
-  final VoidCallback onPrev;
-  final VoidCallback onNext;
-  final VoidCallback onToday;
-
-  const _MonthNav({
-    required this.prevName,
-    required this.nextName,
-    required this.position,
-    required this.onPrev,
-    required this.onNext,
-    required this.onToday,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Row(
-      children: [
-        Expanded(
-          child: _MNavButton(
-            label: prevName.isEmpty ? '◄' : '◄ $prevName',
-            onTap: onPrev,
-          ),
-        ),
-        Expanded(
-          child: Column(
-            children: [
-              Text(
-                position,
-                style: AppTextStyles.cinzel(
-                    size: 11, color: c.dim, letterSpacing: 0.8),
-              ),
-              const SizedBox(height: 4),
-              _TodayButton(onTap: onToday),
-            ],
-          ),
-        ),
-        Expanded(
-          child: _MNavButton(
-            label: nextName.isEmpty ? '►' : '$nextName ►',
-            onTap: onNext,
-            alignRight: true,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _NavButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _NavButton({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          border: Border.all(color: c.border),
-          borderRadius: BorderRadius.circular(3),
-        ),
-        child: Text(label,
-            style: AppTextStyles.cinzel(size: 14, color: c.gold)),
+          );
+        },
       ),
     );
   }
 }
 
-class _MNavButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  final bool alignRight;
+// ── Drawer ────────────────────────────────────────────────────────────────────
 
-  const _MNavButton({
-    required this.label,
-    required this.onTap,
-    this.alignRight = false,
+class _AppDrawer extends StatelessWidget {
+  final int celticYear;
+  final int? curMonth;
+  final CalendarView curView;
+  final void Function(CalendarView) onViewSelected;
+  final void Function(int?) onMonthSelected;
+  final VoidCallback onSettingsTap;
+
+  const _AppDrawer({
+    required this.celticYear,
+    required this.curMonth,
+    required this.curView,
+    required this.onViewSelected,
+    required this.onMonthSelected,
+    required this.onSettingsTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          border: Border.all(color: c.border),
-          borderRadius: BorderRadius.circular(4),
+    final c     = context.colors;
+    final today = DateTime.now();
+    final todayC = gregorianToCeltic(today);
+
+    return Drawer(
+      backgroundColor: c.surface,
+      child: SafeArea(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 14),
+              decoration: BoxDecoration(
+                  border: Border(bottom: BorderSide(color: c.border))),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Roots Calendar',
+                      style: AppTextStyles.cinzel(
+                          size: 15,
+                          weight: FontWeight.w700,
+                          color: c.muted,
+                          letterSpacing: 0.5)),
+                  const SizedBox(height: 3),
+                  Text('Celtic Tree Calendar \u00b7 13 months',
+                      style: AppTextStyles.imFell(
+                          size: 12, color: c.dim, italic: true)),
+                ],
+              ),
+            ),
+
+            // View section
+            _DrawerSection(label: 'View', colors: c),
+            _ViewBtn(label: '\u263d  Month',    view: CalendarView.month,    curView: curView, colors: c, onTap: onViewSelected),
+            _ViewBtn(label: '\u29c4  3 Days',   view: CalendarView.threeDay, curView: curView, colors: c, onTap: onViewSelected),
+            _ViewBtn(label: '\u25a6  Week',     view: CalendarView.week,     curView: curView, colors: c, onTap: onViewSelected),
+            _ViewBtn(label: '\u25c8  Day',      view: CalendarView.day,      curView: curView, colors: c, onTap: onViewSelected),
+            _ViewBtn(label: '\u2630  Schedule', view: CalendarView.schedule, curView: curView, colors: c, onTap: onViewSelected),
+
+            // Months section
+            _DrawerSection(label: 'Months', colors: c),
+            ...celticMonths.map((mo) {
+              final isActive = curMonth == mo.number;
+              final containsToday = !todayC.isYearDay &&
+                  !todayC.isLeapDay &&
+                  todayC.celticYear == celticYear &&
+                  todayC.month == mo.number;
+              return _MonthBtn(
+                mo: mo,
+                isActive: isActive,
+                containsToday: containsToday,
+                colors: c,
+                onTap: () => onMonthSelected(mo.number),
+              );
+            }),
+            // Year Day
+            _MonthBtnYD(
+              isActive: curMonth == null,
+              containsToday: todayC.isYearDay && todayC.celticYear == celticYear,
+              colors: c,
+              onTap: () => onMonthSelected(null),
+            ),
+
+            // Settings
+            _DrawerSection(label: 'Settings', colors: c),
+            InkWell(
+              onTap: onSettingsTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Icon(Icons.settings_outlined, size: 18, color: c.dim),
+                    const SizedBox(width: 12),
+                    Text('Settings',
+                        style: AppTextStyles.cinzel(size: 13, color: c.gold2)),
+                    const Spacer(),
+                    Icon(Icons.chevron_right, size: 18, color: c.dim),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+class _DrawerSection extends StatelessWidget {
+  final String label;
+  final AppColors colors;
+  const _DrawerSection({required this.label, required this.colors});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = colors;
+    return Container(
+      color: c.bg,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Text(label.toUpperCase(),
+          style: AppTextStyles.cinzel(
+              size: 9, color: c.dim, letterSpacing: 1.2, weight: FontWeight.w600)),
+    );
+  }
+}
+
+class _ViewBtn extends StatelessWidget {
+  final String label;
+  final CalendarView view;
+  final CalendarView curView;
+  final AppColors colors;
+  final void Function(CalendarView) onTap;
+
+  const _ViewBtn({
+    required this.label,
+    required this.view,
+    required this.curView,
+    required this.colors,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c        = colors;
+    final isActive = view == curView;
+    return InkWell(
+      onTap: () => onTap(view),
+      child: Container(
+        color: isActive ? c.todayBg : null,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Text(
           label,
           style: AppTextStyles.cinzel(
-              size: 11, color: c.muted, letterSpacing: 0.8),
-          textAlign: alignRight ? TextAlign.right : TextAlign.left,
-          overflow: TextOverflow.ellipsis,
+              size: 13,
+              color: isActive ? c.muted : c.gold2,
+              weight: isActive ? FontWeight.w700 : FontWeight.w400,
+              letterSpacing: 0.3),
         ),
       ),
     );
   }
 }
 
-class _TodayButton extends StatelessWidget {
+class _MonthBtn extends StatelessWidget {
+  final CelticMonth mo;
+  final bool isActive;
+  final bool containsToday;
+  final AppColors colors;
   final VoidCallback onTap;
 
-  const _TodayButton({required this.onTap});
+  const _MonthBtn({
+    required this.mo,
+    required this.isActive,
+    required this.containsToday,
+    required this.colors,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
-    return GestureDetector(
+    final c = colors;
+    return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-        decoration: BoxDecoration(
-          border: Border.all(color: c.dim),
-          borderRadius: BorderRadius.circular(3),
+        color: isActive ? c.todayBg : null,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 20,
+              child: Text('${mo.number}',
+                  style: AppTextStyles.cinzel(size: 10, color: c.dim),
+                  textAlign: TextAlign.right),
+            ),
+            const SizedBox(width: 10),
+            Text(mo.name,
+                style: AppTextStyles.cinzel(
+                    size: 13,
+                    color: isActive ? c.muted : c.gold2,
+                    weight: isActive ? FontWeight.w700 : FontWeight.w400)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(mo.keyword,
+                  style: AppTextStyles.imFell(
+                      size: 11, color: c.dim, italic: true),
+                  overflow: TextOverflow.ellipsis),
+            ),
+            if (containsToday)
+              Container(
+                width: 7, height: 7,
+                decoration: BoxDecoration(
+                    color: c.muted, shape: BoxShape.circle),
+              ),
+          ],
         ),
-        child: Text(
-          '☽ Today',
-          style: AppTextStyles.cinzel(
-              size: 10, color: c.dim, letterSpacing: 1),
+      ),
+    );
+  }
+}
+
+class _MonthBtnYD extends StatelessWidget {
+  final bool isActive;
+  final bool containsToday;
+  final AppColors colors;
+  final VoidCallback onTap;
+
+  const _MonthBtnYD({
+    required this.isActive,
+    required this.containsToday,
+    required this.colors,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = colors;
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        color: isActive ? c.todayBg : null,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        child: Row(
+          children: [
+            const SizedBox(width: 30),
+            Text('Year Day',
+                style: AppTextStyles.cinzel(
+                    size: 13,
+                    color: isActive ? c.muted : c.gold2,
+                    weight: isActive ? FontWeight.w700 : FontWeight.w400)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text('Between the worlds',
+                  style: AppTextStyles.imFell(
+                      size: 11, color: c.dim, italic: true),
+                  overflow: TextOverflow.ellipsis),
+            ),
+            if (containsToday)
+              Container(
+                width: 7, height: 7,
+                decoration: BoxDecoration(
+                    color: c.muted, shape: BoxShape.circle),
+              ),
+          ],
         ),
       ),
     );

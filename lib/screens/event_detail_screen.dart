@@ -64,12 +64,13 @@ class EventDetailScreen extends StatelessWidget {
           children: [
             Text(
               celticLabel,
-              style: AppTextStyles.cinzel(size: 13, color: c.gold2),
+              // AppBar is always dark green — use cream for WCAG AA contrast.
+              style: AppTextStyles.cinzel(size: 13, color: AppColors.dark.cream),
               overflow: TextOverflow.ellipsis,
             ),
             Text(
               gFmt.format(date),
-              style: AppTextStyles.imFell(size: 11, color: c.muted),
+              style: AppTextStyles.imFell(size: 11, color: AppColors.dark.text),
             ),
           ],
         ),

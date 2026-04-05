@@ -63,19 +63,19 @@ class AppColors {
     ydDesc:    Color(0xFF8060B0),
   );
 
-  // ── Light palette (roots-calendar-light.html) ────────────────────────────────
+  // ── Light palette (roots-calendar-light-v2.html) ─────────────────────────────
   static const light = AppColors(
-    bg:        Color(0xFFf4efe6),
+    bg:        Color(0xFFf7f3ec),
     surface:   Color(0xFFffffff),
-    surface2:  Color(0xFFf9f6f0),
-    gold:      Color(0xFFc9a84c),
-    gold2:     Color(0xFF7a5a10),
-    cream:     Color(0xFF1c2b19),
-    muted:     Color(0xFF4a7a44),
-    text:      Color(0xFF1c2b19),
-    dim:       Color(0xFF5a6b55),
-    border:    Color(0xFFd8cfc0),
-    todayBg:   Color(0xFFe8f0e4),
+    surface2:  Color(0xFFf0ece4),
+    gold:      Color(0xFFb07800),
+    gold2:     Color(0xFF3a3226),
+    cream:     Color(0xFFffffff),
+    muted:     Color(0xFF1a4018),
+    text:      Color(0xFF111108),
+    dim:       Color(0xFF5a5040),
+    border:    Color(0xFFb8ae9e),
+    todayBg:   Color(0xFFe4ede2),
     yearDayBg: Color(0xFFf0ecf8),
     ydBorder:  Color(0xFFc8b8e8),
     ydTitle:   Color(0xFF5a2090),
@@ -121,13 +121,13 @@ class AppTextStyles {
         letterSpacing: letterSpacing,
       );
 
-  /// IM Fell English — descriptions, keywords, body text.
+  /// Lora — descriptions, keywords, body text.
   static TextStyle imFell({
     double size = 14,
     Color? color,
     bool italic = false,
   }) =>
-      GoogleFonts.imFellEnglish(
+      GoogleFonts.lora(
         fontSize: size,
         color: color ?? AppColors.dark.text,
         fontStyle: italic ? FontStyle.italic : FontStyle.normal,
@@ -139,8 +139,6 @@ class AppTextStyles {
 class AppTheme {
   AppTheme._();
 
-  static const _lightAppBarBg   = Color(0xFF2b5226);
-  static const _lightAppBarGold = Color(0xFFc9a84c);
 
   static ThemeData get dark {
     final c = AppColors.dark;
@@ -211,13 +209,19 @@ class AppTheme {
         onPrimary: Colors.white,
         outline: c.border,
       ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: _lightAppBarBg,
+      appBarTheme: AppBarTheme(
+        backgroundColor: c.surface,
+        foregroundColor: c.text,
         elevation: 0,
-        iconTheme: IconThemeData(color: _lightAppBarGold),
-        centerTitle: true,
+        iconTheme: IconThemeData(color: c.muted),
+        titleTextStyle: AppTextStyles.cinzel(
+          size: 15,
+          color: c.text,
+          weight: FontWeight.w700,
+        ),
+        centerTitle: false,
       ),
-      textTheme: GoogleFonts.imFellEnglishTextTheme(base.textTheme).copyWith(
+      textTheme: GoogleFonts.loraTextTheme(base.textTheme).copyWith(
         bodyMedium: AppTextStyles.imFell(size: 14, color: c.text),
         bodySmall: AppTextStyles.imFell(size: 12, color: c.muted),
       ),

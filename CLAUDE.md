@@ -227,6 +227,37 @@ Write a step-by-step guide covering:
 
 ---
 
+## Writing files — lessons learned
+
+### Prefer the Write tool over shell heredocs for Dart files
+Bash heredocs (`<< 'EOF'`) fail silently or with cryptic errors when the file content contains
+single quotes (`'`), dollar signs (`$`), or backticks. Dart code is full of these. Always use
+the `Write` tool to create or overwrite Dart files.
+
+### After context compaction, re-read before editing
+The `Write` and `Edit` tools require a prior `Read` in the same conversation. After a context
+summary, re-read the file before attempting any edit — otherwise the tool will reject the call
+with "File has not been read yet".
+
+### Use Python patch scripts for surgical multi-site edits
+When a file needs many scattered `const`-removal or string-replacement fixes, writing a small
+Python script (via `Write` → `Bash python script.py`) is more reliable than chaining multiple
+`Edit` calls. Clean up the `.py` files after running them.
+
+### Removing `const` from color-using widgets
+Any widget that references `context.colors.xxx` (a runtime Provider value) cannot be `const`.
+When converting `AppColors.staticField` → `c.xxx`, scan for all `const Icon(...)`,
+`const Padding(child: Icon(...))`, `const BorderSide(color: ...)`, etc. and strip the outer
+`const`. The `const` on padding/size values (e.g. `EdgeInsets`) is still fine — only the
+widget referencing a runtime color needs `const` removed.
+
+### `_parseColor` and other non-build helpers can't use `c`
+The `c = context.colors` shortcut only exists inside `build()`. Methods like `_parseColor`
+that are called outside a build context must use `AppColors.dark.xxx` (or another static
+fallback) — not `c.xxx`.
+
+---
+
 ## Important constraints
 - **No data stored on any server** — all events stay on device in Drift
 - Google sync is optional — app works fully offline without it

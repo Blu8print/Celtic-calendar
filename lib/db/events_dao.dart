@@ -136,6 +136,14 @@ class EventsDao extends DatabaseAccessor<AppDatabase> with _$EventsDaoMixin {
         .go();
   }
 
+  /// All events for a Celtic year, ordered by date. Used by schedule view.
+  Stream<List<Event>> watchEventsForYear(int celticYear) {
+    return (select(events)
+          ..where((e) => e.celticYear.equals(celticYear))
+          ..orderBy([(e) => OrderingTerm.asc(e.gregorianDate)]))
+        .watch();
+  }
+
   /// Reactive stream of Year Day / Leap Day events for a Celtic year.
   Stream<List<Event>> watchYearDayEvents(int celticYear) {
     return (select(events)
