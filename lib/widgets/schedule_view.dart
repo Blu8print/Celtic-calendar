@@ -58,10 +58,12 @@ class _ScheduleViewState extends State<ScheduleView> {
     final today  = DateTime.now();
     final todayC = gregorianToCeltic(today);
 
-    // Group: month → day → events
+    // Group: month → day → events; only show today-or-future
+    final todayDate = DateTime(today.year, today.month, today.day);
     final Map<int, Map<int, List<Event>>> byMonth = {};
     for (final e in widget.events) {
       if (e.celticDay == null || e.celticMonth == null) continue;
+      if (e.gregorianDate.isBefore(todayDate)) continue;
       byMonth.putIfAbsent(e.celticMonth!, () => {});
       byMonth[e.celticMonth!]!
           .putIfAbsent(e.celticDay!, () => [])

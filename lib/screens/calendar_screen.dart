@@ -196,11 +196,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
   // ─── Label helpers ────────────────────────────────────────────────────────────
 
   String get _periodTitle {
-    if (_curMonth == null) return 'Year Day \u00b7 $_curYear';
+    if (_curMonth == null) return 'Year Day';
     final mo = celticMonths[_curMonth! - 1];
     switch (_curView) {
       case CalendarView.month:
-        return '${mo.name} \u00b7 $_curYear\u2013${(_curYear + 1).toString().substring(2)}';
+        return mo.name;
       case CalendarView.threeDay:
         final end = math.min(_curDay + 2, 28);
         return '${mo.name} \u00b7 Days $_curDay\u2013$end';
@@ -210,14 +210,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
         final d = celticToGregorian(_curYear, _curMonth!, _curDay);
         return '${mo.name} \u00b7 ${DateFormat('d MMM').format(d)}';
       case CalendarView.schedule:
-        return 'Schedule \u00b7 $_curYear';
+        return 'Schedule';
     }
   }
 
   String get _periodKeyword {
     if (_curMonth == null) return 'Between the worlds';
     final mo = celticMonths[_curMonth! - 1];
-    return 'The ${mo.tree} \u00b7 ${mo.keyword}';
+    return '${mo.tree} \u00b7 ${mo.keyword}';
   }
 
   // ─── Event helpers ────────────────────────────────────────────────────────────
@@ -313,8 +313,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
         ],
       ),
+      // ── FAB ─────────────────────────────────────────────────────────────
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _openDay(_fabDate()),
+        backgroundColor: c.muted,
+        foregroundColor: c.surface,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add),
+      ),
       // ── Body ────────────────────────────────────────────────────────────
-      body: StreamBuilder<List<Event>>(
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragEnd: (details) {
+          final v = details.primaryVelocity ?? 0;
+          if (v < -300) _nextPeriod();
+          if (v > 300) _prevPeriod();
+        },
+        child: StreamBuilder<List<Event>>(
         key: ValueKey(isSchedule ? '$_curYear-schedule' : '$_curYear-$_curMonth'),
         stream: stream,
         builder: (context, snapshot) {
@@ -400,8 +415,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
           );
         },
+        ),
       ),
     );
+  }
+
+  DateTime _fabDate() {
+    if (_curMonth == null) return yearDayDate(_curYear);
+    if (_curView == CalendarView.day) {
+      return celticToGregorian(_curYear, _curMonth!, _curDay);
+    }
+    final today = DateTime.now();
+    final tc = gregorianToCeltic(today);
+    if (!tc.isYearDay && !tc.isLeapDay &&
+        tc.celticYear == _curYear && tc.month == _curMonth) {
+      return DateTime(today.year, today.month, today.day);
+    }
+    return celticToGregorian(_curYear, _curMonth!, 1);
   }
 }
 

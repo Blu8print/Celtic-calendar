@@ -32,30 +32,57 @@ const _kDurations = <(int, String)>[
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
-/// Shows all events for a given day and allows adding / editing / deleting.
-class EventDetailScreen extends StatelessWidget {
+/// Shows all events for a given day; supports swipe left/right to change day.
+class EventDetailScreen extends StatefulWidget {
   final DateTime date;
 
   const EventDetailScreen({super.key, required this.date});
 
   @override
+  State<EventDetailScreen> createState() => _EventDetailScreenState();
+}
+
+class _EventDetailScreenState extends State<EventDetailScreen> {
+  late DateTime _date;
+
+  @override
+  void initState() {
+    super.initState();
+    _date = DateTime(widget.date.year, widget.date.month, widget.date.day);
+  }
+
+  String _celticLabel() {
+    final celticDate = gregorianToCeltic(_date);
+    if (celticDate.isLeapDay) {
+      return 'Leap Day · Celtic Year ${celticDate.celticYear}';
+    } else if (celticDate.isYearDay) {
+      return 'Year Day · Celtic Year ${celticDate.celticYear}';
+    } else {
+      final mo = celticDate.monthData!;
+      return '${mo.name} · Day ${celticDate.day} · ${mo.tree} · ${mo.keyword}';
+    }
+  }
+
+  void _openEventForm(EventsDao dao, {Event? event}) {
+    final gcal = context.read<GoogleCalendarService>();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _EventScreen(
+          date: _date,
+          dao: dao,
+          existing: event,
+          gcal: gcal,
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final dao = context.read<EventsDao>();
-    final celticDate = gregorianToCeltic(date);
     final gFmt = DateFormat('EEEE, d MMMM yyyy');
-    final dayNorm = DateTime(date.year, date.month, date.day);
-
-    String celticLabel;
-    if (celticDate.isLeapDay) {
-      celticLabel = 'Leap Day · Celtic Year ${celticDate.celticYear}';
-    } else if (celticDate.isYearDay) {
-      celticLabel = 'Year Day · Celtic Year ${celticDate.celticYear}';
-    } else {
-      final mo = celticDate.monthData!;
-      celticLabel =
-          '${mo.name} · Day ${celticDate.day} · ${mo.tree} · ${mo.keyword}';
-    }
 
     return Scaffold(
       backgroundColor: c.bg,
@@ -63,44 +90,54 @@ class EventDetailScreen extends StatelessWidget {
         title: Column(
           children: [
             Text(
-              celticLabel,
-              // AppBar is always dark green — use cream for WCAG AA contrast.
-              style: AppTextStyles.cinzel(size: 13, color: AppColors.dark.cream),
+              _celticLabel(),
+              style: AppTextStyles.cinzel(size: 13, color: c.text),
               overflow: TextOverflow.ellipsis,
             ),
             Text(
-              gFmt.format(date),
-              style: AppTextStyles.imFell(size: 11, color: AppColors.dark.text),
+              gFmt.format(_date),
+              style: AppTextStyles.imFell(size: 11, color: c.dim),
             ),
           ],
         ),
       ),
-      body: StreamBuilder<List<Event>>(
-        stream: dao.watchEventsForDay(dayNorm),
-        builder: (context, snapshot) {
-          final events = snapshot.data ?? [];
-          return CustomScrollView(
-            slivers: [
-              if (events.isEmpty)
-                const SliverToBoxAdapter(child: _EmptyState())
-              else
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, i) => _EventTile(
-                      event: events[i],
-                      onDelete: () => dao.deleteEvent(events[i].id),
-                      onEdit: () => _showEventForm(context, dao, event: events[i]),
-                    ),
-                    childCount: events.length,
-                  ),
-                ),
-              const SliverToBoxAdapter(child: SizedBox(height: 80)),
-            ],
-          );
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragEnd: (details) {
+          final v = details.primaryVelocity ?? 0;
+          if (v < -300) {
+            setState(() => _date = _date.add(const Duration(days: 1)));
+          } else if (v > 300) {
+            setState(() => _date = _date.subtract(const Duration(days: 1)));
+          }
         },
+        child: StreamBuilder<List<Event>>(
+          key: ValueKey(_date),
+          stream: dao.watchEventsForDay(_date),
+          builder: (context, snapshot) {
+            final events = snapshot.data ?? [];
+            return CustomScrollView(
+              slivers: [
+                if (events.isEmpty)
+                  const SliverToBoxAdapter(child: _EmptyState())
+                else
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, i) => _EventTile(
+                        event: events[i],
+                        onEdit: () => _openEventForm(dao, event: events[i]),
+                      ),
+                      childCount: events.length,
+                    ),
+                  ),
+                const SliverToBoxAdapter(child: SizedBox(height: 80)),
+              ],
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showEventForm(context, dao),
+        onPressed: () => _openEventForm(dao),
         backgroundColor: c.surface2,
         foregroundColor: c.gold,
         label: Text('Add Event', style: AppTextStyles.cinzel(size: 13, color: c.gold)),
@@ -113,25 +150,87 @@ class EventDetailScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  void _showEventForm(
-    BuildContext context,
-    EventsDao dao, {
-    Event? event,
-  }) {
-    final c = context.read<AppColors>();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: c.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+// ─── Full-page event screen (add / edit) ──────────────────────────────────────
+
+class _EventScreen extends StatelessWidget {
+  final DateTime date;
+  final EventsDao dao;
+  final Event? existing;
+  final GoogleCalendarService gcal;
+
+  const _EventScreen({
+    required this.date,
+    required this.dao,
+    this.existing,
+    required this.gcal,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final isEdit = existing != null;
+
+    return Scaffold(
+      backgroundColor: c.bg,
+      appBar: AppBar(
+        backgroundColor: c.surface,
+        elevation: 0.5,
+        shadowColor: c.border,
+        title: Text(
+          isEdit ? 'Edit Event' : 'New Event',
+          style: AppTextStyles.cinzel(
+              size: 15, weight: FontWeight.w700, color: c.text),
+        ),
+        actions: [
+          if (isEdit)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              color: Colors.redAccent,
+              tooltip: 'Delete event',
+              onPressed: () => _confirmDelete(context),
+            ),
+        ],
       ),
-      builder: (_) => _EventForm(
-        date: date,
-        dao: dao,
-        existing: event,
-        gcal: context.read<GoogleCalendarService>(),
+      body: SingleChildScrollView(
+        child: _EventForm(
+          date: date,
+          dao: dao,
+          existing: existing,
+          gcal: gcal,
+        ),
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context) {
+    final c = context.read<AppColors>();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.surface,
+        title: Text('Delete event?',
+            style: AppTextStyles.cinzel(size: 15, color: c.text)),
+        content: Text(existing!.title,
+            style: AppTextStyles.imFell(size: 13, color: c.dim)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel',
+                style: AppTextStyles.cinzel(size: 12, color: c.muted)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await dao.deleteEvent(existing!.id);
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: Text('Delete',
+                style: AppTextStyles.cinzel(
+                    size: 12, color: Colors.redAccent)),
+          ),
+        ],
       ),
     );
   }
@@ -141,14 +240,9 @@ class EventDetailScreen extends StatelessWidget {
 
 class _EventTile extends StatelessWidget {
   final Event event;
-  final VoidCallback onDelete;
   final VoidCallback onEdit;
 
-  const _EventTile({
-    required this.event,
-    required this.onDelete,
-    required this.onEdit,
-  });
+  const _EventTile({required this.event, required this.onEdit});
 
   @override
   Widget build(BuildContext context) {
@@ -175,84 +269,61 @@ class _EventTile extends StatelessWidget {
       } catch (_) {}
     }
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: c.surface2,
-        border: Border(left: BorderSide(color: color, width: 3)),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title + action buttons row.
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    event.title,
-                    style: AppTextStyles.cinzel(size: 14, color: c.cream),
-                  ),
-                ),
-                if (event.googleEventId != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2, right: 4),
-                    child: Icon(Icons.cloud_done_outlined, size: 15, color: c.muted),
-                  ),
-                _TileIconButton(icon: Icons.edit_outlined, onTap: onEdit),
-                _TileIconButton(icon: Icons.delete_outline, onTap: () => _confirmDelete(context)),
-              ],
-            ),
-            // Time.
-            if (timeLabel != null) _TileDetail(Icons.access_time, timeLabel),
-            // Description.
-            if (event.description.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  event.description,
-                  style: AppTextStyles.imFell(size: 12, color: c.muted),
-                ),
-              ),
-            // Location.
-            if (event.location != null)
-              _LocationDetail(location: event.location!),
-            // Attendees.
-            if (attendeeCount > 0)
-              _TileDetail(
-                Icons.people_outline,
-                '$attendeeCount attendee${attendeeCount == 1 ? '' : 's'}',
-              ),
-          ],
+    return InkWell(
+      onTap: onEdit,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: c.surface2,
+          border: Border(left: BorderSide(color: color, width: 3)),
+          borderRadius: BorderRadius.circular(6),
         ),
-      ),
-    );
-  }
-
-  void _confirmDelete(BuildContext context) {
-    final c = context.read<AppColors>();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: c.surface,
-        title: Text('Delete event?', style: AppTextStyles.cinzel(size: 15, color: c.cream)),
-        content: Text(event.title, style: AppTextStyles.imFell(size: 13)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel', style: AppTextStyles.cinzel(size: 12, color: c.muted)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title + sync icon row.
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      event.title,
+                      style: AppTextStyles.cinzel(size: 14, color: c.text),
+                    ),
+                  ),
+                  if (event.googleEventId != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2, left: 4),
+                      child: Icon(Icons.cloud_done_outlined,
+                          size: 15, color: c.muted),
+                    ),
+                ],
+              ),
+              // Time.
+              if (timeLabel != null) _TileDetail(Icons.access_time, timeLabel),
+              // Description.
+              if (event.description.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    event.description,
+                    style: AppTextStyles.imFell(size: 12, color: c.muted),
+                  ),
+                ),
+              // Location.
+              if (event.location != null)
+                _LocationDetail(location: event.location!),
+              // Attendees.
+              if (attendeeCount > 0)
+                _TileDetail(
+                  Icons.people_outline,
+                  '$attendeeCount attendee${attendeeCount == 1 ? '' : 's'}',
+                ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              onDelete();
-            },
-            child: Text('Delete', style: AppTextStyles.cinzel(size: 12, color: Colors.redAccent)),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -263,25 +334,6 @@ class _EventTile extends StatelessWidget {
     } catch (_) {
       return AppColors.dark.gold;
     }
-  }
-}
-
-// Small icon button used inside the tile (zero padding, compact).
-class _TileIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _TileIconButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        child: Icon(icon, size: 18, color: c.muted),
-      ),
-    );
   }
 }
 
@@ -371,15 +423,18 @@ class _EventFormState extends State<_EventForm> {
   final _locationCtrl = TextEditingController();
   final _emailCtrl    = TextEditingController();
 
-  TimeOfDay? _startTime;
-  int        _durationMinutes = 60;
-  List<String> _attendees    = [];
-  String     _color          = '#c9a84c';
-  bool       _saving         = false;
+  late DateTime    _selectedDate;
+  TimeOfDay?       _startTime;
+  int              _durationMinutes = 60;
+  List<String>     _attendees       = [];
+  String           _color           = '#c9a84c';
+  bool             _saving          = false;
 
   @override
   void initState() {
     super.initState();
+    _selectedDate = DateTime(
+        widget.date.year, widget.date.month, widget.date.day);
     final e = widget.existing;
     if (e != null) {
       _titleCtrl.text    = e.title;
@@ -387,11 +442,14 @@ class _EventFormState extends State<_EventForm> {
       _locationCtrl.text = e.location ?? '';
       _color             = e.color;
       if (e.startMinutes != null) {
-        _startTime       = TimeOfDay(hour: e.startMinutes! ~/ 60, minute: e.startMinutes! % 60);
+        _startTime       = TimeOfDay(
+            hour: e.startMinutes! ~/ 60, minute: e.startMinutes! % 60);
         _durationMinutes = e.durationMinutes ?? 60;
       }
       if (e.attendees != null) {
-        try { _attendees = List<String>.from(jsonDecode(e.attendees!)); } catch (_) {}
+        try {
+          _attendees = List<String>.from(jsonDecode(e.attendees!));
+        } catch (_) {}
       }
     }
   }
@@ -406,6 +464,27 @@ class _EventFormState extends State<_EventForm> {
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
+
+  String get _celticDateLabel {
+    final cd = gregorianToCeltic(_selectedDate);
+    if (cd.isLeapDay) return 'Leap Day';
+    if (cd.isYearDay) return 'Year Day';
+    final mo = cd.monthData!;
+    return '${mo.name} · Day ${cd.day} · ${mo.tree}';
+  }
+
+  Future<void> _pickDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null && mounted) {
+      setState(() => _selectedDate =
+          DateTime(picked.year, picked.month, picked.day));
+    }
+  }
 
   Future<void> _pickTime(BuildContext context) async {
     final c = context.read<AppColors>();
@@ -441,13 +520,17 @@ class _EventFormState extends State<_EventForm> {
     if (_titleCtrl.text.trim().isEmpty) return;
     setState(() => _saving = true);
 
-    final celticDate = gregorianToCeltic(widget.date);
-    final dayNorm    = DateTime(widget.date.year, widget.date.month, widget.date.day);
+    final celticDate = gregorianToCeltic(_selectedDate);
+    final dayNorm    = _selectedDate;
 
-    final sm  = _startTime == null ? null : _startTime!.hour * 60 + _startTime!.minute;
+    final sm  = _startTime == null
+        ? null
+        : _startTime!.hour * 60 + _startTime!.minute;
     final dm  = _startTime == null ? null : _durationMinutes;
     final att = _attendees.isEmpty ? null : jsonEncode(_attendees);
-    final loc = _locationCtrl.text.trim().isEmpty ? null : _locationCtrl.text.trim();
+    final loc = _locationCtrl.text.trim().isEmpty
+        ? null
+        : _locationCtrl.text.trim();
 
     if (widget.existing == null) {
       await widget.dao.insertEvent(EventsCompanion(
@@ -486,16 +569,16 @@ class _EventFormState extends State<_EventForm> {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final isEdit = widget.existing != null;
 
     // Compute end time for display.
     TimeOfDay? endTime;
     if (_startTime != null) {
-      final endMin = _startTime!.hour * 60 + _startTime!.minute + _durationMinutes;
+      final endMin =
+          _startTime!.hour * 60 + _startTime!.minute + _durationMinutes;
       endTime = TimeOfDay(hour: (endMin ~/ 60) % 24, minute: endMin % 60);
     }
 
-    return SingleChildScrollView(
+    return Padding(
       padding: EdgeInsets.only(
         left: 16, right: 16, top: 20,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
@@ -504,18 +587,34 @@ class _EventFormState extends State<_EventForm> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Header ──────────────────────────────────────────────────────
-          Text(
-            isEdit ? 'Edit Event' : 'New Event',
-            style: AppTextStyles.cinzelDeco(size: 16, color: c.gold),
-            textAlign: TextAlign.center,
+          // ── Date picker row ──────────────────────────────────────────────
+          InkWell(
+            onTap: () => _pickDate(context),
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_today_outlined,
+                      size: 18, color: c.muted),
+                  const SizedBox(width: 10),
+                  Text(
+                    _celticDateLabel,
+                    style: AppTextStyles.cinzel(size: 13, color: c.text),
+                  ),
+                  const Spacer(),
+                  Icon(Icons.edit_outlined, size: 14, color: c.dim),
+                ],
+              ),
+            ),
           ),
+          Divider(color: c.border, height: 1),
           const SizedBox(height: 16),
 
           // ── Title ───────────────────────────────────────────────────────
           TextField(
             controller: _titleCtrl,
-            style: AppTextStyles.cinzel(size: 14, color: c.cream),
+            style: AppTextStyles.cinzel(size: 14, color: c.text),
             decoration: const InputDecoration(labelText: 'Title'),
             textCapitalization: TextCapitalization.sentences,
             autofocus: true,
@@ -553,11 +652,12 @@ class _EventFormState extends State<_EventForm> {
           _FormLabel('Location'),
           TextField(
             controller: _locationCtrl,
-            style: AppTextStyles.imFell(size: 13, color: c.cream),
+            style: AppTextStyles.imFell(size: 13, color: c.text),
             decoration: InputDecoration(
               hintText: 'Add location',
               hintStyle: AppTextStyles.imFell(size: 13, color: c.dim),
-              prefixIcon: Icon(Icons.place_outlined, size: 18, color: c.muted),
+              prefixIcon:
+                  Icon(Icons.place_outlined, size: 18, color: c.muted),
             ),
             textCapitalization: TextCapitalization.sentences,
           ),
@@ -570,11 +670,12 @@ class _EventFormState extends State<_EventForm> {
               Expanded(
                 child: TextField(
                   controller: _emailCtrl,
-                  style: AppTextStyles.imFell(size: 13, color: c.cream),
+                  style: AppTextStyles.imFell(size: 13, color: c.text),
                   decoration: InputDecoration(
                     hintText: 'Email address',
                     hintStyle: AppTextStyles.imFell(size: 13, color: c.dim),
-                    prefixIcon: Icon(Icons.person_add_outlined, size: 18, color: c.muted),
+                    prefixIcon: Icon(Icons.person_add_outlined,
+                        size: 18, color: c.muted),
                   ),
                   keyboardType: TextInputType.emailAddress,
                   onSubmitted: (_) => _addAttendee(),
@@ -583,7 +684,8 @@ class _EventFormState extends State<_EventForm> {
               const SizedBox(width: 8),
               TextButton(
                 onPressed: _addAttendee,
-                child: Text('Add', style: AppTextStyles.cinzel(size: 13, color: c.gold)),
+                child: Text('Add',
+                    style: AppTextStyles.cinzel(size: 13, color: c.gold)),
               ),
             ],
           ),
@@ -595,7 +697,8 @@ class _EventFormState extends State<_EventForm> {
               children: _attendees
                   .map((email) => _AttendeeChip(
                         email: email,
-                        onRemove: () => setState(() => _attendees.remove(email)),
+                        onRemove: () =>
+                            setState(() => _attendees.remove(email)),
                       ))
                   .toList(),
             ),
@@ -632,10 +735,12 @@ class _EventFormState extends State<_EventForm> {
             child: _saving
                 ? SizedBox(
                     height: 18, width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: c.gold),
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: c.gold),
                   )
-                : Text(isEdit ? 'Save Changes' : 'Add Event'),
+                : Text(widget.existing != null ? 'Save Changes' : 'Add Event'),
           ),
+          const SizedBox(height: 8),
         ],
       ),
     );
@@ -655,7 +760,8 @@ class _FormLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: Text(
         text.toUpperCase(),
-        style: AppTextStyles.cinzel(size: 10, color: c.muted, letterSpacing: 1.5),
+        style: AppTextStyles.cinzel(
+            size: 10, color: c.muted, letterSpacing: 1.5),
       ),
     );
   }
@@ -666,7 +772,8 @@ class _TimeRow extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onClear;
 
-  const _TimeRow({required this.startTime, required this.onTap, required this.onClear});
+  const _TimeRow(
+      {required this.startTime, required this.onTap, required this.onClear});
 
   @override
   Widget build(BuildContext context) {
@@ -678,7 +785,8 @@ class _TimeRow extends StatelessWidget {
           children: [
             Icon(Icons.access_time, size: 18, color: c.muted),
             const SizedBox(width: 10),
-            Text('All day', style: AppTextStyles.cinzel(size: 13, color: c.muted)),
+            Text('All day',
+                style: AppTextStyles.cinzel(size: 13, color: c.muted)),
             const SizedBox(width: 6),
             Text(
               '(tap to set time)',
@@ -697,7 +805,7 @@ class _TimeRow extends StatelessWidget {
           onTap: onTap,
           child: Text(
             startTime!.format(context),
-            style: AppTextStyles.cinzel(size: 14, color: c.cream),
+            style: AppTextStyles.cinzel(size: 14, color: c.text),
           ),
         ),
         const SizedBox(width: 10),
@@ -734,11 +842,13 @@ class _DurationRow extends StatelessWidget {
               : _kDurations.first.$1,
           dropdownColor: c.surface2,
           underline: const SizedBox(),
-          style: AppTextStyles.cinzel(size: 13, color: c.cream),
+          style: AppTextStyles.cinzel(size: 13, color: c.text),
           items: _kDurations
               .map((d) => DropdownMenuItem(value: d.$1, child: Text(d.$2)))
               .toList(),
-          onChanged: (v) { if (v != null) onChanged(v); },
+          onChanged: (v) {
+            if (v != null) onChanged(v);
+          },
         ),
         const SizedBox(width: 8),
         Text(

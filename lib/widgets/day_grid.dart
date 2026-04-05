@@ -43,9 +43,11 @@ class DayGrid extends StatelessWidget {
     final today    = DateTime.now();
     final headers  = List.generate(7, (i) => _weekdays[(startDow + i) % 7]);
 
-    // Sort events by celtic day for the list
-    final sortedEvs = [...events]..sort((a, b) =>
-        (a.celticDay ?? 0).compareTo(b.celticDay ?? 0));
+    // Sort events by celtic day for the list; only show today-or-future
+    final todayDate = DateTime(today.year, today.month, today.day);
+    final sortedEvs = [...events]
+      ..removeWhere((e) => e.gregorianDate.isBefore(todayDate))
+      ..sort((a, b) => (a.celticDay ?? 0).compareTo(b.celticDay ?? 0));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

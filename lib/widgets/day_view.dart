@@ -134,7 +134,7 @@ class _DayViewState extends State<DayView> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'The ${mo.tree} \u00b7 ${mo.keyword}',
+                            '${mo.tree} \u00b7 ${mo.keyword}',
                             style: AppTextStyles.imFell(
                                 size: 11, color: c.dim, italic: true),
                           ),
