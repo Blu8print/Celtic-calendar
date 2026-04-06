@@ -10,10 +10,12 @@ import 'screens/calendar_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'services/google_calendar_service.dart';
 import 'theme/app_theme.dart';
+import 'theme/moon_settings_notifier.dart';
 import 'theme/theme_notifier.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   final db = AppDatabase();
   final prefs = await SharedPreferences.getInstance();
   final showOnboarding = !(prefs.getBool('onboarding_complete') ?? false);
@@ -66,6 +68,7 @@ class _RootsCalendarAppState extends State<RootsCalendarApp>
         Provider<EventsDao>(create: (_) => widget.db.eventsDao),
         ChangeNotifierProvider<GoogleCalendarService>.value(value: _gcal),
         ChangeNotifierProvider<ThemeNotifier>(create: (_) => ThemeNotifier()),
+        ChangeNotifierProvider<MoonSettingsNotifier>(create: (_) => MoonSettingsNotifier()),
         // AppColors is derived from ThemeNotifier — rebuilds when theme changes.
         ProxyProvider<ThemeNotifier, AppColors>(
           update: (_, notifier, __) =>
@@ -74,11 +77,8 @@ class _RootsCalendarAppState extends State<RootsCalendarApp>
       ],
       child: Consumer<ThemeNotifier>(
         builder: (context, notifier, _) {
-          final navBarColor = notifier.isLight
-              ? AppColors.light.surface
-              : AppColors.dark.bg;
           SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-            systemNavigationBarColor: navBarColor,
+            systemNavigationBarColor: Colors.transparent,
             systemNavigationBarIconBrightness:
                 notifier.isLight ? Brightness.dark : Brightness.light,
           ));

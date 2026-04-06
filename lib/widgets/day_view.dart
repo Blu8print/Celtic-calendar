@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 
 import '../db/database.dart';
 import '../engine/celtic_calendar.dart';
+import '../engine/celtic_festivals.dart';
+import '../engine/moon_phase.dart';
 import '../theme/app_theme.dart';
 
 const double _kSlotH     = 52.0;
@@ -17,7 +19,8 @@ class DayView extends StatefulWidget {
   final int celticYear;
   final int month;   // 1-13
   final int day;     // 1-28
-  final List<Event> events;   // already filtered to this day
+  final List<Event> events;           // already filtered to this day
+  final List<CelticFestival> festivalsForDay; // read-only, not editable
   final void Function(DateTime date) onOpenDay; // open EventDetailScreen
 
   const DayView({
@@ -26,6 +29,7 @@ class DayView extends StatefulWidget {
     required this.month,
     required this.day,
     required this.events,
+    this.festivalsForDay = const [],
     required this.onOpenDay,
   });
 
@@ -64,6 +68,50 @@ class _DayViewState extends State<DayView> {
     super.dispose();
   }
 
+  void _showFestivalInfo(BuildContext context, AppColors c,
+      CelticFestival f, DateTime gregDate) {
+    final cd = gregorianToCeltic(gregDate);
+    final mo = celticMonths[cd.month! - 1];
+    final barColor = f.type == FestivalType.fire
+        ? const Color(0xFFb07800)
+        : const Color(0xFF4a3080);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: c.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${f.symbol}  ${f.name}',
+                style: AppTextStyles.cinzel(
+                    size: 18, weight: FontWeight.w700, color: barColor)),
+            const SizedBox(height: 6),
+            Text(
+              '${DateFormat('MMMM d').format(gregDate)} · ${mo.name} Day ${cd.day}',
+              style: AppTextStyles.cinzel(size: 11, color: c.dim),
+            ),
+            const SizedBox(height: 12),
+            Text(f.description,
+                style: AppTextStyles.imFell(
+                    size: 14, color: c.text, italic: true)),
+            const SizedBox(height: 8),
+            Text(f.flavour,
+                style: AppTextStyles.imFell(size: 13, color: c.muted)),
+            const SizedBox(height: 16),
+            Text('Celtic Festival — read only',
+                style: AppTextStyles.cinzel(size: 9, color: c.dim,
+                    letterSpacing: 0.8)),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _scrollToNow() {
     if (!_isToday || !_scroll.hasClients) return;
     final now = DateTime.now();
@@ -82,6 +130,7 @@ class _DayViewState extends State<DayView> {
     final mo       = celticMonths[widget.month - 1];
     final gregDate = celticToGregorian(widget.celticYear, widget.month, widget.day);
     final isToday  = _isToday;
+    final phase     = MoonPhaseCalculator.calculate(gregDate);
     final allDayEvs = widget.events.where((e) => e.startMinutes == null).toList();
     final timedEvs  = widget.events.where((e) => e.startMinutes != null).toList();
     final hours  = List.generate(_kHourEnd - _kHourStart, (i) => _kHourStart + i);
@@ -160,33 +209,88 @@ class _DayViewState extends State<DayView> {
                       style: AppTextStyles.cinzel(size: 9, color: c.dim)),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: allDayEvs.isEmpty
+                    child: (allDayEvs.isEmpty && widget.festivalsForDay.isEmpty)
                         ? Text('\u2014',
                             style: AppTextStyles.imFell(
                                 size: 12, color: c.dim, italic: true))
                         : Wrap(
                             spacing: 4, runSpacing: 2,
-                            children: allDayEvs.map((e) {
-                              final col = _parseHex(e.color);
-                              return GestureDetector(
-                                onTap: () => widget.onOpenDay(gregDate),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(
-                                    color: col.withValues(alpha: 0.12),
-                                    borderRadius:
-                                        BorderRadius.circular(4),
-                                    border: Border.all(
-                                        color: col.withValues(alpha: 0.5)),
+                            children: [
+                              // Festival pills first (read-only)
+                              ...widget.festivalsForDay.map((f) {
+                                final barColor = f.type == FestivalType.fire
+                                    ? const Color(0xFFb07800)
+                                    : const Color(0xFF4a3080);
+                                return GestureDetector(
+                                  onLongPress: () =>
+                                      _showFestivalInfo(context, c, f, gregDate),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: barColor.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                          color: barColor.withValues(alpha: 0.5)),
+                                    ),
+                                    child: Text('${f.symbol}  ${f.name}',
+                                        style: AppTextStyles.cinzel(
+                                            size: 9, color: barColor)),
                                   ),
-                                  child: Text(e.title,
-                                      style: AppTextStyles.cinzel(
-                                          size: 9, color: col)),
-                                ),
-                              );
-                            }).toList(),
+                                );
+                              }),
+                              // User event pills
+                              ...allDayEvs.map((e) {
+                                final col = _parseHex(e.color);
+                                return GestureDetector(
+                                  onTap: () => widget.onOpenDay(gregDate),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: col.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                          color: col.withValues(alpha: 0.5)),
+                                    ),
+                                    child: Text(e.title,
+                                        style: AppTextStyles.cinzel(
+                                            size: 9, color: col)),
+                                  ),
+                                );
+                              }),
+                            ],
                           ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Moon phase line ───────────────────────────────────────────
+            Container(
+              decoration: BoxDecoration(
+                color: c.surface2,
+                border: Border(bottom: BorderSide(color: c.border)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: _kGutterW,
+                    decoration: BoxDecoration(
+                      border: Border(
+                          right: BorderSide(color: c.border, width: 0.5)),
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      child: Text(
+                        '${phase.symbol}  ${phase.name}',
+                        style: AppTextStyles.imFell(
+                            size: 11, color: c.dim, italic: true),
+                      ),
+                    ),
                   ),
                 ],
               ),

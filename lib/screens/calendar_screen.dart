@@ -7,8 +7,11 @@ import 'package:provider/provider.dart';
 import '../db/database.dart';
 import '../db/events_dao.dart';
 import '../engine/celtic_calendar.dart';
+import '../engine/celtic_festivals.dart';
+import '../engine/moon_phase.dart';
 import '../services/google_calendar_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/moon_settings_notifier.dart';
 import '../widgets/day_grid.dart';
 import '../widgets/day_view.dart';
 import '../widgets/schedule_view.dart';
@@ -286,12 +289,51 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return map;
   }
 
+  /// Festival dot colour per Celtic day for the given month.
+  Map<int, Color> _daysWithFestivals(int celticYear, int? month) {
+    if (month == null) return {};
+    final map = <int, Color>{};
+    for (final f in CelticFestivalEngine.festivalsForYear(celticYear)) {
+      final cd = gregorianToCeltic(f.gregorianDate);
+      if (cd.month == month && cd.day != null) {
+        map[cd.day!] = f.type == FestivalType.fire
+            ? const Color(0xFFb07800)
+            : const Color(0xFF4a3080);
+      }
+    }
+    return map;
+  }
+
+  /// Festivals that fall in the given Celtic month.
+  List<CelticFestival> _festivalsForMonth(int celticYear, int? month) {
+    if (month == null) return [];
+    return CelticFestivalEngine.festivalsForYear(celticYear)
+        .where((f) => gregorianToCeltic(f.gregorianDate).month == month)
+        .toList();
+  }
+
+  /// Moon symbols per Celtic day, filtered by user settings.
+  Map<int, String> _moonSymbols(
+      int celticYear, int month, MoonSettingsNotifier settings) {
+    final map = <int, String>{};
+    final dates = gregorianDatesForMonth(celticYear, month);
+    for (int i = 0; i < dates.length; i++) {
+      final phase = MoonPhaseCalculator.calculate(dates[i]);
+      if ((phase.isFullMoon && settings.showFullMoons) ||
+          (phase.isNewMoon  && settings.showNewMoons)) {
+        map[i + 1] = phase.symbol;
+      }
+    }
+    return map;
+  }
+
   // ─── Build ────────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    final c   = context.colors;
-    final dao = context.read<EventsDao>();
+    final c            = context.colors;
+    final dao          = context.read<EventsDao>();
+    final moonSettings = context.watch<MoonSettingsNotifier>();
 
     final isSchedule = _curView == CalendarView.schedule;
 
@@ -382,7 +424,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
         child: const Icon(Icons.add),
       ),
       // ── Body ────────────────────────────────────────────────────────────
-      body: GestureDetector(
+      body: SafeArea(
+        bottom: true,
+        child: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onHorizontalDragEnd: (details) {
           final v = details.primaryVelocity ?? 0;
@@ -393,7 +437,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
         key: ValueKey(isSchedule ? '$_curYear-schedule' : '$_curYear-$_curMonth'),
         stream: stream,
         builder: (context, snapshot) {
-          final allEvents = snapshot.data ?? [];
+          final allEvents   = snapshot.data ?? [];
+          final eventsReady = snapshot.hasData;
 
           // Schedule, Day, Week, 3-Day all manage their own scroll —
           // do not nest them inside a SingleChildScrollView.
@@ -449,6 +494,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     events: allEvents
                         .where((e) => e.celticDay == _curDay)
                         .toList(),
+                    festivalsForDay: eventsReady
+                        ? _festivalsForMonth(_curYear, _curMonth)
+                            .where((f) =>
+                                gregorianToCeltic(f.gregorianDate).day == _curDay)
+                            .toList()
+                        : [],
                     onOpenDay: _openDay,
                   ),
                 );
@@ -469,16 +520,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   DayGrid(
                     celticYear: _curYear,
                     month: _curMonth!,
-                    daysWithEvents: _daysWithEvents(allEvents),
-                    events: allEvents,
-                    onDayTap: _openDay,
-                    onDayLongPress: (d) => _openDay(d, addEvent: true),
-                    onEventTap: _openDay,
+                    daysWithEvents:     _daysWithEvents(allEvents),
+                    daysWithFestivals:  eventsReady ? _daysWithFestivals(_curYear, _curMonth) : {},
+                    moonSymbols:        _moonSymbols(_curYear, _curMonth!, moonSettings),
+                    events:             allEvents,
+                    festivalsThisMonth: eventsReady ? _festivalsForMonth(_curYear, _curMonth) : [],
+                    onDayTap:           _openDay,
+                    onDayLongPress:     (d) => _openDay(d, addEvent: true),
+                    onEventTap:         _openDay,
                   ),
               ],
             ),
           );
         },
+        ),
         ),
       ),
     );

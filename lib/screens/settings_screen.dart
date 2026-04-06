@@ -4,8 +4,9 @@ import 'package:provider/provider.dart';
 
 import '../engine/celtic_calendar.dart';
 import '../services/google_calendar_service.dart';
-import '../theme/theme_notifier.dart';
 import '../theme/app_theme.dart';
+import '../theme/moon_settings_notifier.dart';
+import '../theme/theme_notifier.dart';
 
 /// Settings screen: Google account, sync status, and calendar system selector.
 class SettingsScreen extends StatelessWidget {
@@ -24,12 +25,14 @@ class SettingsScreen extends StatelessWidget {
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        children: const [
-          _GoogleAccountSection(),
-          SizedBox(height: 24),
-          _AppearanceSection(),
-          SizedBox(height: 24),
-          _CalendarSystemSection(),
+        children: [
+          const _GoogleAccountSection(),
+          const SizedBox(height: 24),
+          const _AppearanceSection(),
+          const SizedBox(height: 24),
+          const _MoonSection(),
+          const SizedBox(height: 24),
+          const _CalendarSystemSection(),
         ],
       ),
     );
@@ -457,6 +460,69 @@ class _Section extends StatelessWidget {
         Divider(color: c.border, height: 1),
         const SizedBox(height: 12),
         ...children,
+      ],
+    );
+  }
+}
+
+// ─── Moon Phases ──────────────────────────────────────────────────────────────
+
+class _MoonSection extends StatelessWidget {
+  const _MoonSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final c        = context.colors;
+    final settings = context.watch<MoonSettingsNotifier>();
+    return _Section(
+      title: 'Moon Phases',
+      children: [
+        _ToggleRow(
+          label: 'Show full moons in month view',
+          value: settings.showFullMoons,
+          onChanged: settings.setShowFullMoons,
+          colors: c,
+        ),
+        const SizedBox(height: 8),
+        _ToggleRow(
+          label: 'Show new moons in month view',
+          value: settings.showNewMoons,
+          onChanged: settings.setShowNewMoons,
+          colors: c,
+        ),
+      ],
+    );
+  }
+}
+
+class _ToggleRow extends StatelessWidget {
+  final String label;
+  final bool value;
+  final void Function(bool) onChanged;
+  final AppColors colors;
+
+  const _ToggleRow({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = colors;
+    return Row(
+      children: [
+        Expanded(
+          child: Text(label,
+              style: AppTextStyles.cinzel(size: 12, color: c.text)),
+        ),
+        Switch(
+          value: value,
+          onChanged: onChanged,
+          activeThumbColor: c.muted,
+          inactiveTrackColor: c.border,
+        ),
       ],
     );
   }

@@ -10,6 +10,7 @@ import 'package:uuid/uuid.dart';
 import '../db/database.dart';
 import '../db/events_dao.dart';
 import '../engine/celtic_calendar.dart';
+import '../engine/celtic_festivals.dart';
 import '../services/google_calendar_service.dart';
 import '../theme/app_theme.dart';
 
@@ -71,6 +72,16 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
   }
 
+  List<CelticFestival> get _festivalsForDay {
+    final cy = celticYearOf(_date);
+    return CelticFestivalEngine.festivalsForYear(cy).where((f) {
+      final loc = f.gregorianDate.toLocal();
+      return loc.year == _date.year &&
+             loc.month == _date.month &&
+             loc.day   == _date.day;
+    }).toList();
+  }
+
   void _openEventForm(EventsDao dao, {Event? event}) {
     final gcal = context.read<GoogleCalendarService>();
     Navigator.push(
@@ -123,12 +134,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           key: ValueKey(_date),
           stream: dao.watchEventsForDay(_date),
           builder: (context, snapshot) {
-            final events = snapshot.data ?? [];
+            final events    = snapshot.data ?? [];
+            final festivals = _festivalsForDay;
             return CustomScrollView(
               slivers: [
-                if (events.isEmpty)
+                if (events.isEmpty && festivals.isEmpty)
                   const SliverToBoxAdapter(child: _EmptyState())
-                else
+                else if (events.isNotEmpty)
                   SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, i) => _EventTile(
@@ -136,6 +148,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                         onEdit: () => _openEventForm(dao, event: events[i]),
                       ),
                       childCount: events.length,
+                    ),
+                  ),
+                if (festivals.isNotEmpty)
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (_, i) => _FestivalTile(festival: festivals[i]),
+                      childCount: festivals.length,
                     ),
                   ),
                 const SliverToBoxAdapter(child: SizedBox(height: 80)),
@@ -1003,6 +1022,56 @@ class _ColorPickerRow extends StatelessWidget {
           ),
         );
       }),
+    );
+  }
+}
+
+// ─── Festival tile ────────────────────────────────────────────────────────────
+
+class _FestivalTile extends StatelessWidget {
+  final CelticFestival festival;
+  const _FestivalTile({required this.festival});
+
+  @override
+  Widget build(BuildContext context) {
+    final c        = context.colors;
+    final f        = festival;
+    final barColor = f.type == FestivalType.fire
+        ? const Color(0xFFb07800)
+        : const Color(0xFF4a3080);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: c.surface2,
+        borderRadius: BorderRadius.circular(6),
+        border: Border(left: BorderSide(color: barColor, width: 3)),
+      ),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text('${f.symbol}  ${f.name}',
+                    style: AppTextStyles.cinzel(
+                        size: 14, weight: FontWeight.w600, color: barColor)),
+              ),
+              Text('Celtic Festival',
+                  style: AppTextStyles.cinzel(size: 9, color: c.dim,
+                      letterSpacing: 0.5)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(f.description,
+              style: AppTextStyles.imFell(size: 13, color: c.text, italic: true)),
+          const SizedBox(height: 4),
+          Text(f.flavour,
+              style: AppTextStyles.imFell(size: 12, color: c.muted)),
+        ],
+      ),
     );
   }
 }
