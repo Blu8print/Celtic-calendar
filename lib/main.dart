@@ -9,6 +9,7 @@ import 'engine/celtic_calendar.dart';
 import 'screens/calendar_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'services/google_calendar_service.dart';
+import 'services/home_widget_service.dart';
 import 'theme/app_theme.dart';
 import 'theme/moon_settings_notifier.dart';
 import 'theme/theme_notifier.dart';
@@ -42,8 +43,10 @@ class _RootsCalendarAppState extends State<RootsCalendarApp>
     super.initState();
     _gcal = GoogleCalendarService(widget.db.eventsDao);
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _gcal.backgroundSync(celticYearOf(DateTime.now())));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _gcal.backgroundSync(celticYearOf(DateTime.now()));
+      HomeWidgetService.updateTodayWidget(widget.db.eventsDao);
+    });
   }
 
   @override
@@ -57,6 +60,7 @@ class _RootsCalendarAppState extends State<RootsCalendarApp>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _gcal.backgroundSync(celticYearOf(DateTime.now()));
+      HomeWidgetService.updateTodayWidget(widget.db.eventsDao);
     }
   }
 

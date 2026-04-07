@@ -12,6 +12,7 @@ import '../db/events_dao.dart';
 import '../engine/celtic_calendar.dart';
 import '../engine/celtic_festivals.dart';
 import '../services/google_calendar_service.dart';
+import '../services/home_widget_service.dart';
 import '../theme/app_theme.dart';
 
 // ─── Color palette (maps to Google Calendar colorIds) ─────────────────────────
@@ -68,7 +69,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       return 'Year Day · Celtic Year ${celticDate.celticYear}';
     } else {
       final mo = celticDate.monthData!;
-      return '${mo.name} · Day ${celticDate.day} · ${mo.tree} · ${mo.keyword}';
+      return '${mo.name} · Day ${celticDate.day}';
     }
   }
 
@@ -101,23 +102,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   Widget build(BuildContext context) {
     final c = context.colors;
     final dao = context.read<EventsDao>();
-    final gFmt = DateFormat('EEEE, d MMMM yyyy');
 
     return Scaffold(
       backgroundColor: c.bg,
       appBar: AppBar(
-        title: Column(
-          children: [
-            Text(
-              _celticLabel(),
-              style: AppTextStyles.cinzel(size: 13, color: c.text),
-              overflow: TextOverflow.ellipsis,
-            ),
-            Text(
-              gFmt.format(_date),
-              style: AppTextStyles.imFell(size: 11, color: c.dim),
-            ),
-          ],
+        title: Text(
+          _celticLabel(),
+          style: AppTextStyles.cinzel(size: 13, color: c.text),
+          overflow: TextOverflow.ellipsis,
         ),
       ),
       body: GestureDetector(
@@ -292,12 +284,13 @@ class _EventScreen extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context) {
-    final c = context.read<AppColors>();
+    final c          = context.read<AppColors>();
+    final isRecurring = existing!.recurrenceId != null;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: c.surface,
-        title: Text('Delete event?',
+        title: Text(isRecurring ? 'Recurring event' : 'Delete event?',
             style: AppTextStyles.cinzel(size: 15, color: c.text)),
         content: Text(existing!.title,
             style: AppTextStyles.imFell(size: 13, color: c.dim)),
@@ -307,13 +300,28 @@ class _EventScreen extends StatelessWidget {
             child: Text('Cancel',
                 style: AppTextStyles.cinzel(size: 12, color: c.muted)),
           ),
+          if (isRecurring)
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                final all = await dao.getEventsByRecurrenceId(
+                    existing!.recurrenceId!);
+                for (final e in all) await dao.deleteEvent(e.id);
+                if (context.mounted) await HomeWidgetService.updateTodayWidget(dao);
+                if (context.mounted) Navigator.pop(context);
+              },
+              child: Text('Delete all',
+                  style: AppTextStyles.cinzel(
+                      size: 12, color: Colors.redAccent)),
+            ),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
               await dao.deleteEvent(existing!.id);
+              if (context.mounted) await HomeWidgetService.updateTodayWidget(dao);
               if (context.mounted) Navigator.pop(context);
             },
-            child: Text('Delete',
+            child: Text(isRecurring ? 'This event only' : 'Delete',
                 style: AppTextStyles.cinzel(
                     size: 12, color: Colors.redAccent)),
           ),
@@ -380,6 +388,11 @@ class _EventTile extends StatelessWidget {
                       style: AppTextStyles.cinzel(size: 14, color: c.text),
                     ),
                   ),
+                  if (event.recurrenceRule != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2, left: 4),
+                      child: Icon(Icons.repeat, size: 13, color: c.dim),
+                    ),
                   if (event.googleEventId != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 2, left: 4),
@@ -516,6 +529,8 @@ class _EventFormState extends State<_EventForm> {
   List<String>     _attendees       = [];
   String           _color           = '#c9a84c';
   bool             _saving          = false;
+  String           _recurrenceRule  = 'none';
+  DateTime?        _recurrenceEnd;
 
   @override
   void initState() {
@@ -538,6 +553,14 @@ class _EventFormState extends State<_EventForm> {
           _attendees = List<String>.from(jsonDecode(e.attendees!));
         } catch (_) {}
       }
+      if (e.recurrenceRule != null) {
+        _recurrenceRule = e.recurrenceRule!;
+        _recurrenceEnd  = DateTime(
+          e.gregorianDate.year + 1,
+          e.gregorianDate.month,
+          e.gregorianDate.day,
+        );
+      }
     }
   }
 
@@ -558,6 +581,103 @@ class _EventFormState extends State<_EventForm> {
     if (cd.isYearDay) return 'Year Day';
     final mo = cd.monthData!;
     return '${mo.name} · Day ${cd.day} · ${mo.tree}';
+  }
+
+  String get _recurrenceLabel {
+    switch (_recurrenceRule) {
+      case 'daily':   return 'Daily';
+      case 'weekly':  return 'Weekly (${DateFormat('EEEE').format(_selectedDate)})';
+      case 'monthly': return 'Monthly';
+      case 'yearly':  return 'Yearly';
+      default:        return 'Does not repeat';
+    }
+  }
+
+  Future<void> _pickRecurrence(BuildContext context) async {
+    final c = context.read<AppColors>();
+    final options = ['none', 'daily', 'weekly', 'monthly', 'yearly'];
+    final labels  = [
+      'Does not repeat',
+      'Daily',
+      'Weekly (${DateFormat('EEEE').format(_selectedDate)})',
+      'Monthly',
+      'Yearly',
+    ];
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.surface,
+        title: Text('Repeat',
+            style: AppTextStyles.cinzel(size: 15, color: c.text)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(
+            options.length,
+            (i) => ListTile(
+              dense: true,
+              leading: Icon(
+                _recurrenceRule == options[i]
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+                size: 20,
+                color: _recurrenceRule == options[i] ? c.gold : c.dim,
+              ),
+              title: Text(labels[i],
+                  style: AppTextStyles.cinzel(size: 13, color: c.text)),
+              onTap: () => Navigator.pop(ctx, options[i]),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel',
+                style: AppTextStyles.cinzel(size: 12, color: c.muted)),
+          ),
+        ],
+      ),
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _recurrenceRule = picked;
+        if (picked != 'none') {
+          _recurrenceEnd ??= DateTime(
+            _selectedDate.year + 1,
+            _selectedDate.month,
+            _selectedDate.day,
+          );
+        } else {
+          _recurrenceEnd = null;
+        }
+      });
+    }
+  }
+
+  Future<void> _pickRecurrenceEnd(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _recurrenceEnd ??
+          DateTime(_selectedDate.year + 1, _selectedDate.month, _selectedDate.day),
+      firstDate: _selectedDate.add(const Duration(days: 1)),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null && mounted) setState(() => _recurrenceEnd = picked);
+  }
+
+  List<DateTime> _expandRecurrence(DateTime start, String rule, DateTime end) {
+    final dates = <DateTime>[];
+    var cur = start;
+    while (!cur.isAfter(end) && dates.length < 500) {
+      dates.add(cur);
+      cur = switch (rule) {
+        'daily'   => cur.add(const Duration(days: 1)),
+        'weekly'  => cur.add(const Duration(days: 7)),
+        'monthly' => DateTime(cur.year, cur.month + 1, cur.day),
+        'yearly'  => DateTime(cur.year + 1, cur.month, cur.day),
+        _         => end.add(const Duration(days: 1)),
+      };
+    }
+    return dates;
   }
 
   Future<void> _pickDate(BuildContext context) async {
@@ -628,7 +748,31 @@ class _EventFormState extends State<_EventForm> {
         ? null
         : _locationCtrl.text.trim();
 
-    if (widget.existing == null) {
+    if (widget.existing == null && _recurrenceRule != 'none') {
+      // Expand into individual instances linked by a shared recurrenceId.
+      final seriesId = const Uuid().v4();
+      final dates    = _expandRecurrence(_selectedDate, _recurrenceRule, _recurrenceEnd!);
+      for (final d in dates) {
+        final cd      = gregorianToCeltic(d);
+        final dateUtc = DateTime.utc(d.year, d.month, d.day);
+        await widget.dao.insertEvent(EventsCompanion(
+          id:              Value(const Uuid().v4()),
+          celticYear:      Value(cd.celticYear),
+          celticMonth:     Value(cd.month),
+          celticDay:       Value(cd.day),
+          title:           Value(_titleCtrl.text.trim()),
+          description:     Value(_descCtrl.text.trim()),
+          color:           Value(_color),
+          gregorianDate:   Value(dateUtc),
+          startMinutes:    Value(sm),
+          durationMinutes: Value(dm),
+          attendees:       Value(att),
+          location:        Value(loc),
+          recurrenceRule:  Value(_recurrenceRule),
+          recurrenceId:    Value(seriesId),
+        ));
+      }
+    } else if (widget.existing == null) {
       await widget.dao.insertEvent(EventsCompanion(
         id:              Value(const Uuid().v4()),
         celticYear:      Value(celticDate.celticYear),
@@ -661,6 +805,7 @@ class _EventFormState extends State<_EventForm> {
     }
 
     if (widget.gcal.isSignedIn) await widget.gcal.syncPendingEvents();
+    if (mounted) await HomeWidgetService.updateTodayWidget(widget.dao);
     if (mounted) Navigator.pop(context);
   }
 
@@ -746,6 +891,52 @@ class _EventFormState extends State<_EventForm> {
               onChanged: (v) => setState(() => _durationMinutes = v),
             ),
           ],
+          const SizedBox(height: 14),
+
+          // ── Repeat ──────────────────────────────────────────────────────
+          _FormLabel('Repeat'),
+          InkWell(
+            onTap: () => _pickRecurrence(context),
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(Icons.repeat, size: 18, color: c.muted),
+                  const SizedBox(width: 10),
+                  Text(_recurrenceLabel,
+                      style: AppTextStyles.cinzel(size: 13, color: c.text)),
+                  const Spacer(),
+                  if (_recurrenceRule != 'none') ...[
+                    GestureDetector(
+                      onTap: () => _pickRecurrenceEnd(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: c.surface2,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'Until ${DateFormat('d MMM y').format(_recurrenceEnd!)}',
+                          style: AppTextStyles.cinzel(size: 11, color: c.gold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: () => setState(() {
+                        _recurrenceRule = 'none';
+                        _recurrenceEnd  = null;
+                      }),
+                      child: Icon(Icons.close, size: 16, color: c.dim),
+                    ),
+                  ] else
+                    Icon(Icons.chevron_right, size: 18, color: c.dim),
+                ],
+              ),
+            ),
+          ),
           const SizedBox(height: 14),
 
           // ── Location ────────────────────────────────────────────────────

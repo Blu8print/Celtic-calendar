@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Light mode widget colours — matches AppColors.light from roots_day_widget.html -->
+<resources>
+    <color name="widget_bg">#FFF7F3EC</color>
+    <color name="widget_text">#FF111108</color>
+    <color name="widget_accent">#FF1A4018</color>
+    <color name="widget_sub">#FF5A5040</color>
+    <color name="widget_divider">#FFB8AE9E</color>
+</resources>

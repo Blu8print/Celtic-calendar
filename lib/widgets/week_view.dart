@@ -39,7 +39,10 @@ class WeekView extends StatefulWidget {
 }
 
 class _WeekViewState extends State<WeekView> {
-  final _scroll = ScrollController();
+  final _scroll     = ScrollController();
+  double _scale     = 1.0;
+  double _baseScale = 1.0;
+  int    _pointers  = 0;
 
   @override
   void initState() {
@@ -66,8 +69,9 @@ class _WeekViewState extends State<WeekView> {
     final now = DateTime.now();
     final h = now.hour + now.minute / 60.0;
     if (h < _kHourStart) return;
+    final slotH = (_kSlotH * _scale).clamp(20.0, 200.0);
     _scroll.animateTo(
-      math.max(0, (h - _kHourStart) * _kSlotH - 100),
+      math.max(0, (h - _kHourStart) * slotH - 100),
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
     );
@@ -98,14 +102,16 @@ class _WeekViewState extends State<WeekView> {
     final allDayEvs = visEvs.where((e) => e.startMinutes == null).toList();
     final timedEvs  = visEvs.where((e) => e.startMinutes != null).toList();
 
+    final slotH  = (_kSlotH * _scale).clamp(20.0, 200.0);
     final hours  = List.generate(_kHourEnd - _kHourStart, (i) => _kHourStart + i);
-    final totalH = hours.length * _kSlotH;
+    final totalH = hours.length * slotH;
 
     return LayoutBuilder(builder: (context, constraints) {
       final totalColW = constraints.maxWidth - _kGutterW;
       final colW      = totalColW / nDays;
 
       return Container(
+        height: constraints.maxHeight,
         decoration: BoxDecoration(
           color: c.surface,
           border: Border.all(color: c.border),
@@ -216,10 +222,34 @@ class _WeekViewState extends State<WeekView> {
               ),
 
             // Time grid
-            SizedBox(
-              height: 320,
-              child: SingleChildScrollView(
-                controller: _scroll,
+            Expanded(
+              child: Listener(
+                onPointerDown:   (_) => setState(() => _pointers++),
+                onPointerUp:     (_) => setState(() => _pointers = math.max(0, _pointers - 1)),
+                onPointerCancel: (_) => setState(() => _pointers = math.max(0, _pointers - 1)),
+                child: GestureDetector(
+                onScaleStart: (_) => _baseScale = _scale,
+                onScaleUpdate: (d) {
+                  if (_pointers < 2) return;
+                  final newScale = (_baseScale * d.scale).clamp(0.4, 4.0);
+                  if (newScale == _scale) return;
+                  final oldTotal = _kSlotH * _scale * (_kHourEnd - _kHourStart);
+                  final ratio = _scroll.hasClients && oldTotal > 0
+                      ? _scroll.offset / oldTotal
+                      : 0.0;
+                  setState(() => _scale = newScale);
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!_scroll.hasClients) return;
+                    final newTotal = _kSlotH * _scale * (_kHourEnd - _kHourStart);
+                    _scroll.jumpTo((ratio * newTotal)
+                        .clamp(0, _scroll.position.maxScrollExtent));
+                  });
+                },
+                child: SingleChildScrollView(
+                  controller: _scroll,
+                  physics: _pointers >= 2
+                      ? const NeverScrollableScrollPhysics()
+                      : null,
                 child: SizedBox(
                   height: totalH,
                   child: Row(
@@ -236,7 +266,7 @@ class _WeekViewState extends State<WeekView> {
                         child: Column(
                           children: hours
                               .map((h) => SizedBox(
-                                    height: _kSlotH,
+                                    height: slotH,
                                     child: Align(
                                       alignment: Alignment.topRight,
                                       child: Padding(
@@ -267,7 +297,7 @@ class _WeekViewState extends State<WeekView> {
                                           nDays,
                                           (ci) => Container(
                                             width: colW,
-                                            height: _kSlotH,
+                                            height: slotH,
                                             decoration: BoxDecoration(
                                               border: Border(
                                                 bottom: BorderSide(
@@ -291,10 +321,10 @@ class _WeekViewState extends State<WeekView> {
                               if (ci < 0 || ci >= nDays) {
                                 return const SizedBox.shrink();
                               }
-                              final top = e.startMinutes! / 60.0 * _kSlotH -
-                                  _kHourStart * _kSlotH;
+                              final top = e.startMinutes! / 60.0 * slotH -
+                                  _kHourStart * slotH;
                               final height = math.max(
-                                  (e.durationMinutes ?? 60) / 60.0 * _kSlotH,
+                                  (e.durationMinutes ?? 60) / 60.0 * slotH,
                                   18.0);
                               return Positioned(
                                 top: top,
@@ -315,7 +345,7 @@ class _WeekViewState extends State<WeekView> {
                                 nowH >= _kHourStart &&
                                 nowH <= _kHourEnd)
                               Positioned(
-                                top: (nowH - _kHourStart) * _kSlotH - 1,
+                                top: (nowH - _kHourStart) * slotH - 1,
                                 left: (todayC.day! - startDay) * colW,
                                 width: colW,
                                 child: const _NowLine(),
@@ -327,7 +357,9 @@ class _WeekViewState extends State<WeekView> {
                   ),
                 ),
               ),
-            ),
+            ),          // closes SingleChildScrollView
+          ),            // closes GestureDetector
+          ),            // closes Listener
           ],
         ),
       );
@@ -343,8 +375,9 @@ class _EventBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c    = context.colors;
     final col  = _parseHex(event.color);
-    final bg   = col.withValues(alpha: 0.12);
+    final bg   = col.withValues(alpha: 0.15);
     final sMin = event.startMinutes ?? 0;
     final eMin = sMin + (event.durationMinutes ?? 60);
     final ts   =
@@ -352,25 +385,29 @@ class _EventBlock extends StatelessWidget {
         '\u2013${(eMin ~/ 60).toString().padLeft(2, '0')}:${(eMin % 60).toString().padLeft(2, '0')}';
 
     return Container(
+      clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: bg,
+        color: c.surface,
         borderRadius: BorderRadius.circular(3),
         border: Border(left: BorderSide(color: col, width: 3)),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
-      child: Column(
+      child: Container(
+        color: bg,
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(event.title,
-              style: AppTextStyles.cinzel(size: 8.5, color: col),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1),
+              style: AppTextStyles.cinzel(size: 8.5, color: c.text),
+              overflow: TextOverflow.clip),
           if ((event.durationMinutes ?? 60) > 29)
             Text(ts,
-                style: AppTextStyles.imFell(
-                    size: 7.5, color: col.withValues(alpha: 0.8))),
+                style: AppTextStyles.imFell(size: 7.5, color: c.muted),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1),
         ],
+      ),
       ),
     );
   }

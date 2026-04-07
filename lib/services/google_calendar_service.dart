@@ -345,6 +345,10 @@ class GoogleCalendarService extends ChangeNotifier {
     await syncYear(celticYear);
   }
 
+  /// Syncs immediately, bypassing the 15-minute cooldown.
+  /// Use for manual sync button triggers.
+  Future<void> syncNow(int celticYear) => syncYear(celticYear);
+
   Future<void> syncPendingEvents([gcal.CalendarApi? api]) async {
     final unsynced = await _dao.getUnsyncedEvents();
     for (final event in unsynced) {

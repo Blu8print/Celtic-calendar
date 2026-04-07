@@ -150,6 +150,13 @@ class EventsDao extends DatabaseAccessor<AppDatabase> with _$EventsDaoMixin {
         .watch();
   }
 
+  /// All events belonging to the same recurring series.
+  Future<List<Event>> getEventsByRecurrenceId(String recurrenceId) {
+    return (select(events)
+          ..where((e) => e.recurrenceId.equals(recurrenceId)))
+        .get();
+  }
+
   /// Reactive stream of Year Day / Leap Day events for a Celtic year.
   Stream<List<Event>> watchYearDayEvents(int celticYear) {
     return (select(events)

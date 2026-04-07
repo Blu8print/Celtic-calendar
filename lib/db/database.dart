@@ -59,6 +59,12 @@ class Events extends Table {
   /// Free-text location string. Null = no location.
   TextColumn get location => text().nullable()();
 
+  /// Recurrence rule: 'daily' | 'weekly' | 'monthly' | 'yearly'. Null = one-off.
+  TextColumn get recurrenceRule => text().nullable()();
+
+  /// Links all instances of a recurring series (UUID of the first instance).
+  TextColumn get recurrenceId => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -70,7 +76,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -87,6 +93,14 @@ class AppDatabase extends _$AppDatabase {
         );
         await m.database.customStatement(
           'ALTER TABLE events ADD COLUMN location TEXT',
+        );
+      }
+      if (from < 3) {
+        await m.database.customStatement(
+          'ALTER TABLE events ADD COLUMN recurrence_rule TEXT',
+        );
+        await m.database.customStatement(
+          'ALTER TABLE events ADD COLUMN recurrence_id TEXT',
         );
       }
     },

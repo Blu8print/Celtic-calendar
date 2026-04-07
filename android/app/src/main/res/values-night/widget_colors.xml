@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark mode widget colours — matches AppColors.dark -->
+<resources>
+    <color name="widget_bg">#FF0F1A0E</color>
+    <color name="widget_text">#FFC0D8B8</color>
+    <color name="widget_accent">#FFC9A84C</color>
+    <color name="widget_sub">#FF6A8A60</color>
+    <color name="widget_divider">#FF1E3019</color>
+</resources>

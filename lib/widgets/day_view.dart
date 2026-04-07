@@ -38,7 +38,10 @@ class DayView extends StatefulWidget {
 }
 
 class _DayViewState extends State<DayView> {
-  final _scroll = ScrollController();
+  final _scroll     = ScrollController();
+  double _scale     = 1.0;
+  double _baseScale = 1.0;
+  int    _pointers  = 0;
 
   bool get _isToday {
     final tc = gregorianToCeltic(DateTime.now());
@@ -117,8 +120,9 @@ class _DayViewState extends State<DayView> {
     final now = DateTime.now();
     final h = now.hour + now.minute / 60.0;
     if (h < _kHourStart) return;
+    final slotH = (_kSlotH * _scale).clamp(20.0, 200.0);
     _scroll.animateTo(
-      math.max(0, (h - _kHourStart) * _kSlotH - 100),
+      math.max(0, (h - _kHourStart) * slotH - 100),
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
     );
@@ -127,14 +131,14 @@ class _DayViewState extends State<DayView> {
   @override
   Widget build(BuildContext context) {
     final c        = context.colors;
-    final mo       = celticMonths[widget.month - 1];
     final gregDate = celticToGregorian(widget.celticYear, widget.month, widget.day);
     final isToday  = _isToday;
     final phase     = MoonPhaseCalculator.calculate(gregDate);
     final allDayEvs = widget.events.where((e) => e.startMinutes == null).toList();
     final timedEvs  = widget.events.where((e) => e.startMinutes != null).toList();
+    final slotH  = (_kSlotH * _scale).clamp(20.0, 200.0);
     final hours  = List.generate(_kHourEnd - _kHourStart, (i) => _kHourStart + i);
-    final totalH = hours.length * _kSlotH;
+    final totalH = hours.length * slotH;
     final now    = DateTime.now();
     final nowH   = now.hour + now.minute / 60.0;
 
@@ -151,50 +155,6 @@ class _DayViewState extends State<DayView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Compact day header ────────────────────────────────────────
-            Container(
-              decoration: BoxDecoration(
-                color: isToday ? c.todayBg : c.surface2,
-                border: Border(bottom: BorderSide(color: c.border)),
-              ),
-              child: Row(
-                children: [
-                  // Gutter blank
-                  Container(
-                    width: _kGutterW,
-                    decoration: BoxDecoration(
-                      border: Border(right: BorderSide(color: c.border, width: 0.5)),
-                    ),
-                  ),
-                  // Date info
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${DateFormat('d MMMM').format(gregDate)} \u00b7 ${mo.name} Day ${widget.day}',
-                            style: AppTextStyles.cinzel(
-                                size: 13,
-                                weight: FontWeight.w700,
-                                color: c.text),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${mo.tree} \u00b7 ${mo.keyword}',
-                            style: AppTextStyles.imFell(
-                                size: 11, color: c.dim, italic: true),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             // ── All-day row ───────────────────────────────────────────────
             Container(
               decoration: BoxDecoration(
@@ -297,123 +257,129 @@ class _DayViewState extends State<DayView> {
             ),
 
             // ── Time grid ────────────────────────────────────────────────
-            SizedBox(
-              height: 380,
-              child: SingleChildScrollView(
-                controller: _scroll,
-                child: SizedBox(
-                  height: totalH,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Time gutter
-                      Container(
-                        width: _kGutterW,
-                        decoration: BoxDecoration(
-                          color: c.surface2,
-                          border: Border(
-                              right: BorderSide(
-                                  color: c.border, width: 0.5)),
-                        ),
-                        child: Column(
-                          children: hours
-                              .map((h) => SizedBox(
-                                    height: _kSlotH,
-                                    child: Align(
-                                      alignment: Alignment.topRight,
-                                      child: Padding(
-                                        padding:
-                                            const EdgeInsets.only(
-                                                right: 6, top: 3),
-                                        child: Text(
-                                          '${h.toString().padLeft(2, '0')}:00',
-                                          style: AppTextStyles.cinzel(
-                                              size: 8, color: c.dim),
-                                        ),
-                                      ),
-                                    ),
-                                  ))
-                              .toList(),
-                        ),
-                      ),
-                      // Event column
-                      SizedBox(
-                        width: colW,
-                        height: totalH,
-                        child: Stack(
-                          children: [
-                            Column(
+            Expanded(
+              child: Listener(
+                onPointerDown:   (_) => setState(() => _pointers++),
+                onPointerUp:     (_) => setState(() => _pointers = math.max(0, _pointers - 1)),
+                onPointerCancel: (_) => setState(() => _pointers = math.max(0, _pointers - 1)),
+                child: GestureDetector(
+                  onScaleStart: (_) => _baseScale = _scale,
+                  onScaleUpdate: (d) {
+                    if (_pointers < 2) return;
+                    final newScale = (_baseScale * d.scale).clamp(0.4, 4.0);
+                    if (newScale == _scale) return;
+                    final oldTotal = _kSlotH * _scale * (_kHourEnd - _kHourStart);
+                    final ratio = _scroll.hasClients && oldTotal > 0
+                        ? _scroll.offset / oldTotal
+                        : 0.0;
+                    setState(() => _scale = newScale);
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!_scroll.hasClients) return;
+                      final newTotal = _kSlotH * _scale * (_kHourEnd - _kHourStart);
+                      _scroll.jumpTo((ratio * newTotal)
+                          .clamp(0, _scroll.position.maxScrollExtent));
+                    });
+                  },
+                  child: SingleChildScrollView(
+                    controller: _scroll,
+                    physics: _pointers >= 2
+                        ? const NeverScrollableScrollPhysics()
+                        : null,
+                    child: SizedBox(
+                      height: totalH,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Time gutter
+                          Container(
+                            width: _kGutterW,
+                            decoration: BoxDecoration(
+                              color: c.surface2,
+                              border: Border(
+                                  right: BorderSide(
+                                      color: c.border, width: 0.5)),
+                            ),
+                            child: Column(
                               children: hours
-                                  .map((h) => Container(
-                                        width: colW,
-                                        height: _kSlotH,
-                                        decoration: BoxDecoration(
-                                          border: Border(
-                                              bottom: BorderSide(
-                                                  color: c.border,
-                                                  width: 0.5)),
+                                  .map((h) => SizedBox(
+                                        height: slotH,
+                                        child: Align(
+                                          alignment: Alignment.topRight,
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(
+                                                right: 6, top: 3),
+                                            child: Text(
+                                              '${h.toString().padLeft(2, '0')}:00',
+                                              style: AppTextStyles.cinzel(
+                                                  size: 8, color: c.dim),
+                                            ),
+                                          ),
                                         ),
                                       ))
                                   .toList(),
                             ),
-                            // Timed events
-                            ...timedEvs.map((e) {
-                              final top =
-                                  e.startMinutes! / 60.0 * _kSlotH -
-                                      _kHourStart * _kSlotH;
-                              final height = math.max(
-                                  (e.durationMinutes ?? 60) /
-                                      60.0 *
-                                      _kSlotH,
-                                  22.0);
-                              return Positioned(
-                                top: top,
-                                left: 4,
-                                right: 4,
-                                child: SizedBox(
-                                  height: height,
-                                  child: GestureDetector(
-                                    onTap: () =>
-                                        widget.onOpenDay(gregDate),
-                                    child: _DayEventBlock(event: e),
-                                  ),
+                          ),
+                          // Event column
+                          SizedBox(
+                            width: colW,
+                            height: totalH,
+                            child: Stack(
+                              children: [
+                                Column(
+                                  children: hours
+                                      .map((h) => Container(
+                                            width: colW,
+                                            height: slotH,
+                                            decoration: BoxDecoration(
+                                              border: Border(
+                                                  bottom: BorderSide(
+                                                      color: c.border,
+                                                      width: 0.5)),
+                                            ),
+                                          ))
+                                      .toList(),
                                 ),
-                              );
-                            }),
-                            // Now line
-                            if (isToday &&
-                                nowH >= _kHourStart &&
-                                nowH <= _kHourEnd)
-                              Positioned(
-                                top: (nowH - _kHourStart) * _kSlotH - 1,
-                                left: 0, right: 0,
-                                child: const _NowLine(),
-                              ),
-                          ],
-                        ),
+                                // Timed events
+                                ...timedEvs.map((e) {
+                                  final top = e.startMinutes! / 60.0 * slotH -
+                                      _kHourStart * slotH;
+                                  final height = math.max(
+                                      (e.durationMinutes ?? 60) / 60.0 * slotH,
+                                      22.0);
+                                  return Positioned(
+                                    top: top,
+                                    left: 4,
+                                    right: 4,
+                                    child: SizedBox(
+                                      height: height,
+                                      child: GestureDetector(
+                                        onTap: () =>
+                                            widget.onOpenDay(gregDate),
+                                        child: _DayEventBlock(event: e),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                                // Now line
+                                if (isToday &&
+                                    nowH >= _kHourStart &&
+                                    nowH <= _kHourEnd)
+                                  Positioned(
+                                    top: (nowH - _kHourStart) * slotH - 1,
+                                    left: 0, right: 0,
+                                    child: const _NowLine(),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
 
-            // ── Add / view button ─────────────────────────────────────────
-            GestureDetector(
-              onTap: () => widget.onOpenDay(gregDate),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: c.border)),
-                ),
-                child: Text(
-                  '+ Add event  \u00b7  View all events',
-                  style: AppTextStyles.cinzel(
-                      size: 11, color: c.muted, letterSpacing: 0.5),
-                ),
-              ),
-            ),
           ],
         ),
       );
@@ -437,25 +403,30 @@ class _DayEventBlock extends StatelessWidget {
         '${(sMin ~/ 60).toString().padLeft(2, '0')}:${(sMin % 60).toString().padLeft(2, '0')}'
         '\u2013${(eMin ~/ 60).toString().padLeft(2, '0')}:${(eMin % 60).toString().padLeft(2, '0')}';
 
+    final c = context.colors;
     return Container(
+      clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
-        color: bg,
+        color: c.surface,
         borderRadius: BorderRadius.circular(4),
         border: Border(left: BorderSide(color: col, width: 3)),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(event.title,
-              style: AppTextStyles.cinzel(size: 11, color: col),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1),
-          Text(ts,
-              style: AppTextStyles.imFell(
-                  size: 9, color: col.withValues(alpha: 0.8))),
-        ],
+      child: Container(
+        color: bg,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(event.title,
+                style: AppTextStyles.cinzel(size: 11, color: col),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1),
+            Text(ts,
+                style: AppTextStyles.imFell(
+                    size: 9, color: col.withValues(alpha: 0.8))),
+          ],
+        ),
       ),
     );
   }

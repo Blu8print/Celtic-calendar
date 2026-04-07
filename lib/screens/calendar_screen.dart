@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -37,11 +38,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
   CalendarView _curView = CalendarView.month;
   GoogleCalendarService? _gcal;
   String? _lastShownError;
+  Timer? _syncTimer;
 
   @override
   void initState() {
     super.initState();
     _jumpToToday();
+    _syncTimer = Timer.periodic(
+      const Duration(minutes: 10),
+      (_) => _autoSync(),
+    );
   }
 
   @override
@@ -57,8 +63,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   void dispose() {
+    _syncTimer?.cancel();
     _gcal?.removeListener(_onGcalChanged);
     super.dispose();
+  }
+
+  void _autoSync() {
+    if (!mounted) return;
+    context.read<GoogleCalendarService>().backgroundSync(_curYear);
   }
 
   void _onGcalChanged() {
@@ -454,7 +466,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             switch (_curView) {
               case CalendarView.threeDay:
                 return Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
                   child: WeekView(
                     celticYear: _curYear,
                     month: _curMonth!,
@@ -470,7 +482,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 );
               case CalendarView.week:
                 return Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
                   child: WeekView(
                     celticYear: _curYear,
                     month: _curMonth!,
@@ -486,7 +498,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 );
               case CalendarView.day:
                 return Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
                   child: DayView(
                     celticYear: _curYear,
                     month: _curMonth!,
@@ -510,7 +522,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
           // Month and YearDay: content can exceed screen height, use scroll.
           return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
