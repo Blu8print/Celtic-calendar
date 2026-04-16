@@ -65,6 +65,10 @@ class Events extends Table {
   /// Links all instances of a recurring series (UUID of the first instance).
   TextColumn get recurrenceId => text().nullable()();
 
+  /// JSON-encoded list of minute-offsets before the event start for reminders.
+  /// e.g. '[30]' = 30 min before. Null = no reminders.
+  TextColumn get reminders => text().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -76,7 +80,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -101,6 +105,11 @@ class AppDatabase extends _$AppDatabase {
         );
         await m.database.customStatement(
           'ALTER TABLE events ADD COLUMN recurrence_id TEXT',
+        );
+      }
+      if (from < 4) {
+        await m.database.customStatement(
+          'ALTER TABLE events ADD COLUMN reminders TEXT',
         );
       }
     },

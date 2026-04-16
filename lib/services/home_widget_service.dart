@@ -13,6 +13,7 @@ class HomeWidgetService {
   HomeWidgetService._();
 
   static const _storage = FlutterSecureStorage();
+  static final _dateFmt = DateFormat('d MMM');
 
   static Future<void> updateTodayWidget(EventsDao dao) async {
     try {
@@ -23,6 +24,9 @@ class HomeWidgetService {
       final themeVal = await _storage.read(key: 'app_theme');
       final isLight  = themeVal != 'dark'; // default: light
 
+      // Fetch up to 5 upcoming events from today onwards.
+      final upcoming = await dao.getUpcomingEvents(now, limit: 5);
+
       if (celticDate.isYearDay || celticDate.isLeapDay) {
         await _push(
           celticDay: 0,
@@ -30,25 +34,20 @@ class HomeWidgetService {
           tree:      '',
           keyword:   '',
           gregDate:  DateFormat('EEE, d MMM').format(now),
-          events:    [],
+          events:    upcoming,
+          now:       now,
           isLight:   isLight,
         );
       } else {
         final month = celticMonths[celticDate.month! - 1];
-        final all   = await dao.getEventsForDay(now);
-
-        // All-day events (startMinutes == null) shown first, then timed by start.
-        final allDay = all.where((e) => e.startMinutes == null).toList();
-        final timed  = all.where((e) => e.startMinutes != null).toList()
-          ..sort((a, b) => a.startMinutes!.compareTo(b.startMinutes!));
-
         await _push(
           celticDay: celticDate.day ?? 0,
           monthName: month.name,
           tree:      month.tree,
           keyword:   month.keyword,
           gregDate:  DateFormat('EEE, d MMM').format(now),
-          events:    [...allDay, ...timed].take(5).toList(),
+          events:    upcoming,
+          now:       now,
           isLight:   isLight,
         );
       }
@@ -62,13 +61,14 @@ class HomeWidgetService {
   // ─────────────────────────────────────────────────────────────────────────
 
   static Future<void> _push({
-    required int    celticDay,
-    required String monthName,
-    required String tree,
-    required String keyword,
-    required String gregDate,
+    required int      celticDay,
+    required String   monthName,
+    required String   tree,
+    required String   keyword,
+    required String   gregDate,
     required List<Event> events,
-    required bool   isLight,
+    required DateTime now,
+    required bool     isLight,
   }) async {
     final saves = <Future>[
       HomeWidget.saveWidgetData<int>   ('celtic_day',        celticDay),
@@ -85,20 +85,26 @@ class HomeWidgetService {
       final n = i + 1;
       saves.addAll([
         HomeWidget.saveWidgetData<String>('event_${n}_title',  e?.title ?? ''),
-        HomeWidget.saveWidgetData<String>('event_${n}_time',   _timeLabel(e)),
+        HomeWidget.saveWidgetData<String>('event_${n}_time',   _timeLabel(e, now)),
         HomeWidget.saveWidgetData<String>('event_${n}_color',  e?.color ?? ''),
-        HomeWidget.saveWidgetData<bool>  ('event_${n}_allday', e?.startMinutes == null && e != null),
+        HomeWidget.saveWidgetData<bool>  ('event_${n}_allday', e != null && e.startMinutes == null),
       ]);
     }
 
     await Future.wait(saves);
   }
 
-  /// "HH:mm" for timed events, "All day" for all-day, "" if null.
-  static String _timeLabel(Event? e) {
+  /// Returns a date-aware label: "Today · 14:30", "Tomorrow · All day", "12 Apr · 09:00".
+  static String _timeLabel(Event? e, DateTime now) {
     if (e == null) return '';
-    if (e.startMinutes == null) return 'All day';
-    return _fmt(e.startMinutes!);
+    final eDate  = DateTime(e.gregorianDate.year, e.gregorianDate.month, e.gregorianDate.day);
+    final today  = DateTime(now.year, now.month, now.day);
+    final diff   = eDate.difference(today).inDays;
+    final prefix = diff == 0 ? 'Today'
+        : diff == 1 ? 'Tomorrow'
+        : _dateFmt.format(e.gregorianDate);
+    final time   = e.startMinutes == null ? 'All day' : _fmt(e.startMinutes!);
+    return '$prefix · $time';
   }
 
   static String _fmt(int min) =>

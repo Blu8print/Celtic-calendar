@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:workmanager/workmanager.dart';
 
 import 'db/database.dart';
 import 'db/events_dao.dart';
@@ -10,13 +11,41 @@ import 'screens/calendar_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'services/google_calendar_service.dart';
 import 'services/home_widget_service.dart';
+import 'services/reminder_service.dart';
 import 'theme/app_theme.dart';
 import 'theme/moon_settings_notifier.dart';
 import 'theme/theme_notifier.dart';
 
+/// Runs in a background isolate — must be a top-level function.
+@pragma('vm:entry-point')
+void _widgetUpdateDispatcher() {
+  Workmanager().executeTask((taskName, inputData) async {
+    try {
+      WidgetsFlutterBinding.ensureInitialized();
+      final db = AppDatabase();
+      await HomeWidgetService.updateTodayWidget(db.eventsDao);
+      await db.close();
+    } catch (_) {}
+    return true;
+  });
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  await ReminderService.init();
+  await ReminderService.requestPermissions();
+
+  // Register periodic background widget refresh (runs even when app is closed).
+  await Workmanager().initialize(_widgetUpdateDispatcher);
+  await Workmanager().registerPeriodicTask(
+    'roots_widget_refresh',
+    'widgetRefresh',
+    frequency: const Duration(minutes: 30),
+    existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+    constraints: Constraints(networkType: NetworkType.notRequired),
+  );
+
   final db = AppDatabase();
   final prefs = await SharedPreferences.getInstance();
   final showOnboarding = !(prefs.getBool('onboarding_complete') ?? false);

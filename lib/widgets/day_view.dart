@@ -9,10 +9,11 @@ import '../engine/celtic_festivals.dart';
 import '../engine/moon_phase.dart';
 import '../theme/app_theme.dart';
 
-const double _kSlotH     = 52.0;
-const int    _kHourStart  = 0;
-const int    _kHourEnd    = 24;
-const double _kGutterW    = 44.0;
+const double _kSlotH         = 52.0;
+const int    _kHourStart      = 0;
+const int    _kHourEnd        = 24;
+const double _kGutterW        = 44.0;
+const double _kApproxHeaderH  = 80.0; // all-day + moon + compact header overhead
 
 /// Full-day view: compact header + all-day events + timed event timeline.
 class DayView extends StatefulWidget {
@@ -22,6 +23,9 @@ class DayView extends StatefulWidget {
   final List<Event> events;           // already filtered to this day
   final List<CelticFestival> festivalsForDay; // read-only, not editable
   final void Function(DateTime date) onOpenDay; // open EventDetailScreen
+  final double initialScale;
+  final ValueChanged<double>? onScaleChanged;
+  final void Function(DateTime date, TimeOfDay time)? onSlotLongPress;
 
   const DayView({
     super.key,
@@ -31,6 +35,9 @@ class DayView extends StatefulWidget {
     required this.events,
     this.festivalsForDay = const [],
     required this.onOpenDay,
+    this.initialScale = 0.0,
+    this.onScaleChanged,
+    this.onSlotLongPress,
   });
 
   @override
@@ -38,10 +45,11 @@ class DayView extends StatefulWidget {
 }
 
 class _DayViewState extends State<DayView> {
-  final _scroll     = ScrollController();
-  double _scale     = 1.0;
-  double _baseScale = 1.0;
-  int    _pointers  = 0;
+  final _scroll             = ScrollController();
+  double _scale             = 0.0;
+  double _baseScale         = 1.0;
+  int    _pointers          = 0;
+  bool   _fittingScheduled  = false;
 
   bool get _isToday {
     final tc = gregorianToCeltic(DateTime.now());
@@ -54,7 +62,10 @@ class _DayViewState extends State<DayView> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToNow());
+    _scale = widget.initialScale;
+    if (widget.initialScale > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToNow());
+    }
   }
 
   @override
@@ -116,7 +127,7 @@ class _DayViewState extends State<DayView> {
   }
 
   void _scrollToNow() {
-    if (!_isToday || !_scroll.hasClients) return;
+    if (_scale == 0.0 || !_isToday || !_scroll.hasClients) return;
     final now = DateTime.now();
     final h = now.hour + now.minute / 60.0;
     if (h < _kHourStart) return;
@@ -136,14 +147,30 @@ class _DayViewState extends State<DayView> {
     final phase     = MoonPhaseCalculator.calculate(gregDate);
     final allDayEvs = widget.events.where((e) => e.startMinutes == null).toList();
     final timedEvs  = widget.events.where((e) => e.startMinutes != null).toList();
-    final slotH  = (_kSlotH * _scale).clamp(20.0, 200.0);
-    final hours  = List.generate(_kHourEnd - _kHourStart, (i) => _kHourStart + i);
-    final totalH = hours.length * slotH;
-    final now    = DateTime.now();
-    final nowH   = now.hour + now.minute / 60.0;
+    final now  = DateTime.now();
+    final nowH = now.hour + now.minute / 60.0;
 
     return LayoutBuilder(builder: (context, constraints) {
       final colW = constraints.maxWidth - _kGutterW;
+
+      // Auto-fit: on first build with no saved scale, compute zoom so 07:00–23:00
+      // (16 hours) fills the visible viewport, then bake it in via setState.
+      double effectiveScale = _scale;
+      if (_scale == 0.0 && !_fittingScheduled) {
+        _fittingScheduled = true;
+        final gridH = constraints.maxHeight - _kApproxHeaderH;
+        effectiveScale = (gridH / (16 * _kSlotH)).clamp(0.4, 4.0);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          setState(() => _scale = effectiveScale);
+          widget.onScaleChanged?.call(effectiveScale);
+          _scrollToNow();
+        });
+      }
+
+      final slotH  = (_kSlotH * effectiveScale).clamp(20.0, 200.0);
+      final hours  = List.generate(_kHourEnd - _kHourStart, (i) => _kHourStart + i);
+      final totalH = hours.length * slotH;
 
       return Container(
         decoration: BoxDecoration(
@@ -273,12 +300,25 @@ class _DayViewState extends State<DayView> {
                         ? _scroll.offset / oldTotal
                         : 0.0;
                     setState(() => _scale = newScale);
+                    widget.onScaleChanged?.call(newScale);
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (!_scroll.hasClients) return;
                       final newTotal = _kSlotH * _scale * (_kHourEnd - _kHourStart);
                       _scroll.jumpTo((ratio * newTotal)
                           .clamp(0, _scroll.position.maxScrollExtent));
                     });
+                  },
+                  onLongPressStart: widget.onSlotLongPress == null ? null : (details) {
+                    final dx = details.localPosition.dx;
+                    if (dx < _kGutterW) return;
+                    final contentY = details.localPosition.dy +
+                        (_scroll.hasClients ? _scroll.offset : 0);
+                    final hour = (_kHourStart + contentY / slotH)
+                        .floor()
+                        .clamp(_kHourStart, _kHourEnd - 1);
+                    final date = celticToGregorian(
+                        widget.celticYear, widget.month, widget.day);
+                    widget.onSlotLongPress!(date, TimeOfDay(hour: hour, minute: 0));
                   },
                   child: SingleChildScrollView(
                     controller: _scroll,

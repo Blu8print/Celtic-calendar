@@ -50,6 +50,20 @@ class EventsDao extends DatabaseAccessor<AppDatabase> with _$EventsDaoMixin {
     return (delete(events)..where((e) => e.id.equals(id))).go();
   }
 
+  /// Events from [from] day onwards, ordered by date then start time.
+  /// All-day events (startMinutes IS NULL) sort before timed events on the same day.
+  Future<List<Event>> getUpcomingEvents(DateTime from, {int limit = 10}) {
+    final start = DateTime(from.year, from.month, from.day);
+    return (select(events)
+          ..where((e) => e.gregorianDate.isBiggerOrEqualValue(start))
+          ..orderBy([
+            (e) => OrderingTerm.asc(e.gregorianDate),
+            (e) => OrderingTerm.asc(e.startMinutes),
+          ])
+          ..limit(limit))
+        .get();
+  }
+
   /// Returns all events that have not yet been pushed to Google Calendar.
   Future<List<Event>> getUnsyncedEvents() {
     return (select(events)

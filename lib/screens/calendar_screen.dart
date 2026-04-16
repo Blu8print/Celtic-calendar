@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -33,6 +35,7 @@ class CalendarScreen extends StatefulWidget {
 class _CalendarScreenState extends State<CalendarScreen> {
   late int _curYear;
   late int? _curMonth; // 1-13 or null (Year Day)
+  double _timeGridScale = 0.0; // 0.0 = sentinel; replaced by saved value or auto-fit
   late int _curDay;    // 1-28 within the Celtic month
   late int _curWeek;   // 0-3  within the Celtic month
   CalendarView _curView = CalendarView.month;
@@ -44,10 +47,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
   void initState() {
     super.initState();
     _jumpToToday();
+    _loadGridScale();
     _syncTimer = Timer.periodic(
       const Duration(minutes: 10),
       (_) => _autoSync(),
     );
+  }
+
+  Future<void> _loadGridScale() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getDouble('time_grid_scale') ?? 0.0;
+    if (mounted) setState(() => _timeGridScale = saved);
   }
 
   @override
@@ -74,16 +84,22 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   void _onGcalChanged() {
-    final err = _gcal?.lastError;
+    final gcal = _gcal;
+    if (gcal == null) return;
+    final err = gcal.lastError;
     if (err != null && err != _lastShownError && mounted) {
-      _lastShownError = err;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(err),
-          backgroundColor: Colors.red[700],
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      // Network/timeout errors are expected offline behavior — don't surface them.
+      // Only show actionable errors (auth failures, etc.).
+      if (!gcal.lastErrorIsNetworkError) {
+        _lastShownError = err;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(err),
+            backgroundColor: Colors.red[700],
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } else if (err == null) {
       _lastShownError = null;
     }
@@ -251,6 +267,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => EventDetailScreen(date: date, openAddForm: addEvent),
+      ),
+    );
+  }
+
+  void _openNewEventAt(DateTime date, TimeOfDay time) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EventDetailScreen(
+          date: date,
+          openAddForm: true,
+          prefilledStartTime: time,
+        ),
       ),
     );
   }
@@ -478,6 +507,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       _curView = CalendarView.day;
                     }),
                     onEventTap: _openDay,
+                    initialScale: _timeGridScale,
+                    onScaleChanged: (s) {
+                      setState(() => _timeGridScale = s);
+                      SharedPreferences.getInstance()
+                          .then((p) => p.setDouble('time_grid_scale', s));
+                    },
+                    onSlotLongPress: _openNewEventAt,
                   ),
                 );
               case CalendarView.week:
@@ -494,6 +530,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       _curView = CalendarView.day;
                     }),
                     onEventTap: _openDay,
+                    initialScale: _timeGridScale,
+                    onScaleChanged: (s) {
+                      setState(() => _timeGridScale = s);
+                      SharedPreferences.getInstance()
+                          .then((p) => p.setDouble('time_grid_scale', s));
+                    },
+                    onSlotLongPress: _openNewEventAt,
                   ),
                 );
               case CalendarView.day:
@@ -513,6 +556,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             .toList()
                         : [],
                     onOpenDay: _openDay,
+                    initialScale: _timeGridScale,
+                    onScaleChanged: (s) {
+                      setState(() => _timeGridScale = s);
+                      SharedPreferences.getInstance()
+                          .then((p) => p.setDouble('time_grid_scale', s));
+                    },
+                    onSlotLongPress: _openNewEventAt,
                   ),
                 );
               default:

@@ -13,6 +13,7 @@ import '../engine/celtic_calendar.dart';
 import '../engine/celtic_festivals.dart';
 import '../services/google_calendar_service.dart';
 import '../services/home_widget_service.dart';
+import '../services/reminder_service.dart';
 import '../theme/app_theme.dart';
 
 // ─── Color palette (maps to Google Calendar colorIds) ─────────────────────────
@@ -24,6 +25,19 @@ const _kColorHexes = [
 const _kColorValues = [
   Color(0xFFc9a84c), Color(0xFFe67c73), Color(0xFFf4511e), Color(0xFF33b679),
   Color(0xFF039be5), Color(0xFF7986cb), Color(0xFF8e24aa), Color(0xFF3f51b5),
+];
+
+// Reminder preset options: (minutes before, display label)
+const _kReminderOptions = <(int, String)>[
+  (0,    'At time of event'),
+  (5,    '5 min before'),
+  (10,   '10 min before'),
+  (15,   '15 min before'),
+  (30,   '30 min before'),
+  (60,   '1 hour before'),
+  (120,  '2 hours before'),
+  (1440, '1 day before'),
+  (2880, '2 days before'),
 ];
 
 // Duration options: (minutes, display label)
@@ -39,8 +53,15 @@ class EventDetailScreen extends StatefulWidget {
   final DateTime date;
   /// If true, the add-event form opens automatically after the screen mounts.
   final bool openAddForm;
+  /// Pre-fills the start-time field when opening the add form from a long-press.
+  final TimeOfDay? prefilledStartTime;
 
-  const EventDetailScreen({super.key, required this.date, this.openAddForm = false});
+  const EventDetailScreen({
+    super.key,
+    required this.date,
+    this.openAddForm = false,
+    this.prefilledStartTime,
+  });
 
   @override
   State<EventDetailScreen> createState() => _EventDetailScreenState();
@@ -56,7 +77,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     _date = DateTime(_loc.year, _loc.month, _loc.day);
     if (widget.openAddForm) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _openEventForm(context.read<EventsDao>());
+        if (mounted) _openEventForm(
+          context.read<EventsDao>(),
+          prefilledStartTime: widget.prefilledStartTime,
+        );
       });
     }
   }
@@ -83,7 +107,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }).toList();
   }
 
-  void _openEventForm(EventsDao dao, {Event? event}) {
+  void _openEventForm(EventsDao dao, {Event? event, TimeOfDay? prefilledStartTime}) {
     final gcal = context.read<GoogleCalendarService>();
     Navigator.push(
       context,
@@ -93,6 +117,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           dao: dao,
           existing: event,
           gcal: gcal,
+          prefilledStartTime: prefilledStartTime,
         ),
       ),
     );
@@ -167,14 +192,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           borderRadius: BorderRadius.circular(8),
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: c.surface,
-          border: Border(top: BorderSide(color: c.border)),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        child: SafeArea(
-          top: false,
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          decoration: BoxDecoration(
+            color: c.surface,
+            border: Border(top: BorderSide(color: c.border)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           child: Row(
             children: [
               IconButton(
@@ -238,12 +263,14 @@ class _EventScreen extends StatelessWidget {
   final EventsDao dao;
   final Event? existing;
   final GoogleCalendarService gcal;
+  final TimeOfDay? prefilledStartTime;
 
   const _EventScreen({
     required this.date,
     required this.dao,
     this.existing,
     required this.gcal,
+    this.prefilledStartTime,
   });
 
   @override
@@ -278,6 +305,7 @@ class _EventScreen extends StatelessWidget {
           dao: dao,
           existing: existing,
           gcal: gcal,
+          prefilledStartTime: existing == null ? prefilledStartTime : null,
         ),
       ),
     );
@@ -306,7 +334,10 @@ class _EventScreen extends StatelessWidget {
                 Navigator.pop(ctx);
                 final all = await dao.getEventsByRecurrenceId(
                     existing!.recurrenceId!);
-                for (final e in all) await dao.deleteEvent(e.id);
+                for (final e in all) {
+                  await dao.deleteEvent(e.id);
+                  await ReminderService.cancelForEvent(e.id);
+                }
                 if (context.mounted) await HomeWidgetService.updateTodayWidget(dao);
                 if (context.mounted) Navigator.pop(context);
               },
@@ -318,6 +349,7 @@ class _EventScreen extends StatelessWidget {
             onPressed: () async {
               Navigator.pop(ctx);
               await dao.deleteEvent(existing!.id);
+              await ReminderService.cancelForEvent(existing!.id);
               if (context.mounted) await HomeWidgetService.updateTodayWidget(dao);
               if (context.mounted) Navigator.pop(context);
             },
@@ -505,12 +537,14 @@ class _EventForm extends StatefulWidget {
   final EventsDao dao;
   final Event? existing;
   final GoogleCalendarService gcal;
+  final TimeOfDay? prefilledStartTime;
 
   const _EventForm({
     required this.date,
     required this.dao,
     required this.gcal,
     this.existing,
+    this.prefilledStartTime,
   });
 
   @override
@@ -531,12 +565,16 @@ class _EventFormState extends State<_EventForm> {
   bool             _saving          = false;
   String           _recurrenceRule  = 'none';
   DateTime?        _recurrenceEnd;
+  List<int>        _reminders       = [];
 
   @override
   void initState() {
     super.initState();
     _selectedDate = DateTime(
         widget.date.year, widget.date.month, widget.date.day);
+    if (widget.prefilledStartTime != null) {
+      _startTime = widget.prefilledStartTime;
+    }
     final e = widget.existing;
     if (e != null) {
       _titleCtrl.text    = e.title;
@@ -561,6 +599,10 @@ class _EventFormState extends State<_EventForm> {
           e.gregorianDate.day,
         );
       }
+      _reminders = ReminderService.parseReminders(e.reminders);
+    } else {
+      // Default: 30 min before when a start time is pre-filled, else none.
+      _reminders = widget.prefilledStartTime != null ? [30] : [];
     }
   }
 
@@ -748,6 +790,8 @@ class _EventFormState extends State<_EventForm> {
         ? null
         : _locationCtrl.text.trim();
 
+    final remindersJson = ReminderService.encodeReminders(_reminders);
+
     if (widget.existing == null && _recurrenceRule != 'none') {
       // Expand into individual instances linked by a shared recurrenceId.
       final seriesId = const Uuid().v4();
@@ -755,8 +799,9 @@ class _EventFormState extends State<_EventForm> {
       for (final d in dates) {
         final cd      = gregorianToCeltic(d);
         final dateUtc = DateTime.utc(d.year, d.month, d.day);
+        final newId   = const Uuid().v4();
         await widget.dao.insertEvent(EventsCompanion(
-          id:              Value(const Uuid().v4()),
+          id:              Value(newId),
           celticYear:      Value(cd.celticYear),
           celticMonth:     Value(cd.month),
           celticDay:       Value(cd.day),
@@ -770,11 +815,20 @@ class _EventFormState extends State<_EventForm> {
           location:        Value(loc),
           recurrenceRule:  Value(_recurrenceRule),
           recurrenceId:    Value(seriesId),
+          reminders:       Value(remindersJson),
         ));
+        await ReminderService.scheduleForEventData(
+          eventId: newId,
+          title: _titleCtrl.text.trim(),
+          gregorianDate: dateUtc,
+          startMinutes: sm,
+          reminders: _reminders,
+        );
       }
     } else if (widget.existing == null) {
+      final newId = const Uuid().v4();
       await widget.dao.insertEvent(EventsCompanion(
-        id:              Value(const Uuid().v4()),
+        id:              Value(newId),
         celticYear:      Value(celticDate.celticYear),
         celticMonth:     Value(celticDate.month),
         celticDay:       Value(celticDate.day),
@@ -786,7 +840,15 @@ class _EventFormState extends State<_EventForm> {
         durationMinutes: Value(dm),
         attendees:       Value(att),
         location:        Value(loc),
+        reminders:       Value(remindersJson),
       ));
+      await ReminderService.scheduleForEventData(
+        eventId: newId,
+        title: _titleCtrl.text.trim(),
+        gregorianDate: dayNorm,
+        startMinutes: sm,
+        reminders: _reminders,
+      );
     } else {
       await widget.dao.updateEvent(widget.existing!.copyWith(
         title:           _titleCtrl.text.trim(),
@@ -801,7 +863,16 @@ class _EventFormState extends State<_EventForm> {
         durationMinutes: Value(dm),
         attendees:       Value(att),
         location:        Value(loc),
+        syncedToGoogle:  false,
+        reminders:       Value(remindersJson),
       ));
+      await ReminderService.scheduleForEventData(
+        eventId: widget.existing!.id,
+        title: _titleCtrl.text.trim(),
+        gregorianDate: dayNorm,
+        startMinutes: sm,
+        reminders: _reminders,
+      );
     }
 
     if (widget.gcal.isSignedIn) await widget.gcal.syncPendingEvents();
@@ -869,7 +940,7 @@ class _EventFormState extends State<_EventForm> {
           // ── Description ─────────────────────────────────────────────────
           TextField(
             controller: _descCtrl,
-            style: AppTextStyles.imFell(size: 13),
+            style: AppTextStyles.imFell(size: 13, color: c.text),
             decoration: const InputDecoration(labelText: 'Description (optional)'),
             maxLines: 2,
             textCapitalization: TextCapitalization.sentences,
@@ -937,6 +1008,55 @@ class _EventFormState extends State<_EventForm> {
               ),
             ),
           ),
+          const SizedBox(height: 14),
+
+          // ── Notifications ────────────────────────────────────────────────
+          _FormLabel('Notifications'),
+          ..._reminders.asMap().entries.map((entry) {
+            final i      = entry.key;
+            final offset = entry.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  Icon(Icons.notifications_outlined, size: 18, color: c.muted),
+                  const SizedBox(width: 10),
+                  DropdownButton<int>(
+                    value: _kReminderOptions.any((o) => o.$1 == offset)
+                        ? offset
+                        : _kReminderOptions.first.$1,
+                    dropdownColor: c.surface2,
+                    underline: const SizedBox(),
+                    style: AppTextStyles.cinzel(size: 13, color: c.text),
+                    items: _kReminderOptions
+                        .map((o) => DropdownMenuItem(
+                              value: o.$1,
+                              child: Text(o.$2),
+                            ))
+                        .toList(),
+                    onChanged: (v) {
+                      if (v != null) {
+                        setState(() => _reminders[i] = v);
+                      }
+                    },
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => setState(() => _reminders.removeAt(i)),
+                    child: Icon(Icons.close, size: 16, color: c.dim),
+                  ),
+                ],
+              ),
+            );
+          }),
+          if (_reminders.length < 5)
+            TextButton.icon(
+              onPressed: () => setState(() => _reminders.add(30)),
+              icon: Icon(Icons.add, size: 16, color: c.gold),
+              label: Text('Add notification',
+                  style: AppTextStyles.cinzel(size: 12, color: c.gold)),
+              style: TextButton.styleFrom(padding: EdgeInsets.zero),
+            ),
           const SizedBox(height: 14),
 
           // ── Location ────────────────────────────────────────────────────

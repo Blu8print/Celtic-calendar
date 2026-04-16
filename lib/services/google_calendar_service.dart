@@ -75,6 +75,13 @@ class GoogleCalendarService extends ChangeNotifier {
   int       get lastSyncCount   => _lastSyncCount;
   bool?     get lastSyncSuccess => _lastSyncSuccess;
 
+  /// True when the last error was a network/timeout issue (not actionable by user).
+  bool get lastErrorIsNetworkError {
+    final e = _lastError;
+    if (e == null) return false;
+    return e.contains('No internet') || e.contains('timed out');
+  }
+
   // ─── Auth ──────────────────────────────────────────────────────────────────
 
   /// Opens the system browser (Chrome Custom Tab) for Google sign-in.
@@ -295,9 +302,14 @@ class GoogleCalendarService extends ChangeNotifier {
     );
 
     try {
-      final created = await api.events.insert(gcalEvent, 'primary');
-      if (created.id != null) {
-        await _dao.markSynced(event.id, created.id!);
+      if (event.googleEventId != null) {
+        await api.events.patch(gcalEvent, 'primary', event.googleEventId!);
+        await _dao.markSynced(event.id, event.googleEventId!);
+      } else {
+        final created = await api.events.insert(gcalEvent, 'primary');
+        if (created.id != null) {
+          await _dao.markSynced(event.id, created.id!);
+        }
       }
     } catch (e) {
       debugPrint('Google Calendar push failed for ${event.id}: $e');
@@ -332,6 +344,13 @@ class GoogleCalendarService extends ChangeNotifier {
         value: _lastSyncTime!.millisecondsSinceEpoch.toString(),
       );
       notifyListeners();
+    }
+
+    // If we failed due to no connectivity, retry once after 10 seconds.
+    if (lastErrorIsNetworkError) {
+      Future.delayed(const Duration(seconds: 10), () {
+        if (isSignedIn && !_isSyncing) syncYear(celticYear);
+      });
     }
   }
 

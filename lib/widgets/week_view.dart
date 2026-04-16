@@ -7,10 +7,11 @@ import '../db/database.dart';
 import '../engine/celtic_calendar.dart';
 import '../theme/app_theme.dart';
 
-const double _kSlotH    = 52.0;
-const int    _kHourStart = 0;
-const int    _kHourEnd   = 24;
-const double _kGutterW   = 44.0;
+const double _kSlotH         = 52.0;
+const int    _kHourStart      = 0;
+const int    _kHourEnd        = 24;
+const double _kGutterW        = 44.0;
+const double _kApproxHeaderH  = 50.0; // day-names header overhead for auto-fit
 
 /// N-day time grid view (nDays=7 for week, nDays=3 for 3-day).
 /// [startDay] is the first Celtic day shown (1-28).
@@ -22,6 +23,9 @@ class WeekView extends StatefulWidget {
   final List<Event> events;
   final void Function(int celticDay) onDayTap;
   final void Function(DateTime date) onEventTap;
+  final double initialScale;
+  final ValueChanged<double>? onScaleChanged;
+  final void Function(DateTime date, TimeOfDay time)? onSlotLongPress;
 
   const WeekView({
     super.key,
@@ -32,6 +36,9 @@ class WeekView extends StatefulWidget {
     required this.events,
     required this.onDayTap,
     required this.onEventTap,
+    this.initialScale = 0.0,
+    this.onScaleChanged,
+    this.onSlotLongPress,
   });
 
   @override
@@ -39,15 +46,21 @@ class WeekView extends StatefulWidget {
 }
 
 class _WeekViewState extends State<WeekView> {
-  final _scroll     = ScrollController();
-  double _scale     = 1.0;
-  double _baseScale = 1.0;
-  int    _pointers  = 0;
+  final _scroll         = ScrollController();
+  double _scale         = 0.0;
+  double _baseScale     = 1.0;
+  int    _pointers      = 0;
+  bool   _fittingScheduled = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToNow());
+    _scale = widget.initialScale;
+    // Only scroll-to-now once a real scale is known (> 0).
+    // When scale is 0 (auto-fit), _scrollToNow is called from the fit callback.
+    if (widget.initialScale > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToNow());
+    }
   }
 
   @override
@@ -65,7 +78,7 @@ class _WeekViewState extends State<WeekView> {
   }
 
   void _scrollToNow() {
-    if (!_scroll.hasClients) return;
+    if (_scale == 0.0 || !_scroll.hasClients) return;
     final now = DateTime.now();
     final h = now.hour + now.minute / 60.0;
     if (h < _kHourStart) return;
@@ -102,13 +115,28 @@ class _WeekViewState extends State<WeekView> {
     final allDayEvs = visEvs.where((e) => e.startMinutes == null).toList();
     final timedEvs  = visEvs.where((e) => e.startMinutes != null).toList();
 
-    final slotH  = (_kSlotH * _scale).clamp(20.0, 200.0);
-    final hours  = List.generate(_kHourEnd - _kHourStart, (i) => _kHourStart + i);
-    final totalH = hours.length * slotH;
-
     return LayoutBuilder(builder: (context, constraints) {
       final totalColW = constraints.maxWidth - _kGutterW;
       final colW      = totalColW / nDays;
+
+      // Auto-fit: on first build with no saved scale, compute zoom so 07:00–23:00
+      // (16 hours) fills the visible viewport, then bake it in via setState.
+      double effectiveScale = _scale;
+      if (_scale == 0.0 && !_fittingScheduled) {
+        _fittingScheduled = true;
+        final gridH = constraints.maxHeight - _kApproxHeaderH;
+        effectiveScale = (gridH / (16 * _kSlotH)).clamp(0.4, 4.0);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          setState(() => _scale = effectiveScale);
+          widget.onScaleChanged?.call(effectiveScale);
+          _scrollToNow();
+        });
+      }
+
+      final slotH  = (_kSlotH * effectiveScale).clamp(20.0, 200.0);
+      final hours  = List.generate(_kHourEnd - _kHourStart, (i) => _kHourStart + i);
+      final totalH = hours.length * slotH;
 
       return Container(
         height: constraints.maxHeight,
@@ -238,12 +266,30 @@ class _WeekViewState extends State<WeekView> {
                       ? _scroll.offset / oldTotal
                       : 0.0;
                   setState(() => _scale = newScale);
+                  widget.onScaleChanged?.call(newScale);
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (!_scroll.hasClients) return;
                     final newTotal = _kSlotH * _scale * (_kHourEnd - _kHourStart);
                     _scroll.jumpTo((ratio * newTotal)
                         .clamp(0, _scroll.position.maxScrollExtent));
                   });
+                },
+                onLongPressStart: widget.onSlotLongPress == null ? null : (details) {
+                  final dx = details.localPosition.dx;
+                  if (dx < _kGutterW) return;
+                  final contentY = details.localPosition.dy +
+                      (_scroll.hasClients ? _scroll.offset : 0);
+                  final hour = (_kHourStart + contentY / slotH)
+                      .floor()
+                      .clamp(_kHourStart, _kHourEnd - 1);
+                  final dayIdx = ((dx - _kGutterW) / colW)
+                      .floor()
+                      .clamp(0, widget.nDays - 1);
+                  final celticDay = widget.startDay + dayIdx;
+                  if (celticDay > 28) return;
+                  final date = celticToGregorian(
+                      widget.celticYear, widget.month, celticDay);
+                  widget.onSlotLongPress!(date, TimeOfDay(hour: hour, minute: 0));
                 },
                 child: SingleChildScrollView(
                   controller: _scroll,

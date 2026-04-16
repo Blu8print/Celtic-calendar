@@ -342,7 +342,7 @@
         android:id="@+id/widget_no_events"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="No events today"
+        android:text="No upcoming events"
         android:textSize="12sp"
         android:textColor="@color/widget_sub"
         android:textStyle="italic"
