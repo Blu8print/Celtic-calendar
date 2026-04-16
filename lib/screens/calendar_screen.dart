@@ -17,13 +17,14 @@ import '../theme/app_theme.dart';
 import '../theme/moon_settings_notifier.dart';
 import '../widgets/day_grid.dart';
 import '../widgets/day_view.dart';
+import '../widgets/gregorian_year_view.dart';
 import '../widgets/schedule_view.dart';
 import '../widgets/week_view.dart';
 import '../widgets/year_day_card.dart';
 import 'event_detail_screen.dart';
 import 'settings_screen.dart';
 
-enum CalendarView { month, threeDay, week, day, schedule }
+enum CalendarView { month, threeDay, week, day, schedule, greg12 }
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -38,6 +39,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   double _timeGridScale = 0.0; // 0.0 = sentinel; replaced by saved value or auto-fit
   late int _curDay;    // 1-28 within the Celtic month
   late int _curWeek;   // 0-3  within the Celtic month
+  late int _gregYear;  // Gregorian year for the 12-month view
   CalendarView _curView = CalendarView.month;
   GoogleCalendarService? _gcal;
   String? _lastShownError;
@@ -107,6 +109,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   void _jumpToToday() {
     final today = DateTime.now();
+    _gregYear = today.year;
     _curYear = celticYearOf(today);
     final info = gregorianToCeltic(today);
     if (info.isYearDay || info.isLeapDay) {
@@ -178,6 +181,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
             _curDay   = 28;
           }
           _curWeek = (_curDay - 1) ~/ 7;
+        case CalendarView.greg12:
+          _gregYear--;
       }
     });
   }
@@ -234,6 +239,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
             _curDay   = 1;
           }
           _curWeek = (_curDay - 1) ~/ 7;
+        case CalendarView.greg12:
+          _gregYear++;
       }
     });
   }
@@ -289,6 +296,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   // ─── Label helpers ────────────────────────────────────────────────────────────
 
   String get _periodTitle {
+    if (_curView == CalendarView.greg12) return '$_gregYear';
     if (_curMonth == null) return 'Year Day';
     final mo = celticMonths[_curMonth! - 1];
     switch (_curView) {
@@ -304,10 +312,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
         return '${mo.name} \u00b7 ${DateFormat('d MMM').format(d)}';
       case CalendarView.schedule:
         return 'Schedule';
+      case CalendarView.greg12:
+        return '$_gregYear';
     }
   }
 
   String get _periodKeyword {
+    if (_curView == CalendarView.greg12) return 'Gregorian Calendar';
     if (_curMonth == null) return 'Between the worlds';
     final mo = celticMonths[_curMonth! - 1];
     return '${mo.tree} \u00b7 ${mo.keyword}';
@@ -377,12 +388,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final moonSettings = context.watch<MoonSettingsNotifier>();
 
     final isSchedule = _curView == CalendarView.schedule;
+    final isGreg12   = _curView == CalendarView.greg12;
 
     final stream = isSchedule
         ? dao.watchEventsForYear(_curYear)
-        : _curMonth != null
-            ? dao.watchEventsForMonth(_curYear, _curMonth!)
-            : dao.watchYearDayEvents(_curYear);
+        : isGreg12
+            ? dao.watchEventsForGregorianYear(_gregYear)
+            : _curMonth != null
+                ? dao.watchEventsForMonth(_curYear, _curMonth!)
+                : dao.watchYearDayEvents(_curYear);
 
     return Scaffold(
       backgroundColor: c.bg,
@@ -475,19 +489,39 @@ class _CalendarScreenState extends State<CalendarScreen> {
           if (v > 300) _prevPeriod();
         },
         child: StreamBuilder<List<Event>>(
-        key: ValueKey(isSchedule ? '$_curYear-schedule' : '$_curYear-$_curMonth'),
+        key: ValueKey(isGreg12
+            ? '$_gregYear-greg12'
+            : isSchedule ? '$_curYear-schedule' : '$_curYear-$_curMonth'),
         stream: stream,
         builder: (context, snapshot) {
           final allEvents   = snapshot.data ?? [];
           final eventsReady = snapshot.hasData;
 
-          // Schedule, Day, Week, 3-Day all manage their own scroll —
+          if (snapshot.connectionState == ConnectionState.waiting && !eventsReady) {
+            return Center(
+              child: CircularProgressIndicator(
+                color: context.colors.gold,
+                strokeWidth: 2,
+              ),
+            );
+          }
+
+          // Schedule, Day, Week, 3-Day, Greg12 all manage their own scroll —
           // do not nest them inside a SingleChildScrollView.
           if (_curView == CalendarView.schedule) {
             return ScheduleView(
               celticYear: _curYear,
               events: allEvents,
               onEventTap: _openDay,
+            );
+          }
+
+          if (_curView == CalendarView.greg12) {
+            return GregorianYearView(
+              gregYear: _gregYear,
+              events: allEvents,
+              onDayTap: _openDay,
+              onDayLongPress: (d) => _openDay(d, addEvent: true),
             );
           }
 
@@ -602,6 +636,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   DateTime _fabDate() {
+    if (_curView == CalendarView.greg12) return DateTime.now();
     if (_curMonth == null) return yearDayDate(_curYear);
     if (_curView == CalendarView.day) {
       return celticToGregorian(_curYear, _curMonth!, _curDay);
@@ -676,6 +711,7 @@ class _AppDrawer extends StatelessWidget {
             _ViewBtn(label: '\u25a6  Week',     view: CalendarView.week,     curView: curView, colors: c, onTap: onViewSelected),
             _ViewBtn(label: '\u25c8  Day',      view: CalendarView.day,      curView: curView, colors: c, onTap: onViewSelected),
             _ViewBtn(label: '\u2630  Schedule', view: CalendarView.schedule, curView: curView, colors: c, onTap: onViewSelected),
+            _ViewBtn(label: '\u229e  12 Month',  view: CalendarView.greg12,   curView: curView, colors: c, onTap: onViewSelected),
 
             // Months section
             _DrawerSection(label: 'Months', colors: c),

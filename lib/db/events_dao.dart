@@ -50,6 +50,9 @@ class EventsDao extends DatabaseAccessor<AppDatabase> with _$EventsDaoMixin {
     return (delete(events)..where((e) => e.id.equals(id))).go();
   }
 
+  /// Deletes every event row. Used by the "Reset App" feature.
+  Future<int> deleteAllEvents() => delete(events).go();
+
   /// Events from [from] day onwards, ordered by date then start time.
   /// All-day events (startMinutes IS NULL) sort before timed events on the same day.
   Future<List<Event>> getUpcomingEvents(DateTime from, {int limit = 10}) {
@@ -135,6 +138,7 @@ class EventsDao extends DatabaseAccessor<AppDatabase> with _$EventsDaoMixin {
         updatedAt: event.updatedAt,
         syncedToGoogle: event.syncedToGoogle,
         googleEventId: event.googleEventId,
+        reminders: event.reminders,
       ));
     }
   }
@@ -164,11 +168,30 @@ class EventsDao extends DatabaseAccessor<AppDatabase> with _$EventsDaoMixin {
         .watch();
   }
 
+  /// Looks up a single event by its Google Calendar event ID.
+  Future<Event?> getEventByGoogleId(String googleId) {
+    return (select(events)
+          ..where((e) => e.googleEventId.equals(googleId)))
+        .getSingleOrNull();
+  }
+
   /// All events belonging to the same recurring series.
   Future<List<Event>> getEventsByRecurrenceId(String recurrenceId) {
     return (select(events)
           ..where((e) => e.recurrenceId.equals(recurrenceId)))
         .get();
+  }
+
+  /// Reactive stream of all events in a Gregorian calendar year (Jan 1 – Dec 31).
+  Stream<List<Event>> watchEventsForGregorianYear(int year) {
+    final start = DateTime(year, 1, 1);
+    final end   = DateTime(year + 1, 1, 1);
+    return (select(events)
+          ..where((e) =>
+              e.gregorianDate.isBiggerOrEqualValue(start) &
+              e.gregorianDate.isSmallerThanValue(end))
+          ..orderBy([(e) => OrderingTerm.asc(e.gregorianDate)]))
+        .watch();
   }
 
   /// Reactive stream of Year Day / Leap Day events for a Celtic year.

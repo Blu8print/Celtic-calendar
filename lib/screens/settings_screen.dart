@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../db/database.dart';
 import '../engine/celtic_calendar.dart';
 import '../services/google_calendar_service.dart';
 import '../theme/app_theme.dart';
@@ -33,6 +34,9 @@ class SettingsScreen extends StatelessWidget {
           const _MoonSection(),
           const SizedBox(height: 24),
           const _CalendarSystemSection(),
+          const SizedBox(height: 24),
+          const _DangerZoneSection(),
+          const SizedBox(height: 32),
         ],
       ),
     );
@@ -549,6 +553,107 @@ class _InfoRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─── Danger zone ──────────────────────────────────────────────────────────────
+
+class _DangerZoneSection extends StatelessWidget {
+  const _DangerZoneSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return _Section(
+      title: 'Danger Zone',
+      children: [
+        OutlinedButton.icon(
+          onPressed: () => _confirmReset(context),
+          icon: const Icon(Icons.delete_forever_outlined, size: 16, color: Colors.redAccent),
+          label: Text(
+            'Reset App & Clear All Data',
+            style: AppTextStyles.cinzel(size: 13, color: Colors.redAccent),
+          ),
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: Colors.redAccent),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            alignment: Alignment.centerLeft,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Deletes all events and resets all settings. Cannot be undone.',
+          style: AppTextStyles.imFell(size: 11, color: c.dim, italic: true),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _confirmReset(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        final c = ctx.colors;
+        return AlertDialog(
+          backgroundColor: c.surface,
+          shape: RoundedRectangleBorder(
+            side: BorderSide(color: c.border),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          title: Text(
+            'Reset App?',
+            style: AppTextStyles.cinzelDeco(size: 15, color: c.text),
+          ),
+          content: Text(
+            'This will permanently delete all your events and sign you out '
+            'of Google Calendar. This cannot be undone.',
+            style: AppTextStyles.imFell(size: 13, color: c.text),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Cancel',
+                  style: AppTextStyles.cinzel(size: 12, color: c.muted)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('Reset',
+                  style: AppTextStyles.cinzel(
+                      size: 12, color: Colors.redAccent)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    final gcal  = context.read<GoogleCalendarService>();
+    final db    = context.read<AppDatabase>();
+    final moon  = context.read<MoonSettingsNotifier>();
+    final theme = context.read<ThemeNotifier>();
+
+    if (gcal.isSignedIn) await gcal.signOut();
+    await db.eventsDao.deleteAllEvents();
+    await moon.setShowFullMoons(true);
+    await moon.setShowNewMoons(false);
+    await theme.setLight(true);
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: context.colors.surface2,
+        content: Text(
+          'App reset. All data has been cleared.',
+          style: AppTextStyles.imFell(size: 13, color: context.colors.text),
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          side: BorderSide(color: context.colors.border),
+          borderRadius: BorderRadius.circular(6),
+        ),
+      ),
     );
   }
 }

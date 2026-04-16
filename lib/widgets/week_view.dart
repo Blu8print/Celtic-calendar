@@ -215,14 +215,14 @@ class _WeekViewState extends State<WeekView> {
               ),
             ),
 
-            // All-day strip
+            // All-day strip — one cell per day column so pills stay aligned
             if (allDayEvs.isNotEmpty)
               Container(
                 decoration: BoxDecoration(
                   color: c.surface2,
                   border: Border(bottom: BorderSide(color: c.border)),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -235,16 +235,34 @@ class _WeekViewState extends State<WeekView> {
                             textAlign: TextAlign.right),
                       ),
                     ),
-                    Expanded(
-                      child: Wrap(
-                        spacing: 4, runSpacing: 2,
-                        children: allDayEvs
-                            .map((e) => _EventPill(
-                                event: e,
-                                onTap: () => widget.onEventTap(e.gregorianDate)))
-                            .toList(),
-                      ),
-                    ),
+                    ...List.generate(nDays, (i) {
+                      final dayNum = startDay + i;
+                      final dayEvs = allDayEvs
+                          .where((e) => e.celticDay == dayNum)
+                          .toList();
+                      return Container(
+                        width: colW,
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            right: i < nDays - 1
+                                ? BorderSide(color: c.border, width: 0.5)
+                                : BorderSide.none,
+                          ),
+                        ),
+                        child: dayEvs.isEmpty
+                            ? const SizedBox(height: 20)
+                            : Wrap(
+                                spacing: 2, runSpacing: 2,
+                                children: dayEvs
+                                    .map((e) => _EventPill(
+                                        event: e,
+                                        onTap: () =>
+                                            widget.onEventTap(e.gregorianDate)))
+                                    .toList(),
+                              ),
+                      );
+                    }),
                   ],
                 ),
               ),

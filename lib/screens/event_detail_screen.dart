@@ -332,9 +332,13 @@ class _EventScreen extends StatelessWidget {
             TextButton(
               onPressed: () async {
                 Navigator.pop(ctx);
+                final gcalSvc = context.read<GoogleCalendarService>();
                 final all = await dao.getEventsByRecurrenceId(
                     existing!.recurrenceId!);
                 for (final e in all) {
+                  if (e.googleEventId != null) {
+                    await gcalSvc.deleteGoogleEvent(e.googleEventId!);
+                  }
                   await dao.deleteEvent(e.id);
                   await ReminderService.cancelForEvent(e.id);
                 }
@@ -348,6 +352,10 @@ class _EventScreen extends StatelessWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
+              final gid = existing!.googleEventId;
+              if (gid != null) {
+                await context.read<GoogleCalendarService>().deleteGoogleEvent(gid);
+              }
               await dao.deleteEvent(existing!.id);
               await ReminderService.cancelForEvent(existing!.id);
               if (context.mounted) await HomeWidgetService.updateTodayWidget(dao);
@@ -563,6 +571,7 @@ class _EventFormState extends State<_EventForm> {
   List<String>     _attendees       = [];
   String           _color           = '#c9a84c';
   bool             _saving          = false;
+  String?          _titleError;
   String           _recurrenceRule  = 'none';
   DateTime?        _recurrenceEnd;
   List<int>        _reminders       = [];
@@ -601,8 +610,8 @@ class _EventFormState extends State<_EventForm> {
       }
       _reminders = ReminderService.parseReminders(e.reminders);
     } else {
-      // Default: 30 min before when a start time is pre-filled, else none.
-      _reminders = widget.prefilledStartTime != null ? [30] : [];
+      // New events: 30 min before for timed events, 1 day before for all-day.
+      _reminders = (_startTime != null) ? [30] : [1440];
     }
   }
 
@@ -761,7 +770,15 @@ class _EventFormState extends State<_EventForm> {
         child: child!,
       ),
     );
-    if (picked != null && mounted) setState(() => _startTime = picked);
+    if (picked != null && mounted) {
+      setState(() {
+        _startTime = picked;
+        // Auto-swap: if reminders still match the all-day default, switch to timed default.
+        if (widget.existing == null && _reminders.length == 1 && _reminders[0] == 1440) {
+          _reminders = [30];
+        }
+      });
+    }
   }
 
   void _addAttendee() {
@@ -775,7 +792,10 @@ class _EventFormState extends State<_EventForm> {
   }
 
   Future<void> _save() async {
-    if (_titleCtrl.text.trim().isEmpty) return;
+    if (_titleCtrl.text.trim().isEmpty) {
+      setState(() => _titleError = 'Title is required');
+      return;
+    }
     setState(() => _saving = true);
 
     final celticDate = gregorianToCeltic(_selectedDate);
@@ -897,7 +917,9 @@ class _EventFormState extends State<_EventForm> {
     return Padding(
       padding: EdgeInsets.only(
         left: 16, right: 16, top: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        bottom: MediaQuery.of(context).viewInsets.bottom
+              + MediaQuery.of(context).padding.bottom
+              + 24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -931,9 +953,15 @@ class _EventFormState extends State<_EventForm> {
           TextField(
             controller: _titleCtrl,
             style: AppTextStyles.cinzel(size: 14, color: c.text),
-            decoration: const InputDecoration(labelText: 'Title'),
+            decoration: InputDecoration(
+              labelText: 'Title',
+              errorText: _titleError,
+            ),
             textCapitalization: TextCapitalization.sentences,
             autofocus: true,
+            onChanged: (_) {
+              if (_titleError != null) setState(() => _titleError = null);
+            },
           ),
           const SizedBox(height: 10),
 
@@ -952,7 +980,13 @@ class _EventFormState extends State<_EventForm> {
           _TimeRow(
             startTime: _startTime,
             onTap: () => _pickTime(context),
-            onClear: () => setState(() => _startTime = null),
+            onClear: () => setState(() {
+              _startTime = null;
+              // Auto-swap: if reminders still match the timed default, switch to all-day default.
+              if (widget.existing == null && _reminders.length == 1 && _reminders[0] == 30) {
+                _reminders = [1440];
+              }
+            }),
           ),
           if (_startTime != null) ...[
             const SizedBox(height: 8),

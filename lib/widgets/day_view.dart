@@ -188,21 +188,31 @@ class _DayViewState extends State<DayView> {
                 color: c.surface2,
                 border: Border(bottom: BorderSide(color: c.border)),
               ),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 8, vertical: 6),
+              padding: const EdgeInsets.symmetric(vertical: 6),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('All day',
-                      style: AppTextStyles.cinzel(size: 9, color: c.dim)),
-                  const SizedBox(width: 8),
+                  Container(
+                    width: _kGutterW,
+                    decoration: BoxDecoration(
+                      border: Border(
+                          right: BorderSide(color: c.border, width: 0.5)),
+                    ),
+                    padding: const EdgeInsets.only(right: 4, top: 1),
+                    child: Text('All\nday',
+                        style: AppTextStyles.cinzel(size: 7, color: c.dim),
+                        textAlign: TextAlign.right),
+                  ),
                   Expanded(
-                    child: (allDayEvs.isEmpty && widget.festivalsForDay.isEmpty)
-                        ? Text('\u2014',
-                            style: AppTextStyles.imFell(
-                                size: 12, color: c.dim, italic: true))
-                        : Wrap(
-                            spacing: 4, runSpacing: 2,
-                            children: [
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: (allDayEvs.isEmpty && widget.festivalsForDay.isEmpty)
+                          ? Text('\u2014',
+                              style: AppTextStyles.imFell(
+                                  size: 12, color: c.dim, italic: true))
+                          : Wrap(
+                              spacing: 4, runSpacing: 2,
+                              children: [
                               // Festival pills first (read-only)
                               ...widget.festivalsForDay.map((f) {
                                 final barColor = f.type == FestivalType.fire
@@ -248,6 +258,7 @@ class _DayViewState extends State<DayView> {
                               }),
                             ],
                           ),
+                    ),
                   ),
                 ],
               ),

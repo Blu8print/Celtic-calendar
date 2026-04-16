@@ -21,6 +21,7 @@ import 'package:uuid/uuid.dart';
 import '../db/database.dart';
 import '../db/events_dao.dart';
 import '../engine/celtic_calendar.dart';
+import 'reminder_service.dart';
 
 class GoogleCalendarService extends ChangeNotifier {
   // ── OAuth config ────────────────────────────────────────────────────────────
@@ -221,6 +222,20 @@ class GoogleCalendarService extends ChangeNotifier {
               .toList();
           if (att != null && att.isNotEmpty) attendees = jsonEncode(att);
 
+          // Popup reminders from Google Calendar.
+          String? remindersJson;
+          final overrides = gcEvent.reminders?.overrides;
+          if (gcEvent.reminders?.useDefault == false &&
+              overrides != null && overrides.isNotEmpty) {
+            final minutes = overrides
+                .where((r) => r.method == 'popup' && r.minutes != null)
+                .map((r) => r.minutes!)
+                .toList();
+            if (minutes.isNotEmpty) {
+              remindersJson = ReminderService.encodeReminders(minutes);
+            }
+          }
+
           final companion = EventsCompanion(
             id:               Value(_uuid.v4()),
             celticYear:       Value(celtic.celticYear),
@@ -238,9 +253,25 @@ class GoogleCalendarService extends ChangeNotifier {
             durationMinutes:  Value(durationMinutes),
             attendees:        Value(attendees),
             location:         Value(gcEvent.location),
+            reminders:        Value(remindersJson),
           );
 
           await _dao.upsertGoogleEvent(companion);
+
+          // Schedule local notifications for any pulled reminders.
+          if (remindersJson != null) {
+            final saved = await _dao.getEventByGoogleId(googleId);
+            if (saved != null) {
+              await ReminderService.scheduleForEventData(
+                eventId:       saved.id,
+                title:         saved.title,
+                gregorianDate: saved.gregorianDate,
+                startMinutes:  saved.startMinutes,
+                reminders:     ReminderService.parseReminders(remindersJson),
+              );
+            }
+          }
+
           count++;
         }
         pageToken = result.nextPageToken;
@@ -291,6 +322,17 @@ class GoogleCalendarService extends ChangeNotifier {
       }
     }
 
+    // Build reminder overrides from local reminders JSON.
+    final reminderMinutes = ReminderService.parseReminders(event.reminders);
+    final gcalReminders = reminderMinutes.isEmpty
+        ? gcal.EventReminders(useDefault: true)
+        : gcal.EventReminders(
+            useDefault: false,
+            overrides: reminderMinutes
+                .map((m) => gcal.EventReminder(method: 'popup', minutes: m))
+                .toList(),
+          );
+
     final gcalEvent = gcal.Event(
       summary:     event.title,
       description: event.description.isEmpty ? null : event.description,
@@ -299,6 +341,7 @@ class GoogleCalendarService extends ChangeNotifier {
       end:         endDt,
       colorId:     _hexToGcalColorId(event.color),
       attendees:   attendees,
+      reminders:   gcalReminders,
     );
 
     try {
@@ -372,6 +415,19 @@ class GoogleCalendarService extends ChangeNotifier {
     final unsynced = await _dao.getUnsyncedEvents();
     for (final event in unsynced) {
       await pushEvent(event, api);
+    }
+  }
+
+  /// Deletes a single event from Google Calendar. Best-effort: fails silently
+  /// if offline or if the event was already removed from Google (410 Gone).
+  Future<void> deleteGoogleEvent(String googleEventId) async {
+    if (!isSignedIn) return;
+    final api = await _calendarApi();
+    if (api == null) return;
+    try {
+      await api.events.delete('primary', googleEventId);
+    } catch (e) {
+      debugPrint('GCal delete ignored: $e');
     }
   }
 
