@@ -1,14 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Android Auto Backup rules (API 23+).
-  Backs up the Drift SQLite database so events survive device resets.
-  Excludes the secure-storage shared-preferences that hold OAuth tokens —
-  those must not be backed up or restored across devices.
+  No <include> tags — Android backs up everything by default (including the
+  Drift database). We only need to explicitly exclude the flutter_secure_storage
+  shared preferences that hold OAuth tokens, which must never be restored
+  across devices.
 -->
 <full-backup-content>
-    <!-- Include the Drift database -->
-    <include domain="database" path="roots_calendar.db"/>
-
-    <!-- Exclude OAuth tokens stored by flutter_secure_storage -->
     <exclude domain="sharedpref" path="FlutterSecureStorage"/>
 </full-backup-content>
