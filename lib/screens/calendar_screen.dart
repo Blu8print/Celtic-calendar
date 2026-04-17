@@ -314,7 +314,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       case CalendarView.schedule:
         return 'Schedule';
       case CalendarView.greg12:
-        return '$_gregYear';
+        return '$_gregYear'; // reached only if _curMonth != null (edge case during navigation)
     }
   }
 
@@ -323,6 +323,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
     if (_curMonth == null) return 'Between the worlds';
     final mo = celticMonths[_curMonth! - 1];
     return '${mo.tree} \u00b7 ${mo.keyword}';
+  }
+
+  void _saveGridScale(double s) {
+    setState(() => _timeGridScale = s);
+    SharedPreferences.getInstance()
+        .then((p) => p.setDouble('time_grid_scale', s));
   }
 
   // ─── Event helpers ────────────────────────────────────────────────────────────
@@ -534,11 +540,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     }),
                     onEventTap: _openDay,
                     initialScale: _timeGridScale,
-                    onScaleChanged: (s) {
-                      setState(() => _timeGridScale = s);
-                      SharedPreferences.getInstance()
-                          .then((p) => p.setDouble('time_grid_scale', s));
-                    },
+                    onScaleChanged: _saveGridScale,
                     onSlotLongPress: _openNewEventAt,
                   ),
                 );
@@ -557,11 +559,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     }),
                     onEventTap: _openDay,
                     initialScale: _timeGridScale,
-                    onScaleChanged: (s) {
-                      setState(() => _timeGridScale = s);
-                      SharedPreferences.getInstance()
-                          .then((p) => p.setDouble('time_grid_scale', s));
-                    },
+                    onScaleChanged: _saveGridScale,
                     onSlotLongPress: _openNewEventAt,
                   ),
                 );
@@ -583,11 +581,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         : [],
                     onOpenDay: _openDay,
                     initialScale: _timeGridScale,
-                    onScaleChanged: (s) {
-                      setState(() => _timeGridScale = s);
-                      SharedPreferences.getInstance()
-                          .then((p) => p.setDouble('time_grid_scale', s));
-                    },
+                    onScaleChanged: _saveGridScale,
                     onSlotLongPress: _openNewEventAt,
                   ),
                 );

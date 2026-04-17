@@ -203,10 +203,8 @@ class _CelticYearScope extends StatelessWidget {
     final c = context.colors;
     final now = DateTime.now();
     final year = celticYearOf(now);
-    final start = year;      // Dec 24 of this year
-    final end = year + 1;    // Dec 23 of next year
     return Text(
-      'Syncing Celtic year $year  (Dec 24 $start – Dec 23 $end)',
+      'Syncing Celtic year $year  (Dec 24 $year – Dec 23 ${year + 1})',
       style: AppTextStyles.imFell(size: 11, color: c.dim, italic: true),
     );
   }

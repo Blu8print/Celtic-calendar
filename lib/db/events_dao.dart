@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../engine/celtic_calendar.dart';
 import 'database.dart';
 
 part 'events_dao.g.dart';
@@ -148,13 +149,13 @@ class EventsDao extends DatabaseAccessor<AppDatabase> with _$EventsDaoMixin {
   /// Called after a pull to clean up events deleted in Google Calendar.
   Future<void> removeStaleGoogleEvents(
       int celticYear, Set<String> activeIds) async {
-    final yearStart = DateTime(celticYear, 12, 24);
-    final yearEnd = DateTime(celticYear + 1, 12, 23, 23, 59, 59);
+    final rangeStart = yearStart(celticYear);
+    final rangeEnd   = DateTime(celticYear + 1, 12, 23, 23, 59, 59);
     await (delete(events)
           ..where(
             (e) =>
                 e.googleEventId.isNotNull() &
-                e.gregorianDate.isBetweenValues(yearStart, yearEnd) &
+                e.gregorianDate.isBetweenValues(rangeStart, rangeEnd) &
                 e.googleEventId.isNotIn(activeIds),
           ))
         .go();
