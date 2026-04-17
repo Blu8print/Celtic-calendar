@@ -6,12 +6,9 @@ import 'package:intl/intl.dart';
 import '../db/database.dart';
 import '../engine/celtic_calendar.dart';
 import '../theme/app_theme.dart';
+import 'time_grid_shared.dart';
 
-const double _kSlotH         = 52.0;
-const int    _kHourStart      = 0;
-const int    _kHourEnd        = 24;
-const double _kGutterW        = 44.0;
-const double _kApproxHeaderH  = 50.0; // day-names header overhead for auto-fit
+const double _kApproxHeaderH = 50.0; // day-names header overhead for auto-fit
 
 /// N-day time grid view (nDays=7 for week, nDays=3 for 3-day).
 /// [startDay] is the first Celtic day shown (1-28).
@@ -81,10 +78,10 @@ class _WeekViewState extends State<WeekView> {
     if (_scale == 0.0 || !_scroll.hasClients) return;
     final now = DateTime.now();
     final h = now.hour + now.minute / 60.0;
-    if (h < _kHourStart) return;
-    final slotH = (_kSlotH * _scale).clamp(20.0, 200.0);
+    if (h < kHourStart) return;
+    final slotH = (kTimeSlotH * _scale).clamp(20.0, 200.0);
     _scroll.animateTo(
-      math.max(0, (h - _kHourStart) * slotH - 100),
+      math.max(0, (h - kHourStart) * slotH - 100),
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
     );
@@ -116,7 +113,7 @@ class _WeekViewState extends State<WeekView> {
     final timedEvs  = visEvs.where((e) => e.startMinutes != null).toList();
 
     return LayoutBuilder(builder: (context, constraints) {
-      final totalColW = constraints.maxWidth - _kGutterW;
+      final totalColW = constraints.maxWidth - kTimeGutterW;
       final colW      = totalColW / nDays;
 
       // Auto-fit: on first build with no saved scale, compute zoom so 07:00–23:00
@@ -125,7 +122,7 @@ class _WeekViewState extends State<WeekView> {
       if (_scale == 0.0 && !_fittingScheduled) {
         _fittingScheduled = true;
         final gridH = constraints.maxHeight - _kApproxHeaderH;
-        effectiveScale = (gridH / (16 * _kSlotH)).clamp(0.4, 4.0);
+        effectiveScale = (gridH / (16 * kTimeSlotH)).clamp(0.4, 4.0);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           setState(() => _scale = effectiveScale);
@@ -134,8 +131,8 @@ class _WeekViewState extends State<WeekView> {
         });
       }
 
-      final slotH  = (_kSlotH * effectiveScale).clamp(20.0, 200.0);
-      final hours  = List.generate(_kHourEnd - _kHourStart, (i) => _kHourStart + i);
+      final slotH  = (kTimeSlotH * effectiveScale).clamp(20.0, 200.0);
+      final hours  = List.generate(kHourEnd - kHourStart, (i) => kHourStart + i);
       final totalH = hours.length * slotH;
 
       return Container(
@@ -157,7 +154,7 @@ class _WeekViewState extends State<WeekView> {
               child: Row(
                 children: [
                   SizedBox(
-                    width: _kGutterW,
+                    width: kTimeGutterW,
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border(right: BorderSide(color: c.border, width: 0.5)),
@@ -227,7 +224,7 @@ class _WeekViewState extends State<WeekView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(
-                      width: _kGutterW,
+                      width: kTimeGutterW,
                       child: Padding(
                         padding: const EdgeInsets.only(right: 4, top: 2),
                         child: Text('All\nday',
@@ -279,7 +276,7 @@ class _WeekViewState extends State<WeekView> {
                   if (_pointers < 2) return;
                   final newScale = (_baseScale * d.scale).clamp(0.4, 4.0);
                   if (newScale == _scale) return;
-                  final oldTotal = _kSlotH * _scale * (_kHourEnd - _kHourStart);
+                  final oldTotal = kTimeSlotH * _scale * (kHourEnd - kHourStart);
                   final ratio = _scroll.hasClients && oldTotal > 0
                       ? _scroll.offset / oldTotal
                       : 0.0;
@@ -287,20 +284,20 @@ class _WeekViewState extends State<WeekView> {
                   widget.onScaleChanged?.call(newScale);
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (!_scroll.hasClients) return;
-                    final newTotal = _kSlotH * _scale * (_kHourEnd - _kHourStart);
+                    final newTotal = kTimeSlotH * _scale * (kHourEnd - kHourStart);
                     _scroll.jumpTo((ratio * newTotal)
                         .clamp(0, _scroll.position.maxScrollExtent));
                   });
                 },
                 onLongPressStart: widget.onSlotLongPress == null ? null : (details) {
                   final dx = details.localPosition.dx;
-                  if (dx < _kGutterW) return;
+                  if (dx < kTimeGutterW) return;
                   final contentY = details.localPosition.dy +
                       (_scroll.hasClients ? _scroll.offset : 0);
-                  final hour = (_kHourStart + contentY / slotH)
+                  final hour = (kHourStart + contentY / slotH)
                       .floor()
-                      .clamp(_kHourStart, _kHourEnd - 1);
-                  final dayIdx = ((dx - _kGutterW) / colW)
+                      .clamp(kHourStart, kHourEnd - 1);
+                  final dayIdx = ((dx - kTimeGutterW) / colW)
                       .floor()
                       .clamp(0, widget.nDays - 1);
                   final celticDay = widget.startDay + dayIdx;
@@ -321,7 +318,7 @@ class _WeekViewState extends State<WeekView> {
                     children: [
                       // Time gutter
                       Container(
-                        width: _kGutterW,
+                        width: kTimeGutterW,
                         decoration: BoxDecoration(
                           color: c.surface2,
                           border: Border(
@@ -386,7 +383,7 @@ class _WeekViewState extends State<WeekView> {
                                 return const SizedBox.shrink();
                               }
                               final top = e.startMinutes! / 60.0 * slotH -
-                                  _kHourStart * slotH;
+                                  kHourStart * slotH;
                               final height = math.max(
                                   (e.durationMinutes ?? 60) / 60.0 * slotH,
                                   18.0);
@@ -406,13 +403,13 @@ class _WeekViewState extends State<WeekView> {
                             }),
                             // Now line
                             if (todayInView &&
-                                nowH >= _kHourStart &&
-                                nowH <= _kHourEnd)
+                                nowH >= kHourStart &&
+                                nowH <= kHourEnd)
                               Positioned(
-                                top: (nowH - _kHourStart) * slotH - 1,
+                                top: (nowH - kHourStart) * slotH - 1,
                                 left: (todayC.day! - startDay) * colW,
                                 width: colW,
-                                child: const _NowLine(),
+                                child: const TimeGridNowLine(),
                               ),
                           ],
                         ),
@@ -440,7 +437,7 @@ class _EventBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c    = context.colors;
-    final col  = _parseHex(event.color);
+    final col  = parseHexColor(event.color);
     final bg   = col.withValues(alpha: 0.15);
     final sMin = event.startMinutes ?? 0;
     final eMin = sMin + (event.durationMinutes ?? 60);
@@ -484,7 +481,7 @@ class _EventPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final col = _parseHex(event.color);
+    final col = parseHexColor(event.color);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -502,28 +499,3 @@ class _EventPill extends StatelessWidget {
   }
 }
 
-class _NowLine extends StatelessWidget {
-  const _NowLine();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 8, height: 8,
-          decoration: const BoxDecoration(
-              color: Color(0xFFcc2020), shape: BoxShape.circle),
-        ),
-        Expanded(child: Container(height: 2, color: const Color(0xFFcc2020))),
-      ],
-    );
-  }
-}
-
-Color _parseHex(String hex) {
-  try {
-    return Color(int.parse('FF${hex.replaceAll('#', '')}', radix: 16));
-  } catch (_) {
-    return AppColors.dark.gold;
-  }
-}

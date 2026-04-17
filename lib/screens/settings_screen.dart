@@ -70,27 +70,7 @@ class _GoogleAccountSection extends StatelessWidget {
               ),
               if (gcal.lastError != null) ...[
                 const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.redAccent.withValues(alpha: 0.08),
-                    border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.error_outline, size: 14, color: Colors.redAccent),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          gcal.lastError!,
-                          style: AppTextStyles.imFell(size: 11, color: Colors.redAccent),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _GcalErrorBox(message: gcal.lastError!),
               ],
             ] else ...[
               _InfoRow(label: 'Signed in as', value: gcal.userEmail ?? ''),
@@ -134,27 +114,7 @@ class _GoogleAccountSection extends StatelessWidget {
 
               if (gcal.lastError != null) ...[
                 const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.redAccent.withValues(alpha: 0.08),
-                    border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(Icons.error_outline, size: 14, color: Colors.redAccent),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          gcal.lastError!,
-                          style: AppTextStyles.imFell(size: 11, color: Colors.redAccent),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _GcalErrorBox(message: gcal.lastError!),
               ],
 
               const SizedBox(height: 14),
@@ -553,6 +513,38 @@ class _InfoRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─── Gcal error box ───────────────────────────────────────────────────────────
+
+class _GcalErrorBox extends StatelessWidget {
+  final String message;
+  const _GcalErrorBox({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.redAccent.withValues(alpha: 0.08),
+        border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.error_outline, size: 14, color: Colors.redAccent),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: AppTextStyles.imFell(size: 11, color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

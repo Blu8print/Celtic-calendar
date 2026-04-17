@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../db/database.dart';
 import '../theme/app_theme.dart';
+import 'time_grid_shared.dart';
 
 /// Displays all 12 Gregorian months for [gregYear] in a scrollable grid,
 /// styled to match the dark/light forest theme. Each day cell shows a
@@ -32,12 +33,7 @@ class GregorianYearView extends StatelessWidget {
         e.gregorianDate.day,
       );
       if (!eventMap.containsKey(key)) {
-        try {
-          eventMap[key] =
-              Color(int.parse('FF${e.color.replaceAll('#', '')}', radix: 16));
-        } catch (_) {
-          eventMap[key] = AppColors.dark.gold;
-        }
+        eventMap[key] = parseHexColor(e.color);
       }
     }
 

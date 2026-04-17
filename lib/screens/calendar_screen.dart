@@ -17,6 +17,7 @@ import '../theme/app_theme.dart';
 import '../theme/moon_settings_notifier.dart';
 import '../widgets/day_grid.dart';
 import '../widgets/day_view.dart';
+import '../widgets/time_grid_shared.dart';
 import '../widgets/gregorian_year_view.dart';
 import '../widgets/schedule_view.dart';
 import '../widgets/week_view.dart';
@@ -331,37 +332,28 @@ class _CalendarScreenState extends State<CalendarScreen> {
     for (final e in evs) {
       final day = e.celticDay;
       if (day != null && !map.containsKey(day)) {
-        try {
-          map[day] = Color(int.parse('FF${e.color.replaceAll('#', '')}', radix: 16));
-        } catch (_) {
-          map[day] = AppColors.dark.gold;
-        }
+        map[day] = parseHexColor(e.color);
       }
     }
     return map;
   }
 
-  /// Festival dot colour per Celtic day for the given month.
-  Map<int, Color> _daysWithFestivals(int celticYear, int? month) {
-    if (month == null) return {};
-    final map = <int, Color>{};
+  /// Festivals for [month], plus a day→colour dot map — computed in one pass.
+  ({List<CelticFestival> list, Map<int, Color> dots})
+      _festivalsForMonth(int celticYear, int? month) {
+    if (month == null) return (list: [], dots: {});
+    final list = <CelticFestival>[];
+    final dots = <int, Color>{};
     for (final f in CelticFestivalEngine.festivalsForYear(celticYear)) {
       final cd = gregorianToCeltic(f.gregorianDate);
       if (cd.month == month && cd.day != null) {
-        map[cd.day!] = f.type == FestivalType.fire
+        list.add(f);
+        dots[cd.day!] = f.type == FestivalType.fire
             ? const Color(0xFFb07800)
             : const Color(0xFF4a3080);
       }
     }
-    return map;
-  }
-
-  /// Festivals that fall in the given Celtic month.
-  List<CelticFestival> _festivalsForMonth(int celticYear, int? month) {
-    if (month == null) return [];
-    return CelticFestivalEngine.festivalsForYear(celticYear)
-        .where((f) => gregorianToCeltic(f.gregorianDate).month == month)
-        .toList();
+    return (list: list, dots: dots);
   }
 
   /// Moon symbols per Celtic day, filtered by user settings.
@@ -584,7 +576,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                         .where((e) => e.celticDay == _curDay)
                         .toList(),
                     festivalsForDay: eventsReady
-                        ? _festivalsForMonth(_curYear, _curMonth)
+                        ? _festivalsForMonth(_curYear, _curMonth).list
                             .where((f) =>
                                 gregorianToCeltic(f.gregorianDate).day == _curDay)
                             .toList()
@@ -613,18 +605,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 if (_curMonth == null)
                   YearDayCard(celticYear: _curYear, onTap: _openYearDay)
                 else
-                  DayGrid(
+                  Builder(builder: (context) {
+                    final festivals = eventsReady
+                        ? _festivalsForMonth(_curYear, _curMonth)
+                        : (list: <CelticFestival>[], dots: <int, Color>{});
+                    return DayGrid(
                     celticYear: _curYear,
                     month: _curMonth!,
                     daysWithEvents:     _daysWithEvents(allEvents),
-                    daysWithFestivals:  eventsReady ? _daysWithFestivals(_curYear, _curMonth) : {},
+                    daysWithFestivals:  festivals.dots,
                     moonSymbols:        _moonSymbols(_curYear, _curMonth!, moonSettings),
                     events:             allEvents,
-                    festivalsThisMonth: eventsReady ? _festivalsForMonth(_curYear, _curMonth) : [],
+                    festivalsThisMonth: festivals.list,
                     onDayTap:           _openDay,
                     onDayLongPress:     (d) => _openDay(d, addEvent: true),
                     onEventTap:         _openDay,
-                  ),
+                  );
+                  }),
               ],
             ),
           );
