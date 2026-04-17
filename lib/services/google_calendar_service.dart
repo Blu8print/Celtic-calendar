@@ -50,11 +50,15 @@ class GoogleCalendarService extends ChangeNotifier {
   String?   _accessToken;
   String?   _refreshToken;
   String?   _userEmail;
+  bool      _isSigningIn = false;
   bool      _isSyncing = false;
   String?   _lastError;
   DateTime? _lastSyncTime;
   int       _lastSyncCount = 0;
   bool?     _lastSyncSuccess;
+  /// Cached popup reminders from calendarList.get('primary').defaultReminders.
+  /// Populated at the start of each pullYear(); empty until first sync.
+  List<int> _calendarDefaultMinutes = const [];
 
   GoogleCalendarService(this._dao) {
     _loadStoredTokens();
@@ -69,6 +73,7 @@ class GoogleCalendarService extends ChangeNotifier {
   // ─── State accessors ───────────────────────────────────────────────────────
 
   bool      get isSignedIn      => _accessToken != null;
+  bool      get isSigningIn     => _isSigningIn;
   bool      get isSyncing       => _isSyncing;
   String?   get lastError       => _lastError;
   String?   get userEmail       => _userEmail;
@@ -88,8 +93,10 @@ class GoogleCalendarService extends ChangeNotifier {
   /// Opens the system browser (Chrome Custom Tab) for Google sign-in.
   /// No SHA-1, no google-services.json — just a standard web OAuth flow.
   Future<void> signIn() async {
+    _isSigningIn = true;
+    _lastError = null;
+    notifyListeners();
     try {
-      _lastError = null;
       final result = await _appAuth.authorizeAndExchangeCode(
         AuthorizationTokenRequest(
           _clientId,
@@ -110,10 +117,11 @@ class GoogleCalendarService extends ChangeNotifier {
         await _storage.write(key: _kUserEmail, value: _userEmail);
       }
 
-      notifyListeners();
       syncYear(celticYearOf(DateTime.now())); // auto-sync on sign-in
     } catch (e) {
       _lastError = _humaniseError(e.toString());
+    } finally {
+      _isSigningIn = false;
       notifyListeners();
     }
   }
@@ -166,6 +174,24 @@ class GoogleCalendarService extends ChangeNotifier {
     }
   }
 
+  // ─── Calendar defaults ─────────────────────────────────────────────────────
+
+  /// Fetches the user's default popup reminders from the 'primary' calendar.
+  /// Stores them in [_calendarDefaultMinutes]. Fails silently.
+  Future<void> _fetchCalendarDefaults(gcal.CalendarApi api) async {
+    try {
+      final entry = await api.calendarList.get('primary');
+      final defaults = entry.defaultReminders ?? const [];
+      _calendarDefaultMinutes = defaults
+          .where((r) => r.method == 'popup' && r.minutes != null)
+          .map((r) => r.minutes!)
+          .toList();
+    } catch (e) {
+      debugPrint('Could not fetch calendar default reminders: $e');
+      // Keep existing cached value (or empty on first run).
+    }
+  }
+
   // ─── Pull from Google Calendar ─────────────────────────────────────────────
 
   /// Fetches all Google Calendar events for the given Celtic year, upserts
@@ -174,6 +200,8 @@ class GoogleCalendarService extends ChangeNotifier {
   Future<int> pullYear(int celticYear, [gcal.CalendarApi? api]) async {
     api ??= await _calendarApi();
     if (api == null) return 0;
+
+    await _fetchCalendarDefaults(api);
 
     final timeMin = DateTime(celticYear, 12, 24).toUtc();
     final timeMax = DateTime(celticYear + 1, 12, 24).toUtc();
@@ -224,9 +252,10 @@ class GoogleCalendarService extends ChangeNotifier {
 
           // Popup reminders from Google Calendar.
           String? remindersJson;
-          final overrides = gcEvent.reminders?.overrides;
-          if (gcEvent.reminders?.useDefault == false &&
-              overrides != null && overrides.isNotEmpty) {
+          final useDefault = gcEvent.reminders?.useDefault ?? true;
+          final overrides  = gcEvent.reminders?.overrides;
+          if (!useDefault && overrides != null && overrides.isNotEmpty) {
+            // Explicit overrides — use them directly.
             final minutes = overrides
                 .where((r) => r.method == 'popup' && r.minutes != null)
                 .map((r) => r.minutes!)
@@ -234,6 +263,12 @@ class GoogleCalendarService extends ChangeNotifier {
             if (minutes.isNotEmpty) {
               remindersJson = ReminderService.encodeReminders(minutes);
             }
+          } else if (useDefault) {
+            // Apply calendar defaults (or hard fallback if defaults are unknown).
+            final minutes = _calendarDefaultMinutes.isNotEmpty
+                ? _calendarDefaultMinutes
+                : (startMinutes != null ? [30] : [1440]);
+            remindersJson = ReminderService.encodeReminders(minutes);
           }
 
           final companion = EventsCompanion(
@@ -323,8 +358,13 @@ class GoogleCalendarService extends ChangeNotifier {
     }
 
     // Build reminder overrides from local reminders JSON.
+    // If local reminders match the calendar's defaults (or are empty),
+    // send useDefault:true so Google Calendar displays them as default reminders.
     final reminderMinutes = ReminderService.parseReminders(event.reminders);
-    final gcalReminders = reminderMinutes.isEmpty
+    final matchesDefaults = reminderMinutes.isEmpty ||
+        (reminderMinutes.length == _calendarDefaultMinutes.length &&
+         ({...reminderMinutes}..removeAll(_calendarDefaultMinutes)).isEmpty);
+    final gcalReminders = matchesDefaults
         ? gcal.EventReminders(useDefault: true)
         : gcal.EventReminders(
             useDefault: false,

@@ -64,9 +64,20 @@ class _GoogleAccountSection extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               ElevatedButton.icon(
-                onPressed: gcal.signIn,
-                icon: const Icon(Icons.login, size: 16),
-                label: const Text('Sign in with Google'),
+                onPressed: gcal.isSigningIn ? null : gcal.signIn,
+                icon: gcal.isSigningIn
+                    ? SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.5,
+                          color: c.gold,
+                        ),
+                      )
+                    : const Icon(Icons.login, size: 16),
+                label: Text(
+                  gcal.isSigningIn ? 'Signing in…' : 'Sign in with Google',
+                ),
               ),
               if (gcal.lastError != null) ...[
                 const SizedBox(height: 10),
@@ -88,22 +99,24 @@ class _GoogleAccountSection extends StatelessWidget {
 
               // ── Sync action ──────────────────────────────────────────────
               if (gcal.isSyncing)
-                Row(
-                  children: [
-                    SizedBox(
-                      height: 14,
-                      width: 14,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 1.5,
-                        color: c.gold,
+                MergeSemantics(
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        height: 14,
+                        width: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.5,
+                          color: c.gold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Syncing with Google Calendar…',
-                      style: AppTextStyles.cinzel(size: 12, color: c.muted),
-                    ),
-                  ],
+                      const SizedBox(width: 10),
+                      Text(
+                        'Syncing with Google Calendar…',
+                        style: AppTextStyles.cinzel(size: 12, color: c.muted),
+                      ),
+                    ],
+                  ),
                 )
               else
                 ElevatedButton.icon(
@@ -176,10 +189,12 @@ class _SyncStatusBadge extends StatelessWidget {
 
     return Row(
       children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+        ExcludeSemantics(
+          child: Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+          ),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -204,8 +219,8 @@ class _CelticYearScope extends StatelessWidget {
     final now = DateTime.now();
     final year = celticYearOf(now);
     return Text(
-      'Syncing Celtic year $year  (Dec 24 $year – Dec 23 ${year + 1})',
-      style: AppTextStyles.imFell(size: 11, color: c.dim, italic: true),
+      'Syncing Celtic year $year (Dec 24 $year – Dec 23 ${year + 1})',
+      style: AppTextStyles.imFell(size: 12, color: c.dim, italic: true),
     );
   }
 }
@@ -245,7 +260,7 @@ class _AppearanceSection extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           'Choose the look that suits you best.',
-          style: AppTextStyles.imFell(size: 11, color: c.dim, italic: true),
+          style: AppTextStyles.imFell(size: 12, color: c.dim, italic: true),
         ),
       ],
     );
@@ -267,25 +282,34 @@ class _ThemeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? c.surface2 : c.surface,
-          border: Border.all(color: isSelected ? c.gold : c.border),
+    return Semantics(
+      button: true,
+      label: label,
+      selected: isSelected,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(6),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: isSelected ? c.gold : c.dim),
-            const SizedBox(width: 6),
-            Text(label,
-                style: AppTextStyles.cinzel(
-                    size: 12, color: isSelected ? c.gold : c.muted)),
-          ],
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: isSelected ? c.surface2 : c.surface,
+              border: Border.all(color: isSelected ? c.gold : c.border),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 16, color: isSelected ? c.gold : c.dim),
+                const SizedBox(width: 6),
+                Text(label,
+                    style: AppTextStyles.cinzel(
+                        size: 12, color: isSelected ? c.gold : c.muted)),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -306,7 +330,7 @@ class _CalendarSystemSection extends StatelessWidget {
         _SystemChip(
           label: 'Celtic Tree (Beth-Luis-Nion)',
           isSelected: true,
-          onTap: () {},
+          onTap: () {},  // no-op: _SystemChip suppresses tap when isSelected
         ),
         const SizedBox(height: 6),
         _SystemChip(
@@ -323,7 +347,7 @@ class _CalendarSystemSection extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           'Additional calendar systems coming in a future release.',
-          style: AppTextStyles.imFell(size: 11, color: c.dim, italic: true),
+          style: AppTextStyles.imFell(size: 12, color: c.dim, italic: true),
         ),
       ],
     );
@@ -362,34 +386,43 @@ class _SystemChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? c.surface2 : c.surface,
-          border: Border.all(
-            color: isSelected ? c.gold : c.border,
-          ),
+    return Semantics(
+      button: true,
+      label: label,
+      selected: isSelected,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isSelected ? null : onTap,
           borderRadius: BorderRadius.circular(6),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-              size: 16,
-              color: isSelected ? c.gold : c.dim,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: AppTextStyles.cinzel(
-                size: 13,
-                color: isSelected ? c.gold : c.muted,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            decoration: BoxDecoration(
+              color: isSelected ? c.surface2 : c.surface,
+              border: Border.all(
+                color: isSelected ? c.gold : c.border,
               ),
+              borderRadius: BorderRadius.circular(6),
             ),
-          ],
+            child: Row(
+              children: [
+                Icon(
+                  isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                  size: 16,
+                  color: isSelected ? c.gold : c.dim,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  label,
+                  style: AppTextStyles.cinzel(
+                    size: 13,
+                    color: isSelected ? c.gold : c.muted,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -413,7 +446,7 @@ class _Section extends StatelessWidget {
         Text(
           title.toUpperCase(),
           style: AppTextStyles.cinzel(
-            size: 11,
+            size: 12,
             color: c.muted,
             letterSpacing: 2,
           ),
@@ -473,19 +506,23 @@ class _ToggleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = colors;
-    return Row(
-      children: [
-        Expanded(
-          child: Text(label,
-              style: AppTextStyles.cinzel(size: 12, color: c.text)),
-        ),
-        Switch(
-          value: value,
-          onChanged: onChanged,
-          activeThumbColor: c.muted,
-          inactiveTrackColor: c.border,
-        ),
-      ],
+    return MergeSemantics(
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label,
+                style: AppTextStyles.cinzel(size: 12, color: c.text)),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: c.gold,
+            activeTrackColor: c.gold.withValues(alpha: 0.35),
+            inactiveThumbColor: c.dim,
+            inactiveTrackColor: c.border,
+          ),
+        ],
+      ),
     );
   }
 }
@@ -538,7 +575,7 @@ class _GcalErrorBox extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: AppTextStyles.imFell(size: 11, color: Colors.redAccent),
+              style: AppTextStyles.imFell(size: 13, color: Colors.redAccent),
             ),
           ),
         ],
@@ -574,7 +611,7 @@ class _DangerZoneSection extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           'Deletes all events and resets all settings. Cannot be undone.',
-          style: AppTextStyles.imFell(size: 11, color: c.dim, italic: true),
+          style: AppTextStyles.imFell(size: 12, color: c.dim, italic: true),
         ),
       ],
     );
