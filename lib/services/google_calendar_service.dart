@@ -39,6 +39,7 @@ class GoogleCalendarService extends ChangeNotifier {
   static const _kUserEmail    = 'gcal_user_email';
   static const _kLastSyncTime = 'gcal_last_sync_time';
   static const _syncCooldown  = Duration(minutes: 15);
+  static const _maxRetryDelay = Duration(minutes: 5);
 
   final EventsDao _dao;
   final _uuid      = const Uuid();
@@ -56,6 +57,7 @@ class GoogleCalendarService extends ChangeNotifier {
   DateTime? _lastSyncTime;
   int       _lastSyncCount = 0;
   bool?     _lastSyncSuccess;
+  int       _retryCount = 0;
   /// Cached popup reminders from calendarList.get('primary').defaultReminders.
   /// Populated at the start of each pullYear(); empty until first sync.
   List<int> _calendarDefaultMinutes = const [];
@@ -81,11 +83,13 @@ class GoogleCalendarService extends ChangeNotifier {
   int       get lastSyncCount   => _lastSyncCount;
   bool?     get lastSyncSuccess => _lastSyncSuccess;
 
-  /// True when the last error was a network/timeout issue (not actionable by user).
+  /// True when the last error is transient and a retry makes sense.
   bool get lastErrorIsNetworkError {
     final e = _lastError;
     if (e == null) return false;
-    return e.contains('No internet') || e.contains('timed out');
+    return e.contains('No internet') ||
+        e.contains('timed out') ||
+        e.contains('rate limit');
   }
 
   // ─── Auth ──────────────────────────────────────────────────────────────────
@@ -160,8 +164,20 @@ class GoogleCalendarService extends ChangeNotifier {
           _accessToken = refreshed.accessToken;
           await _storage.write(key: _kAccessToken, value: _accessToken);
         }
-      } catch (_) {
-        // Ignore — try with existing token.
+      } catch (e) {
+        debugPrint('Token refresh failed: $e');
+        // If Google explicitly rejected the refresh token (revoked / expired),
+        // proactively sign out so the user sees the sign-in prompt rather than
+        // hitting repeated 401 errors on every subsequent API call.
+        final msg = e.toString().toLowerCase();
+        if (msg.contains('invalid_grant') ||
+            msg.contains('token has been expired') ||
+            msg.contains('revoked')) {
+          await signOut();
+          return null;
+        }
+        // For transient errors (network, timeout) fall through and try the
+        // existing access token — it may still be valid.
       }
     }
 
@@ -415,6 +431,7 @@ class GoogleCalendarService extends ChangeNotifier {
         await syncPendingEvents(api);
       }
       _lastSyncSuccess = _lastError == null;
+      if (_lastSyncSuccess == true) _retryCount = 0;
     } catch (e) {
       _lastError = _humaniseError(e.toString());
       _lastSyncSuccess = false;
@@ -429,11 +446,18 @@ class GoogleCalendarService extends ChangeNotifier {
       notifyListeners();
     }
 
-    // If we failed due to no connectivity, retry once after 10 seconds.
+    // Exponential backoff for transient errors (network down, rate-limited).
+    // Delay: 10 s, 20 s, 40 s … capped at _maxRetryDelay.
     if (lastErrorIsNetworkError) {
-      Future.delayed(const Duration(seconds: 10), () {
+      _retryCount++;
+      final delay = _maxRetryDelay < Duration(seconds: 10 * (1 << _retryCount))
+          ? _maxRetryDelay
+          : Duration(seconds: 10 * (1 << _retryCount));
+      Future.delayed(delay, () {
         if (isSignedIn && !_isSyncing) syncYear(celticYear);
       });
+    } else {
+      _retryCount = 0;
     }
   }
 
@@ -513,6 +537,11 @@ class GoogleCalendarService extends ChangeNotifier {
     if (lower.contains('401') || lower.contains('invalid_token') ||
         lower.contains('unauthenticated')) {
       return 'Session expired. Please sign out and sign in again.';
+    }
+    if (lower.contains('429') || lower.contains('rate limit') ||
+        lower.contains('too many requests') || lower.contains('usageratelimitexceeded') ||
+        lower.contains('ratelimitexceeded')) {
+      return 'Google Calendar rate limit reached. Will retry automatically.';
     }
     if (lower.contains('socketexception') || lower.contains('network') ||
         lower.contains('host lookup') || lower.contains('connection refused')) {

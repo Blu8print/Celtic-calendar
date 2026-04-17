@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ data extraction rules (cloud backup & device-to-device transfer).
+  Mirrors the backup_rules.xml policy for modern Android backup APIs.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="database" path="roots_calendar.db"/>
+        <exclude domain="sharedpref" path="FlutterSecureStorage"/>
+    </cloud-backup>
+    <device-transfer>
+        <include domain="database" path="roots_calendar.db"/>
+        <exclude domain="sharedpref" path="FlutterSecureStorage"/>
+    </device-transfer>
+</data-extraction-rules>

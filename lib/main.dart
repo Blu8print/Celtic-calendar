@@ -1,3 +1,7 @@
+import 'dart:ui' show PlatformDispatcher;
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -25,13 +29,43 @@ void _widgetUpdateDispatcher() {
       final db = AppDatabase();
       await HomeWidgetService.updateTodayWidget(db.eventsDao);
       await db.close();
-    } catch (_) {}
+    } catch (e, stack) {
+      debugPrint('Widget update failed: $e\n$stack');
+    }
     return true;
   });
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialise Firebase (requires google-services.json on Android and
+  // GoogleService-Info.plist on iOS — see GOOGLE_SETUP.md).
+  // The app remains functional without it; crash reports just won't be sent.
+  bool firebaseReady = false;
+  try {
+    await Firebase.initializeApp();
+    firebaseReady = true;
+  } catch (e) {
+    debugPrint('Firebase not configured — crash reporting disabled: $e');
+  }
+
+  // Catch Flutter framework errors (widget build failures, rendering errors).
+  FlutterError.onError = (details) {
+    FlutterError.dumpErrorToConsole(details);
+    if (firebaseReady) {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    }
+  };
+
+  // Catch async errors that escape all Zone boundaries (e.g. in Future callbacks).
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('Unhandled platform error: $error\n$stack');
+    if (firebaseReady) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    }
+    return true;
+  };
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   await ReminderService.init();
   await ReminderService.requestPermissions();

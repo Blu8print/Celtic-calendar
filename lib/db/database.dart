@@ -79,6 +79,10 @@ class Events extends Table {
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  /// Named constructor for unit tests — accepts any [QueryExecutor] so tests
+  /// can pass an in-memory database without touching the filesystem.
+  AppDatabase.forTesting(QueryExecutor e) : super(e);
+
   @override
   int get schemaVersion => 4;
 
