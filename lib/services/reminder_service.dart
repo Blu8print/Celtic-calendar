@@ -14,6 +14,9 @@ class ReminderService {
   static const _channelId   = 'roots_reminders';
   static const _channelName = 'Event Reminders';
 
+  /// Called when the user taps a notification. Payload is the ISO-8601 date string.
+  static void Function(String payload)? onNotificationTap;
+
   // ── Init ──────────────────────────────────────────────────────────────────
 
   static Future<void> init() async {
@@ -32,8 +35,24 @@ class ReminderService {
       requestSoundPermission: false,
     );
     await _plugin.initialize(
-      const InitializationSettings(android: androidSettings, iOS: iosSettings),
+      settings: InitializationSettings(android: androidSettings, iOS: iosSettings),
+      onDidReceiveNotificationResponse: (response) {
+        final payload = response.payload;
+        if (payload != null) onNotificationTap?.call(payload);
+      },
     );
+  }
+
+  /// Returns the ISO-8601 date string from the notification that launched the
+  /// app, or null if the app was not launched from a notification.
+  static Future<String?> getLaunchPayload() async {
+    try {
+      final details = await _plugin.getNotificationAppLaunchDetails();
+      if (details?.didNotificationLaunchApp == true) {
+        return details?.notificationResponse?.payload;
+      }
+    } catch (_) {}
+    return null;
   }
 
   static Future<void> requestPermissions() async {
@@ -88,11 +107,11 @@ class ReminderService {
 
       try {
         await _plugin.zonedSchedule(
-          _id(eventId, i),
-          title,
-          body,
-          fireTz,
-          NotificationDetails(
+          id: _id(eventId, i),
+          title: title,
+          body: body,
+          scheduledDate: fireTz,
+          notificationDetails: NotificationDetails(
             android: AndroidNotificationDetails(
               _channelId,
               _channelName,
@@ -101,9 +120,8 @@ class ReminderService {
             ),
             iOS: const DarwinNotificationDetails(),
           ),
+          payload: gregorianDate.toIso8601String(),
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
         );
       } catch (e) {
         debugPrint('ReminderService.schedule [$i]: $e');
@@ -113,14 +131,17 @@ class ReminderService {
 
   static Future<void> cancelForEvent(String eventId) async {
     for (var i = 0; i < 5; i++) {
-      await _plugin.cancel(_id(eventId, i));
+      await _plugin.cancel(id: _id(eventId, i));
     }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  static int _id(String eventId, int idx) =>
-      (eventId.hashCode.abs() % 1000000) * 10 + idx;
+  static int _id(String eventId, int idx) {
+    // >>> 1 (unsigned right shift) makes hashCode non-negative without the
+    // overflow risk of .abs() when hashCode == int.minValue.
+    return ((eventId.hashCode >>> 1) % 100000) * 10 + idx;
+  }
 
   static String _offsetLabel(int minutes) {
     if (minutes < 60)   return '$minutes min';

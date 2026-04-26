@@ -58,6 +58,8 @@ class GoogleCalendarService extends ChangeNotifier {
   int       _lastSyncCount = 0;
   bool?     _lastSyncSuccess;
   int       _retryCount = 0;
+  int       _pushFailCount = 0;
+  DateTime? _tokenRefreshedAt;
   /// Cached popup reminders from calendarList.get('primary').defaultReminders.
   /// Populated at the start of each pullYear(); empty until first sync.
   List<int> _calendarDefaultMinutes = const [];
@@ -74,14 +76,16 @@ class GoogleCalendarService extends ChangeNotifier {
 
   // ─── State accessors ───────────────────────────────────────────────────────
 
-  bool      get isSignedIn      => _accessToken != null;
-  bool      get isSigningIn     => _isSigningIn;
-  bool      get isSyncing       => _isSyncing;
-  String?   get lastError       => _lastError;
-  String?   get userEmail       => _userEmail;
-  DateTime? get lastSyncTime    => _lastSyncTime;
-  int       get lastSyncCount   => _lastSyncCount;
-  bool?     get lastSyncSuccess => _lastSyncSuccess;
+  bool      get isSignedIn       => _accessToken != null;
+  bool      get isSigningIn      => _isSigningIn;
+  bool      get isSyncing        => _isSyncing;
+  String?   get lastError        => _lastError;
+  String?   get userEmail        => _userEmail;
+  DateTime? get lastSyncTime     => _lastSyncTime;
+  int       get lastSyncCount    => _lastSyncCount;
+  bool?     get lastSyncSuccess  => _lastSyncSuccess;
+  /// Number of events that failed to push in the last sync cycle.
+  int       get lastPushFailCount => _pushFailCount;
 
   /// True when the last error is transient and a retry makes sense.
   bool get lastErrorIsNetworkError {
@@ -131,10 +135,14 @@ class GoogleCalendarService extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    _accessToken  = null;
-    _refreshToken = null;
-    _userEmail    = null;
+    _accessToken      = null;
+    _refreshToken     = null;
+    _userEmail        = null;
+    _tokenRefreshedAt = null;
     await _storage.deleteAll();
+    // Clear queued deletes so a different account signing in later doesn't
+    // have stale deletions flushed to its calendar.
+    await _dao.clearAllPendingDeletes();
     notifyListeners();
   }
 
@@ -147,8 +155,11 @@ class GoogleCalendarService extends ChangeNotifier {
   Future<gcal.CalendarApi?> _calendarApi() async {
     if (_accessToken == null) return null;
 
-    // Refresh the access token if we have a refresh token.
-    if (_refreshToken != null) {
+    // Refresh the access token only if we haven't refreshed recently.
+    // Google tokens are valid for ~1 hour; skip round-trips within 5 minutes.
+    final needsRefresh = _tokenRefreshedAt == null ||
+        DateTime.now().difference(_tokenRefreshedAt!) > const Duration(minutes: 5);
+    if (_refreshToken != null && needsRefresh) {
       try {
         final refreshed = await _appAuth.token(
           TokenRequest(
@@ -162,6 +173,7 @@ class GoogleCalendarService extends ChangeNotifier {
         );
         if (refreshed.accessToken != null) {
           _accessToken = refreshed.accessToken;
+          _tokenRefreshedAt = DateTime.now();
           await _storage.write(key: _kAccessToken, value: _accessToken);
         }
       } catch (e) {
@@ -380,8 +392,14 @@ class GoogleCalendarService extends ChangeNotifier {
     final matchesDefaults = reminderMinutes.isEmpty ||
         (reminderMinutes.length == _calendarDefaultMinutes.length &&
          ({...reminderMinutes}..removeAll(_calendarDefaultMinutes)).isEmpty);
+    // Always include overrides explicitly so that PATCH calls fully replace the
+    // reminders sub-object. Google Calendar PATCH merges nested fields rather
+    // than replacing the whole object, so omitting overrides leaves any
+    // previously-pushed overrides in place.  Sending overrides:[] alongside
+    // useDefault:true clears them without triggering the "Cannot specify both
+    // default reminders and overrides" 400 error (empty list ≠ overrides).
     final gcalReminders = matchesDefaults
-        ? gcal.EventReminders(useDefault: true)
+        ? gcal.EventReminders(useDefault: true, overrides: [])
         : gcal.EventReminders(
             useDefault: false,
             overrides: reminderMinutes
@@ -402,16 +420,50 @@ class GoogleCalendarService extends ChangeNotifier {
 
     try {
       if (event.googleEventId != null) {
-        await api.events.patch(gcalEvent, 'primary', event.googleEventId!);
-        await _dao.markSynced(event.id, event.googleEventId!);
+        try {
+          await api.events.patch(gcalEvent, 'primary', event.googleEventId!);
+          await _dao.markSynced(event.id, event.googleEventId!);
+          await _dao.resetSyncFail(event.id);
+        } on gcal.DetailedApiRequestError catch (e) {
+          if (e.status == 404 || e.status == 410) {
+            // Event was deleted in Google Calendar — clear the stale ID so the
+            // event is re-inserted as a new event on the next push cycle.
+            await _dao.clearGoogleId(event.id);
+            debugPrint(
+                'Event ${event.id}: stale googleEventId cleared (${e.status}), '
+                'will re-insert on next push.');
+          } else {
+            rethrow;
+          }
+        }
       } else {
-        final created = await api.events.insert(gcalEvent, 'primary');
-        if (created.id != null) {
-          await _dao.markSynced(event.id, created.id!);
+        // Use the local UUID (hyphens stripped) as the Google Calendar event ID.
+        // Google accepts client-specified IDs matching [a-v0-9]{5,1024}; UUID
+        // hex chars are [0-9a-f] — a valid subset. This makes insert idempotent:
+        // if the network drops after Google creates the event but before
+        // markSynced() persists the ID, the next retry gets a 409 Conflict and
+        // we recover without creating a duplicate.
+        final clientId = event.id.replaceAll('-', '');
+        gcalEvent.id = clientId;
+        try {
+          final created = await api.events.insert(gcalEvent, 'primary');
+          await _dao.markSynced(event.id, created.id ?? clientId);
+          await _dao.resetSyncFail(event.id);
+        } on gcal.DetailedApiRequestError catch (apiErr) {
+          if (apiErr.status == 409) {
+            // Already created in a prior attempt — mark synced with known ID.
+            await _dao.markSynced(event.id, clientId);
+            await _dao.resetSyncFail(event.id);
+            debugPrint('Event ${event.id}: 409 on insert, already existed — marked synced.');
+          } else {
+            rethrow; // bubble up to outer catch → incrementSyncFail
+          }
         }
       }
     } catch (e) {
       debugPrint('Google Calendar push failed for ${event.id}: $e');
+      await _dao.incrementSyncFail(event.id);
+      _pushFailCount++;
     }
   }
 
@@ -421,6 +473,7 @@ class GoogleCalendarService extends ChangeNotifier {
     if (!isSignedIn || _isSyncing) return;
     _isSyncing = true;
     _lastError = null;
+    _pushFailCount = 0;
     notifyListeners();
 
     try {
@@ -429,6 +482,7 @@ class GoogleCalendarService extends ChangeNotifier {
       if (api != null) {
         _lastSyncCount = await pullYear(celticYear, api);
         await syncPendingEvents(api);
+        await _flushPendingDeletes(api);
       }
       _lastSyncSuccess = _lastError == null;
       if (_lastSyncSuccess == true) _retryCount = 0;
@@ -476,22 +530,62 @@ class GoogleCalendarService extends ChangeNotifier {
   Future<void> syncNow(int celticYear) => syncYear(celticYear);
 
   Future<void> syncPendingEvents([gcal.CalendarApi? api]) async {
+    // Obtain the API (and refresh token) once for the whole batch — avoids
+    // one token-refresh round-trip per unsynced event.
+    api ??= await _calendarApi();
+    if (api == null) return;
     final unsynced = await _dao.getUnsyncedEvents();
     for (final event in unsynced) {
       await pushEvent(event, api);
     }
   }
 
-  /// Deletes a single event from Google Calendar. Best-effort: fails silently
-  /// if offline or if the event was already removed from Google (410 Gone).
+  /// Deletes a single event from Google Calendar.
+  /// The ID is queued in the local DB first so the deletion survives an offline
+  /// app restart. An immediate attempt is made if online; if it fails the queue
+  /// entry remains and will be flushed during the next [syncYear] call.
   Future<void> deleteGoogleEvent(String googleEventId) async {
+    // Persist first — guarantees the delete survives offline / crash.
+    await _dao.queueGoogleDelete(googleEventId);
+
     if (!isSignedIn) return;
     final api = await _calendarApi();
     if (api == null) return;
     try {
       await api.events.delete('primary', googleEventId);
+      await _dao.clearPendingDelete(googleEventId);
+    } on gcal.DetailedApiRequestError catch (e) {
+      if (e.status == 404 || e.status == 410) {
+        // Already gone — remove from queue silently.
+        await _dao.clearPendingDelete(googleEventId);
+      }
+      // Other status codes: leave in queue for next sync cycle.
     } catch (e) {
-      debugPrint('GCal delete ignored: $e');
+      debugPrint('GCal delete queued (offline): $e');
+      // Entry stays in pending_deletes and will be flushed by _flushPendingDeletes.
+    }
+  }
+
+  /// Drains the pending-delete queue, called at the end of every [syncYear].
+  Future<void> _flushPendingDeletes(gcal.CalendarApi api) async {
+    // Remove entries older than 30 days before processing — prevents unbounded
+    // growth and clears ghosts from previously revoked accounts.
+    await _dao.expireOldPendingDeletes();
+    final pending = await _dao.getPendingDeletes();
+    for (final row in pending) {
+      try {
+        await api.events.delete('primary', row.googleEventId);
+        await _dao.clearPendingDelete(row.googleEventId);
+      } on gcal.DetailedApiRequestError catch (e) {
+        if (e.status == 404 || e.status == 410) {
+          // Already gone — clear from queue without treating as an error.
+          await _dao.clearPendingDelete(row.googleEventId);
+        }
+        // Other status codes: leave in queue for the next sync cycle.
+      } catch (e) {
+        debugPrint('GCal pending delete failed (offline?): $e');
+        // Leave in queue.
+      }
     }
   }
 
@@ -519,7 +613,7 @@ class GoogleCalendarService extends ChangeNotifier {
       var payload = parts[1];
       payload += '=' * ((4 - payload.length % 4) % 4);
       final json = utf8.decode(
-        base64Url.decode(payload.replaceAll('-', '+').replaceAll('_', '/')),
+        base64Url.decode(payload), // base64Url.decode handles url-safe chars natively
       );
       final map = jsonDecode(json) as Map<String, dynamic>;
       return map['email'] as String?;
@@ -553,7 +647,15 @@ class GoogleCalendarService extends ChangeNotifier {
     if (lower.contains('null check operator')) {
       return 'Authentication failed. Please sign out and sign in again.';
     }
-    return raw.length > 120 ? '${raw.substring(0, 120)}...' : raw;
+    if (lower.contains('user_cancelled_authorize_flow') ||
+        lower.contains('user cancelled') ||
+        lower.contains('canceled')) {
+      return 'Sign-in was cancelled.';
+    }
+    if (lower.contains('access_denied') || lower.contains('accessdenied')) {
+      return 'Calendar access was denied. Please sign in again and allow calendar access.';
+    }
+    return 'Google Calendar sync failed. Please try again later.';
   }
 
   DateTime? _eventDate(gcal.Event gcEvent) {

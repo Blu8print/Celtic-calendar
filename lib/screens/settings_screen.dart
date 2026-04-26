@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../db/database.dart';
 import '../engine/celtic_calendar.dart';
@@ -8,6 +10,7 @@ import '../services/google_calendar_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/moon_settings_notifier.dart';
 import '../theme/theme_notifier.dart';
+import 'onboarding_screen.dart';
 
 /// Settings screen: Google account, sync status, and calendar system selector.
 class SettingsScreen extends StatelessWidget {
@@ -36,6 +39,8 @@ class SettingsScreen extends StatelessWidget {
           const _CalendarSystemSection(),
           const SizedBox(height: 24),
           const _DangerZoneSection(),
+          const SizedBox(height: 24),
+          const _SupportSection(),
           const SizedBox(height: 32),
         ],
       ),
@@ -178,10 +183,17 @@ class _SyncStatusBadge extends StatelessWidget {
       dotColor = c.dim;
       label = 'Never synced';
     } else if (gcal.lastSyncSuccess == true) {
-      dotColor = const Color(0xff4caf72); // forest green
-      final count = gcal.lastSyncCount;
-      label = 'Connected · ${relativeTime(gcal.lastSyncTime)} · '
-          '$count event${count == 1 ? '' : 's'}';
+      final count     = gcal.lastSyncCount;
+      final failCount = gcal.lastPushFailCount;
+      if (failCount > 0) {
+        dotColor = const Color(0xffe8a84c); // amber — partial success
+        label = 'Connected · ${relativeTime(gcal.lastSyncTime)} · '
+            '$count pulled · $failCount push failure${failCount == 1 ? '' : 's'}';
+      } else {
+        dotColor = const Color(0xff4caf72); // forest green — full success
+        label = 'Connected · ${relativeTime(gcal.lastSyncTime)} · '
+            '$count event${count == 1 ? '' : 's'}';
+      }
     } else {
       dotColor = Colors.redAccent;
       label = 'Sync failed · ${relativeTime(gcal.lastSyncTime)}';
@@ -584,6 +596,47 @@ class _GcalErrorBox extends StatelessWidget {
   }
 }
 
+// ─── Support / About ─────────────────────────────────────────────────────────
+
+class _SupportSection extends StatelessWidget {
+  const _SupportSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return _Section(
+      title: 'Support',
+      children: [
+        InkWell(
+          onTap: () async {
+            final uri = Uri.parse('mailto:support@blu8print.com');
+            if (await canLaunchUrl(uri)) launchUrl(uri);
+          },
+          borderRadius: BorderRadius.circular(6),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                Icon(Icons.mail_outline, size: 16, color: c.muted),
+                const SizedBox(width: 10),
+                Text(
+                  'support@blu8print.com',
+                  style: AppTextStyles.cinzel(size: 13, color: c.gold),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Questions, feedback, or bug reports — we\'d love to hear from you.',
+          style: AppTextStyles.imFell(size: 12, color: c.dim, italic: true),
+        ),
+      ],
+    );
+  }
+}
+
 // ─── Danger zone ──────────────────────────────────────────────────────────────
 
 class _DangerZoneSection extends StatelessWidget {
@@ -667,20 +720,13 @@ class _DangerZoneSection extends StatelessWidget {
     await moon.setShowNewMoons(false);
     await theme.setLight(true);
 
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboarding_complete', false);
+
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: context.colors.surface2,
-        content: Text(
-          'App reset. All data has been cleared.',
-          style: AppTextStyles.imFell(size: 13, color: context.colors.text),
-        ),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          side: BorderSide(color: context.colors.border),
-          borderRadius: BorderRadius.circular(6),
-        ),
-      ),
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+      (_) => false,
     );
   }
 }

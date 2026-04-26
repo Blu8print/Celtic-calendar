@@ -69,13 +69,35 @@ class Events extends Table {
   /// e.g. '[30]' = 30 min before. Null = no reminders.
   TextColumn get reminders => text().nullable()();
 
+  /// Consecutive push-failure count. Reset to 0 on successful push.
+  /// Used purely for UI feedback (amber badge in settings).
+  IntColumn get syncFailCount =>
+      integer().withDefault(const Constant(0))();
+
   @override
   Set<Column> get primaryKey => {id};
 }
 
+// ─── PendingDeletes table ──────────────────────────────────────────────────────
+// Stores Google Calendar event IDs that need to be deleted remotely.
+// Entries are created when the user deletes a synced event (including offline)
+// and removed once the API delete succeeds (or the event is confirmed gone).
+
+class PendingDeletes extends Table {
+  /// The Google Calendar event ID to delete.
+  TextColumn get googleEventId => text()();
+
+  /// When the delete was queued.
+  DateTimeColumn get queuedAt =>
+      dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {googleEventId};
+}
+
 // ─── Database ─────────────────────────────────────────────────────────────────
 
-@DriftDatabase(tables: [Events], daos: [EventsDao])
+@DriftDatabase(tables: [Events, PendingDeletes], daos: [EventsDao])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
@@ -84,7 +106,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor e) : super(e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -114,6 +136,17 @@ class AppDatabase extends _$AppDatabase {
       if (from < 4) {
         await m.database.customStatement(
           'ALTER TABLE events ADD COLUMN reminders TEXT',
+        );
+      }
+      if (from < 5) {
+        await m.database.customStatement('''
+          CREATE TABLE IF NOT EXISTS pending_deletes (
+            google_event_id TEXT NOT NULL PRIMARY KEY,
+            queued_at INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000)
+          )
+        ''');
+        await m.database.customStatement(
+          'ALTER TABLE events ADD COLUMN sync_fail_count INTEGER NOT NULL DEFAULT 0',
         );
       }
     },

@@ -12,19 +12,19 @@ dependencies:
 
   # Database
   drift: ^2.18.0
-  sqlite3_flutter_libs: ^0.5.0
+  sqlite3_flutter_libs: ^0.6.0+eol
   path_provider: ^2.1.0
   path: ^1.9.0
 
   # Google Calendar
-  flutter_appauth: ^8.0.0
-  flutter_secure_storage: ^9.0.0
-  googleapis: ^12.0.0
+  flutter_appauth: ^12.0.0
+  flutter_secure_storage: ^10.0.0
+  googleapis: ^16.0.0
   http: ^1.2.0
 
   # Notifications
-  flutter_local_notifications: ^18.0.0
-  timezone: ^0.9.4
+  flutter_local_notifications: ^21.0.0
+  timezone: ^0.11.0
   flutter_timezone: ^5.0.0
 
   # Background tasks
@@ -32,25 +32,25 @@ dependencies:
 
   # Utilities
   uuid: ^4.4.0
-  intl: ^0.19.0
+  intl: ^0.20.2
   shared_preferences: ^2.3.0
 
   # Crash reporting
-  firebase_core: ^3.0.0
-  firebase_crashlytics: ^4.0.0
+  firebase_core: ^4.7.0
+  firebase_crashlytics: ^5.2.0
 
   # UI
-  google_fonts: ^6.2.0
+  google_fonts: ^8.0.2
   provider: ^6.1.0
   url_launcher: ^6.3.0
-  home_widget: ^0.6.0
+  home_widget: ^0.9.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   drift_dev: ^2.18.0
   build_runner: ^2.4.0
-  flutter_lints: ^3.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true

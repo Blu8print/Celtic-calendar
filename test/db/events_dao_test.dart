@@ -216,6 +216,31 @@ void main() {
     });
   });
 
+  // ── countSyncFailures ─────────────────────────────────────────────────────
+
+  group('countSyncFailures', () {
+    test('returns 0 when no events have failures', () async {
+      await dao.insertEvent(_event(id: 'sf1', title: 'Ok', gregorianDate: DateTime.utc(2025, 1, 1)));
+      expect(await dao.countSyncFailures(), 0);
+    });
+
+    test('counts only events with syncFailCount > 0', () async {
+      await dao.insertEvent(_event(id: 'sf2', title: 'Fail', gregorianDate: DateTime.utc(2025, 1, 2)));
+      await dao.insertEvent(_event(id: 'sf3', title: 'Ok', gregorianDate: DateTime.utc(2025, 1, 3)));
+
+      await dao.incrementSyncFail('sf2');
+      expect(await dao.countSyncFailures(), 1);
+    });
+
+    test('resetSyncFail brings count back to 0', () async {
+      await dao.insertEvent(_event(id: 'sf4', title: 'Reset', gregorianDate: DateTime.utc(2025, 1, 4)));
+      await dao.incrementSyncFail('sf4');
+      expect(await dao.countSyncFailures(), 1);
+      await dao.resetSyncFail('sf4');
+      expect(await dao.countSyncFailures(), 0);
+    });
+  });
+
   // ── deleteAllEvents ───────────────────────────────────────────────────────
 
   group('deleteAllEvents', () {

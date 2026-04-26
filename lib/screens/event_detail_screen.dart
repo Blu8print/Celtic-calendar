@@ -525,7 +525,9 @@ class _LocationDetail extends StatelessWidget {
               final uri = Uri.parse(
                 'https://maps.google.com/?q=${Uri.encodeComponent(location)}',
               );
-              await launchUrl(uri, mode: LaunchMode.externalApplication);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
             },
             child: Padding(
               padding: const EdgeInsets.only(left: 6),
@@ -602,11 +604,23 @@ class _EventFormState extends State<_EventForm> {
       }
       if (e.recurrenceRule != null) {
         _recurrenceRule = e.recurrenceRule!;
-        _recurrenceEnd  = DateTime(
+        // Fallback: 1 year from event date; overwritten once series is loaded.
+        _recurrenceEnd = DateTime(
           e.gregorianDate.year + 1,
           e.gregorianDate.month,
           e.gregorianDate.day,
         );
+        if (e.recurrenceId != null) {
+          // Load the real end date from the last instance in the series.
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            final all = await widget.dao.getEventsByRecurrenceId(e.recurrenceId!);
+            if (all.isEmpty || !mounted) return;
+            final last = all.reduce((a, b) =>
+                a.gregorianDate.isAfter(b.gregorianDate) ? a : b);
+            final ld = last.gregorianDate.toLocal();
+            setState(() => _recurrenceEnd = DateTime(ld.year, ld.month, ld.day));
+          });
+        }
       }
       _reminders = ReminderService.parseReminders(e.reminders);
     } else {
@@ -723,12 +737,23 @@ class _EventFormState extends State<_EventForm> {
       cur = switch (rule) {
         'daily'   => cur.add(const Duration(days: 1)),
         'weekly'  => cur.add(const Duration(days: 7)),
-        'monthly' => DateTime(cur.year, cur.month + 1, cur.day),
+        'monthly' => _addOneMonth(cur),
         'yearly'  => DateTime(cur.year + 1, cur.month, cur.day),
         _         => end.add(const Duration(days: 1)),
       };
     }
     return dates;
+  }
+
+  /// Adds exactly one month, clamping the day to the last day of the target
+  /// month. E.g. Jan 31 + 1 month = Feb 28 (not Mar 2/3).
+  static DateTime _addOneMonth(DateTime d) {
+    var m = d.month + 1;
+    var y = d.year;
+    if (m > 12) { m = 1; y++; }
+    // DateTime(y, m+1, 0).day gives the number of days in month m.
+    final daysInMonth = DateTime(m < 12 ? y : y + 1, m < 12 ? m + 1 : 1, 0).day;
+    return DateTime(y, m, d.day > daysInMonth ? daysInMonth : d.day);
   }
 
   Future<void> _pickDate(BuildContext context) async {
@@ -798,106 +823,116 @@ class _EventFormState extends State<_EventForm> {
     }
     setState(() => _saving = true);
 
-    final celticDate = gregorianToCeltic(_selectedDate);
-    final dayNorm    = DateTime.utc(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    try {
+      final celticDate = gregorianToCeltic(_selectedDate);
+      final dayNorm    = DateTime.utc(_selectedDate.year, _selectedDate.month, _selectedDate.day);
 
-    final sm  = _startTime == null
-        ? null
-        : _startTime!.hour * 60 + _startTime!.minute;
-    final dm  = _startTime == null ? null : _durationMinutes;
-    final att = _attendees.isEmpty ? null : jsonEncode(_attendees);
-    final loc = _locationCtrl.text.trim().isEmpty
-        ? null
-        : _locationCtrl.text.trim();
+      final sm  = _startTime == null
+          ? null
+          : _startTime!.hour * 60 + _startTime!.minute;
+      final dm  = _startTime == null ? null : _durationMinutes;
+      final att = _attendees.isEmpty ? null : jsonEncode(_attendees);
+      final loc = _locationCtrl.text.trim().isEmpty
+          ? null
+          : _locationCtrl.text.trim();
 
-    final remindersJson = ReminderService.encodeReminders(_reminders);
+      final remindersJson = ReminderService.encodeReminders(_reminders);
 
-    if (widget.existing == null && _recurrenceRule != 'none') {
-      // Expand into individual instances linked by a shared recurrenceId.
-      final seriesId = const Uuid().v4();
-      final dates    = _expandRecurrence(_selectedDate, _recurrenceRule, _recurrenceEnd!);
-      for (final d in dates) {
-        final cd      = gregorianToCeltic(d);
-        final dateUtc = DateTime.utc(d.year, d.month, d.day);
-        final newId   = const Uuid().v4();
+      if (widget.existing == null && _recurrenceRule != 'none') {
+        // Expand into individual instances linked by a shared recurrenceId.
+        final seriesId = const Uuid().v4();
+        final dates    = _expandRecurrence(_selectedDate, _recurrenceRule, _recurrenceEnd!);
+        for (final d in dates) {
+          final cd      = gregorianToCeltic(d);
+          final dateUtc = DateTime.utc(d.year, d.month, d.day);
+          final newId   = const Uuid().v4();
+          await widget.dao.insertEvent(EventsCompanion(
+            id:              Value(newId),
+            celticYear:      Value(cd.celticYear),
+            celticMonth:     Value(cd.month),
+            celticDay:       Value(cd.day),
+            title:           Value(_titleCtrl.text.trim()),
+            description:     Value(_descCtrl.text.trim()),
+            color:           Value(_color),
+            gregorianDate:   Value(dateUtc),
+            startMinutes:    Value(sm),
+            durationMinutes: Value(dm),
+            attendees:       Value(att),
+            location:        Value(loc),
+            recurrenceRule:  Value(_recurrenceRule),
+            recurrenceId:    Value(seriesId),
+            reminders:       Value(remindersJson),
+          ));
+          await ReminderService.scheduleForEventData(
+            eventId: newId,
+            title: _titleCtrl.text.trim(),
+            gregorianDate: dateUtc,
+            startMinutes: sm,
+            reminders: _reminders,
+          );
+        }
+      } else if (widget.existing == null) {
+        final newId = const Uuid().v4();
         await widget.dao.insertEvent(EventsCompanion(
           id:              Value(newId),
-          celticYear:      Value(cd.celticYear),
-          celticMonth:     Value(cd.month),
-          celticDay:       Value(cd.day),
+          celticYear:      Value(celticDate.celticYear),
+          celticMonth:     Value(celticDate.month),
+          celticDay:       Value(celticDate.day),
           title:           Value(_titleCtrl.text.trim()),
           description:     Value(_descCtrl.text.trim()),
           color:           Value(_color),
-          gregorianDate:   Value(dateUtc),
+          gregorianDate:   Value(dayNorm),
           startMinutes:    Value(sm),
           durationMinutes: Value(dm),
           attendees:       Value(att),
           location:        Value(loc),
-          recurrenceRule:  Value(_recurrenceRule),
-          recurrenceId:    Value(seriesId),
           reminders:       Value(remindersJson),
         ));
         await ReminderService.scheduleForEventData(
           eventId: newId,
           title: _titleCtrl.text.trim(),
-          gregorianDate: dateUtc,
+          gregorianDate: dayNorm,
+          startMinutes: sm,
+          reminders: _reminders,
+        );
+      } else {
+        await widget.dao.updateEvent(widget.existing!.copyWith(
+          title:           _titleCtrl.text.trim(),
+          description:     _descCtrl.text.trim(),
+          color:           _color,
+          updatedAt:       DateTime.now(),
+          gregorianDate:   dayNorm,
+          celticYear:      celticDate.celticYear,
+          celticMonth:     Value(celticDate.month),
+          celticDay:       Value(celticDate.day),
+          startMinutes:    Value(sm),
+          durationMinutes: Value(dm),
+          attendees:       Value(att),
+          location:        Value(loc),
+          syncedToGoogle:  false,
+          reminders:       Value(remindersJson),
+        ));
+        await ReminderService.scheduleForEventData(
+          eventId: widget.existing!.id,
+          title: _titleCtrl.text.trim(),
+          gregorianDate: dayNorm,
           startMinutes: sm,
           reminders: _reminders,
         );
       }
-    } else if (widget.existing == null) {
-      final newId = const Uuid().v4();
-      await widget.dao.insertEvent(EventsCompanion(
-        id:              Value(newId),
-        celticYear:      Value(celticDate.celticYear),
-        celticMonth:     Value(celticDate.month),
-        celticDay:       Value(celticDate.day),
-        title:           Value(_titleCtrl.text.trim()),
-        description:     Value(_descCtrl.text.trim()),
-        color:           Value(_color),
-        gregorianDate:   Value(dayNorm),
-        startMinutes:    Value(sm),
-        durationMinutes: Value(dm),
-        attendees:       Value(att),
-        location:        Value(loc),
-        reminders:       Value(remindersJson),
-      ));
-      await ReminderService.scheduleForEventData(
-        eventId: newId,
-        title: _titleCtrl.text.trim(),
-        gregorianDate: dayNorm,
-        startMinutes: sm,
-        reminders: _reminders,
-      );
-    } else {
-      await widget.dao.updateEvent(widget.existing!.copyWith(
-        title:           _titleCtrl.text.trim(),
-        description:     _descCtrl.text.trim(),
-        color:           _color,
-        updatedAt:       DateTime.now(),
-        gregorianDate:   dayNorm,
-        celticYear:      celticDate.celticYear,
-        celticMonth:     Value(celticDate.month),
-        celticDay:       Value(celticDate.day),
-        startMinutes:    Value(sm),
-        durationMinutes: Value(dm),
-        attendees:       Value(att),
-        location:        Value(loc),
-        syncedToGoogle:  false,
-        reminders:       Value(remindersJson),
-      ));
-      await ReminderService.scheduleForEventData(
-        eventId: widget.existing!.id,
-        title: _titleCtrl.text.trim(),
-        gregorianDate: dayNorm,
-        startMinutes: sm,
-        reminders: _reminders,
-      );
-    }
 
-    if (widget.gcal.isSignedIn) await widget.gcal.syncPendingEvents();
-    if (mounted) await HomeWidgetService.updateTodayWidget(widget.dao);
-    if (mounted) Navigator.pop(context);
+      if (widget.gcal.isSignedIn) await widget.gcal.syncPendingEvents();
+      if (mounted) await HomeWidgetService.updateTodayWidget(widget.dao);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save event: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────

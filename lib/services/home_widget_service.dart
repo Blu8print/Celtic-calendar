@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:intl/intl.dart';
@@ -53,8 +54,9 @@ class HomeWidgetService {
       }
 
       await HomeWidget.updateWidget(androidName: 'RootsDayWidget');
-    } catch (_) {
+    } catch (e, stack) {
       // Widget update is best-effort — never crash the app.
+      debugPrint('HomeWidget update failed: $e\n$stack');
     }
   }
 

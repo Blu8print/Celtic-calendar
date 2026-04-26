@@ -6,10 +6,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../engine/celtic_calendar.dart';
 import '../services/google_calendar_service.dart';
 import '../theme/app_theme.dart';
+import '../theme/moon_settings_notifier.dart';
+import '../theme/theme_notifier.dart';
 import 'calendar_screen.dart';
-
-// Shorthand constants — always the light palette.
-const _c = AppColors.light;
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -41,14 +40,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Scaffold(
-      backgroundColor: _c.bg,
+      backgroundColor: c.bg,
       body: Stack(
         children: [
           PageView(
             controller: _ctrl,
             onPageChanged: (p) => setState(() => _page = p),
-            children: const [_Page1(), _Page2(), _Page3()],
+            children: [_Page1(), _Page2(), _Page3(), _Page4()],
           ),
           Positioned(
             bottom: 32,
@@ -69,6 +69,7 @@ class _Page1 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -80,8 +81,8 @@ class _Page1 extends StatelessWidget {
             // Ogham letter
             Text(
               'ᚁ',
-              style: AppTextStyles.cinzel(size: 48, color: _c.gold)
-                  .copyWith(color: _c.gold.withValues(alpha: 0.4)),
+              style: AppTextStyles.cinzel(size: 48, color: c.gold)
+                  .copyWith(color: c.gold.withValues(alpha: 0.4)),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -89,7 +90,7 @@ class _Page1 extends StatelessWidget {
             Text(
               'Thirteen months.\nTwenty-eight days each.',
               style: AppTextStyles.cinzel(
-                  size: 26, weight: FontWeight.w700, color: _c.text),
+                  size: 26, weight: FontWeight.w700, color: c.text),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -98,18 +99,18 @@ class _Page1 extends StatelessWidget {
               constraints: const BoxConstraints(maxWidth: 300),
               child: Text(
                 'A year of 364 days — plus one day that belongs to no month.',
-                style: AppTextStyles.imFell(size: 15, color: _c.dim, italic: true),
+                style: AppTextStyles.imFell(size: 15, color: c.dim, italic: true),
                 textAlign: TextAlign.center,
               ),
             ),
             const SizedBox(height: 32),
             // Mini calendar
-            const _MiniCalendar(),
+            _MiniCalendar(),
             const SizedBox(height: 20),
             // Caption
             Text(
               'Every month is exactly four weeks.\nEvery week always starts on the same day.',
-              style: AppTextStyles.imFell(size: 13, color: _c.dim),
+              style: AppTextStyles.imFell(size: 13, color: c.dim),
               textAlign: TextAlign.center,
             ),
           ],
@@ -126,6 +127,7 @@ class _MiniCalendar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Column(
       children: List.generate(4, (week) {
         return Padding(
@@ -138,7 +140,7 @@ class _MiniCalendar extends StatelessWidget {
                 width: 32,
                 child: Text(
                   'Wk ${week + 1}',
-                  style: AppTextStyles.cinzel(size: 9, color: _c.dim),
+                  style: AppTextStyles.cinzel(size: 9, color: c.dim),
                   textAlign: TextAlign.right,
                 ),
               ),
@@ -153,8 +155,8 @@ class _MiniCalendar extends StatelessWidget {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: isToday ? _c.muted : _c.surface,
-                      border: Border.all(color: _c.border, width: 0.5),
+                      color: isToday ? c.muted : c.surface,
+                      border: Border.all(color: c.border, width: 0.5),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     alignment: Alignment.center,
@@ -162,7 +164,7 @@ class _MiniCalendar extends StatelessWidget {
                       '$cellNum',
                       style: AppTextStyles.cinzel(
                           size: 11,
-                          color: isToday ? Colors.white : _c.text),
+                          color: isToday ? Colors.white : c.text),
                     ),
                   ),
                 );
@@ -184,6 +186,7 @@ class _Page2 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     final today = DateTime.now();
     final celticDate = gregorianToCeltic(today);
     final celticYear = celticYearOf(today);
@@ -214,8 +217,8 @@ class _Page2 extends StatelessWidget {
             // Ogham char
             Text(
               mo.ogham,
-              style: AppTextStyles.cinzel(size: 40, color: _c.gold)
-                  .copyWith(color: _c.gold.withValues(alpha: 0.5)),
+              style: AppTextStyles.cinzel(size: 40, color: c.gold)
+                  .copyWith(color: c.gold.withValues(alpha: 0.5)),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
@@ -223,7 +226,7 @@ class _Page2 extends StatelessWidget {
             Text(
               mo.name,
               style: AppTextStyles.cinzel(
-                  size: 32, weight: FontWeight.w700, color: _c.muted),
+                  size: 32, weight: FontWeight.w700, color: c.muted),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
@@ -231,7 +234,7 @@ class _Page2 extends StatelessWidget {
             Text(
               mo.tree.toUpperCase(),
               style: AppTextStyles.cinzel(
-                  size: 12, color: _c.dim, letterSpacing: 2),
+                  size: 12, color: c.dim, letterSpacing: 2),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
@@ -240,28 +243,28 @@ class _Page2 extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: _c.surface2,
-                border: Border.all(color: _c.border),
+                color: c.surface2,
+                border: Border.all(color: c.border),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
                 mo.keyword,
                 style: AppTextStyles.imFell(
-                    size: 12, color: _c.gold, italic: true),
+                    size: 12, color: c.gold, italic: true),
               ),
             ),
             if (dateRange.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
                 dateRange,
-                style: AppTextStyles.cinzel(size: 11, color: _c.dim),
+                style: AppTextStyles.cinzel(size: 11, color: c.dim),
               ),
             ],
             const SizedBox(height: 28),
             // Body
             Text(
               'Each month is named after a sacred tree.\nEach tree carries a teaching.',
-              style: AppTextStyles.imFell(size: 15, color: _c.text),
+              style: AppTextStyles.imFell(size: 15, color: c.text),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -273,26 +276,26 @@ class _Page2 extends StatelessWidget {
                     children: [
                       Text(pair.$1,
                           style: AppTextStyles.cinzel(
-                              size: 12, color: _c.dim)),
+                              size: 12, color: c.dim)),
                       Text('  ·  ',
                           style: AppTextStyles.cinzel(
-                              size: 12, color: _c.border)),
+                              size: 12, color: c.border)),
                       Text(pair.$2,
                           style: AppTextStyles.imFell(
-                              size: 12, color: _c.dim, italic: true)),
+                              size: 12, color: c.dim, italic: true)),
                     ],
                   ),
                 )),
             Text(
               '· · ·',
-              style: AppTextStyles.cinzel(size: 12, color: _c.border),
+              style: AppTextStyles.cinzel(size: 12, color: c.border),
             ),
             const SizedBox(height: 24),
             // Closing
             Text(
               'Thirteen trees. Thirteen teachings. One year.',
               style:
-                  AppTextStyles.imFell(size: 14, color: _c.gold, italic: true),
+                  AppTextStyles.imFell(size: 14, color: c.gold, italic: true),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 120), // space for nav overlay
@@ -310,6 +313,7 @@ class _Page3 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -321,7 +325,7 @@ class _Page3 extends StatelessWidget {
             Text(
               'Your life, in Celtic time.',
               style: AppTextStyles.cinzel(
-                  size: 26, weight: FontWeight.w700, color: _c.text),
+                  size: 26, weight: FontWeight.w700, color: c.text),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -331,7 +335,7 @@ class _Page3 extends StatelessWidget {
               child: Text(
                 'Roots Calendar lives alongside your existing calendars. '
                 'Your events appear here, rooted in the rhythm of the trees.',
-                style: AppTextStyles.imFell(size: 15, color: _c.dim),
+                style: AppTextStyles.imFell(size: 15, color: c.dim),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -352,7 +356,7 @@ class _Page3 extends StatelessWidget {
               child: Text(
                 "I'll set this up later",
                 style:
-                    AppTextStyles.imFell(size: 13, color: _c.dim, italic: true),
+                    AppTextStyles.imFell(size: 13, color: c.dim, italic: true),
               ),
             ),
           ],
@@ -368,19 +372,20 @@ class _ConnectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: _c.surface,
-          border: Border.all(color: _c.border),
+          color: c.surface,
+          border: Border.all(color: c.border),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
-            Icon(Icons.event_available_outlined, color: _c.muted, size: 28),
+            Icon(Icons.event_available_outlined, color: c.muted, size: 28),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -388,12 +393,12 @@ class _ConnectCard extends StatelessWidget {
                 children: [
                   Text(
                     'Connect Google Calendar',
-                    style: AppTextStyles.cinzel(size: 14, color: _c.text),
+                    style: AppTextStyles.cinzel(size: 14, color: c.text),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     'See your existing events in the Celtic calendar. Optional.',
-                    style: AppTextStyles.imFell(size: 12, color: _c.dim),
+                    style: AppTextStyles.imFell(size: 12, color: c.dim),
                   ),
                 ],
               ),
@@ -408,20 +413,222 @@ class _ConnectCard extends StatelessWidget {
 class _ConnectedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _c.surface,
-        border: Border.all(color: _c.border),
+        color: c.surface,
+        border: Border.all(color: c.border),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          Icon(Icons.check_circle_outline, color: _c.muted, size: 28),
+          Icon(Icons.check_circle_outline, color: c.muted, size: 28),
           const SizedBox(width: 14),
           Text(
             'Connected',
-            style: AppTextStyles.cinzel(size: 14, color: _c.muted),
+            style: AppTextStyles.cinzel(size: 14, color: c.muted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Page 4 — Preferences ─────────────────────────────────────────────────────
+
+class _Page4 extends StatelessWidget {
+  const _Page4();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 56),
+            Text(
+              'Make it yours.',
+              style: AppTextStyles.cinzel(
+                  size: 26, weight: FontWeight.w700, color: c.text),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'You can change these any time in Settings.',
+              style: AppTextStyles.imFell(size: 13, color: c.dim, italic: true),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 40),
+
+            // ── Theme ──────────────────────────────────────────────────────
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'APPEARANCE',
+                style: AppTextStyles.cinzel(
+                    size: 10, color: c.dim, letterSpacing: 2),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Consumer<ThemeNotifier>(
+              builder: (context, notifier, _) {
+                return Row(
+                  children: [
+                    _ThemeChip(
+                      label: 'Light',
+                      icon: Icons.wb_sunny_outlined,
+                      isSelected: notifier.isLight,
+                      onTap: () => notifier.setLight(true),
+                    ),
+                    const SizedBox(width: 12),
+                    _ThemeChip(
+                      label: 'Dark',
+                      icon: Icons.nights_stay_outlined,
+                      isSelected: !notifier.isLight,
+                      onTap: () => notifier.setLight(false),
+                    ),
+                  ],
+                );
+              },
+            ),
+
+            const SizedBox(height: 36),
+
+            // ── Moon phases ────────────────────────────────────────────────
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'MOON PHASES',
+                style: AppTextStyles.cinzel(
+                    size: 10, color: c.dim, letterSpacing: 2),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Show moon symbols in the month grid.',
+                style: AppTextStyles.imFell(size: 13, color: c.dim, italic: true),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Consumer<MoonSettingsNotifier>(
+              builder: (context, settings, _) {
+                return Column(
+                  children: [
+                    _MoonToggleRow(
+                      label: 'Full moon',
+                      symbol: '○',
+                      value: settings.showFullMoons,
+                      onChanged: settings.setShowFullMoons,
+                    ),
+                    const SizedBox(height: 8),
+                    _MoonToggleRow(
+                      label: 'New moon',
+                      symbol: '●',
+                      value: settings.showNewMoons,
+                      onChanged: settings.setShowNewMoons,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ThemeChip({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: isSelected ? c.muted : c.surface,
+            border: Border.all(
+              color: isSelected ? c.muted : c.border,
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(
+            children: [
+              Icon(icon,
+                  color: isSelected ? Colors.white : c.dim, size: 22),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: AppTextStyles.cinzel(
+                    size: 12,
+                    color: isSelected ? Colors.white : c.dim),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MoonToggleRow extends StatelessWidget {
+  final String label;
+  final String symbol;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _MoonToggleRow({
+    required this.label,
+    required this.symbol,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      decoration: BoxDecoration(
+        color: c.surface,
+        border: Border.all(color: c.border),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Text(symbol,
+              style: AppTextStyles.cinzel(size: 16, color: c.dim)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(label,
+                style: AppTextStyles.cinzel(size: 13, color: c.text)),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: c.muted,
           ),
         ],
       ),
@@ -444,27 +651,28 @@ class _NavOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _DotIndicator(count: 3, current: page),
+        _DotIndicator(count: 4, current: page),
         const SizedBox(height: 16),
         Row(
           children: [
-            if (page < 2)
+            if (page < 3)
               TextButton(
                 onPressed: onFinish,
                 child: Text(
                   'Skip',
                   style: AppTextStyles.imFell(
-                      size: 13, color: _c.dim, italic: true),
+                      size: 13, color: c.dim, italic: true),
                 ),
               ),
             const Spacer(),
             ElevatedButton(
-              onPressed: page < 2 ? onNext : onFinish,
+              onPressed: page < 3 ? onNext : onFinish,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _c.muted,
+                backgroundColor: c.muted,
                 foregroundColor: Colors.white,
                 minimumSize: const Size(120, 52),
                 elevation: 0,
@@ -472,7 +680,7 @@ class _NavOverlay extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12)),
               ),
               child: Text(
-                page < 2 ? 'Continue' : 'Begin',
+                page < 3 ? 'Continue' : 'Begin',
                 style: AppTextStyles.cinzel(size: 14, color: Colors.white),
               ),
             ),
@@ -491,6 +699,7 @@ class _DotIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(
@@ -503,7 +712,7 @@ class _DotIndicator extends StatelessWidget {
             height: i == current ? 10 : 8,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: i == current ? _c.muted : _c.border,
+              color: i == current ? c.muted : c.border,
             ),
           ),
         ),

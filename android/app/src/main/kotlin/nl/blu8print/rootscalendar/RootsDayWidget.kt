@@ -86,7 +86,7 @@ class RootsDayWidget : AppWidgetProvider() {
         ): Int {
             val opts = appWidgetManager.getAppWidgetOptions(appWidgetId)
             val minHeightDp = opts.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 190)
-            return ((minHeightDp - 82) / 55).coerceIn(1, 5)
+            return ((minHeightDp - 82) / 55).coerceIn(0, 5)
         }
 
         fun updateWidget(

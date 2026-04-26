@@ -121,13 +121,13 @@ class AppTextStyles {
         letterSpacing: letterSpacing,
       );
 
-  /// Lora — descriptions, keywords, body text.
+  /// IM Fell English — descriptions, keywords, body text.
   static TextStyle imFell({
     double size = 14,
     Color? color,
     bool italic = false,
   }) =>
-      GoogleFonts.lora(
+      GoogleFonts.imFellEnglish(
         fontSize: size,
         color: color ?? AppColors.dark.text,
         fontStyle: italic ? FontStyle.italic : FontStyle.normal,
@@ -221,7 +221,7 @@ class AppTheme {
         ),
         centerTitle: false,
       ),
-      textTheme: GoogleFonts.loraTextTheme(base.textTheme).copyWith(
+      textTheme: GoogleFonts.imFellEnglishTextTheme(base.textTheme).copyWith(
         bodyMedium: AppTextStyles.imFell(size: 14, color: c.text),
         bodySmall: AppTextStyles.imFell(size: 12, color: c.muted),
       ),

@@ -12,6 +12,7 @@ import 'db/database.dart';
 import 'db/events_dao.dart';
 import 'engine/celtic_calendar.dart';
 import 'screens/calendar_screen.dart';
+import 'screens/event_detail_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'services/google_calendar_service.dart';
 import 'services/home_widget_service.dart';
@@ -20,17 +21,34 @@ import 'theme/app_theme.dart';
 import 'theme/moon_settings_notifier.dart';
 import 'theme/theme_notifier.dart';
 
+/// Global navigator key — used to route notification taps from outside the widget tree.
+final _navigatorKey = GlobalKey<NavigatorState>();
+
+void _openDateFromPayload(String payload) {
+  try {
+    final date = DateTime.parse(payload);
+    final nav = _navigatorKey.currentState;
+    if (nav == null) return;
+    nav.push(MaterialPageRoute(
+      builder: (_) => EventDetailScreen(date: date),
+    ));
+  } catch (e, stack) {
+    debugPrint('Failed to open date from notification payload "$payload": $e\n$stack');
+  }
+}
+
 /// Runs in a background isolate — must be a top-level function.
 @pragma('vm:entry-point')
 void _widgetUpdateDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
+    WidgetsFlutterBinding.ensureInitialized();
+    final db = AppDatabase();
     try {
-      WidgetsFlutterBinding.ensureInitialized();
-      final db = AppDatabase();
       await HomeWidgetService.updateTodayWidget(db.eventsDao);
-      await db.close();
     } catch (e, stack) {
       debugPrint('Widget update failed: $e\n$stack');
+    } finally {
+      await db.close();
     }
     return true;
   });
@@ -69,6 +87,7 @@ void main() async {
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   await ReminderService.init();
   await ReminderService.requestPermissions();
+  ReminderService.onNotificationTap = _openDateFromPayload;
 
   // Register periodic background widget refresh (runs even when app is closed).
   await Workmanager().initialize(_widgetUpdateDispatcher);
@@ -106,9 +125,12 @@ class _RootsCalendarAppState extends State<RootsCalendarApp>
     super.initState();
     _gcal = GoogleCalendarService(widget.db.eventsDao);
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       _gcal.backgroundSync(celticYearOf(DateTime.now()));
       HomeWidgetService.updateTodayWidget(widget.db.eventsDao);
+      // Handle cold-start from notification tap.
+      final payload = await ReminderService.getLaunchPayload();
+      if (payload != null) _openDateFromPayload(payload);
     });
   }
 
@@ -152,6 +174,7 @@ class _RootsCalendarAppState extends State<RootsCalendarApp>
           return MaterialApp(
             title: 'Roots Calendar',
             debugShowCheckedModeBanner: false,
+            navigatorKey: _navigatorKey,
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
             themeMode: notifier.isLight ? ThemeMode.light : ThemeMode.dark,

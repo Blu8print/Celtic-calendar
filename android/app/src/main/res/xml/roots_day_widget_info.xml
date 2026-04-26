@@ -8,4 +8,6 @@
     android:initialLayout="@layout/roots_day_widget"
     android:widgetCategory="home_screen"
     android:resizeMode="horizontal|vertical"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="110dp"
     android:previewLayout="@layout/roots_day_widget" />
