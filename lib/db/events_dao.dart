@@ -125,7 +125,11 @@ class EventsDao extends DatabaseAccessor<AppDatabase> with _$EventsDaoMixin {
         .getSingleOrNull();
 
     if (existing == null) {
-      await into(events).insert(event);
+      // Events from Google are by definition synced — mark them so the guard
+      // below works correctly on subsequent upserts.
+      await into(events).insert(
+        event.copyWith(syncedToGoogle: const Value(true)),
+      );
     } else {
       // TODO(conflict-v2): compare existing.updatedAt vs event.updatedAt.value
       // to detect simultaneous edits on phone and Google web. For v1 the
