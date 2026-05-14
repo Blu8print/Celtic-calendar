@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- No cross-app tracking is performed. -->
+	<key>NSPrivacyTracking</key>
+	<false/>
+
+	<!-- No data is collected and sent off-device. -->
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+
+	<!-- Required-reason API declarations. -->
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<!-- shared_preferences reads/writes app preferences via NSUserDefaults. -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<!-- CA92.1: Access user defaults to read/write data within the app itself. -->
+				<string>CA92.1</string>
+			</array>
+		</dict>
+		<!-- drift and path_provider access file metadata (timestamps/size) for database files
+		     stored in the app container. -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<!-- DDA9.1: Access timestamps of files inside the app container. -->
+				<string>DDA9.1</string>
+			</array>
+		</dict>
+		<!-- sqlite3_flutter_libs checks available disk space before writing to the database
+		     to prevent data corruption. -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<!-- E174.1: Check disk space to prevent data loss or corruption during writes. -->
+				<string>E174.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
