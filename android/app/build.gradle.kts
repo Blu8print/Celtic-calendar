@@ -1,8 +1,16 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+val keyPropertiesFile = rootProject.file("key.properties")
+val keyProperties = Properties()
+if (keyPropertiesFile.exists()) {
+    keyPropertiesFile.inputStream().use { keyProperties.load(it) }
 }
 
 android {
@@ -17,7 +25,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = "17"
     }
 
     defaultConfig {
@@ -30,27 +38,19 @@ android {
         manifestPlaceholders["appAuthRedirectScheme"] = "com.googleusercontent.apps.994680507449-c3pkq1is9vpo7ioohnu5r6j56b4hi3ne"
     }
 
-    // Release signing reads from environment variables so the keystore never
-    // has to be committed to version control.
-    //
-    // Required env vars (set in CI secrets / local shell before building):
-    //   KEYSTORE_PATH     — absolute path to the .jks / .keystore file
-    //   KEYSTORE_PASSWORD — store password
-    //   KEY_ALIAS         — key alias inside the keystore
-    //   KEY_PASSWORD      — key password
-    //
-    // To generate a keystore locally (one-time):
-    //   keytool -genkey -v -keystore roots-calendar.jks \
-    //           -keyalg RSA -keysize 2048 -validity 10000 \
-    //           -alias roots-calendar
+    // Release signing reads from android/key.properties (never committed to git).
+    // Create that file with:
+    //   storePassword=<your password>
+    //   keyPassword=<your password>
+    //   keyAlias=roots-calendar
+    //   storeFile=../../roots-calendar-release.jks
     signingConfigs {
         create("release") {
-            val keystorePath = System.getenv("KEYSTORE_PATH")
-            if (keystorePath != null) {
-                storeFile = file(keystorePath)
-                storePassword = System.getenv("KEYSTORE_PASSWORD")
-                keyAlias = System.getenv("KEY_ALIAS")
-                keyPassword = System.getenv("KEY_PASSWORD")
+            if (keyPropertiesFile.exists()) {
+                storeFile = file(keyProperties.getProperty("storeFile"))
+                storePassword = keyProperties.getProperty("storePassword")
+                keyAlias = keyProperties.getProperty("keyAlias")
+                keyPassword = keyProperties.getProperty("keyPassword")
             }
         }
     }
@@ -58,9 +58,9 @@ android {
     buildTypes {
         release {
             val releaseConfig = signingConfigs.getByName("release")
-            // Use the release keystore when env vars are present; fall back to
-            // debug keys only for local development builds without env vars set.
-            signingConfig = if (releaseConfig.storeFile != null) releaseConfig
+            // Use release keystore when key.properties is present; fall back to
+            // debug keys only for local builds without the properties file.
+            signingConfig = if (keyPropertiesFile.exists()) releaseConfig
                             else signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
