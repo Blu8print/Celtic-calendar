@@ -15,6 +15,7 @@ import '../services/google_calendar_service.dart';
 import '../services/home_widget_service.dart';
 import '../services/reminder_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/sky_strip.dart';
 
 // ─── Color palette (maps to Google Calendar colorIds) ─────────────────────────
 
@@ -69,6 +70,7 @@ class EventDetailScreen extends StatefulWidget {
 
 class _EventDetailScreenState extends State<EventDetailScreen> {
   late DateTime _date;
+  bool _skyExpanded = true; // persists across day swipes
 
   @override
   void initState() {
@@ -155,6 +157,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             final festivals = _festivalsForDay;
             return CustomScrollView(
               slivers: [
+                SliverToBoxAdapter(child: SkyStrip(
+                  date: _date,
+                  initiallyExpanded: _skyExpanded,
+                  onExpandedChanged: (v) => _skyExpanded = v,
+                )),
                 if (events.isEmpty && festivals.isEmpty)
                   const SliverToBoxAdapter(child: _EmptyState())
                 else if (events.isNotEmpty)

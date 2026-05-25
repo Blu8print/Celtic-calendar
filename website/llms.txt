@@ -1,0 +1,69 @@
+# Roots Calendar
+
+> Roots Calendar is a free, open-source mobile app that lets you live by the Celtic Tree Calendar — a 13-month, 28-day-per-month system rooted in the ancient Beth-Luis-Nion tradition. Available on Android, with Google Calendar sync and full offline support.
+
+## What is Roots Calendar?
+
+Roots Calendar is a Flutter app for Android that displays the Celtic Tree Calendar alongside the Gregorian calendar. Every day cell shows both the Celtic date and the familiar Gregorian date, so the app works as a companion — not a replacement — to your existing calendar.
+
+The app is free, contains no ads, requires no account, and stores all event data locally on the device (Drift/SQLite). Google Calendar sync is optional and uses OAuth directly between the device and Google — no intermediate server ever touches your data. The app is open-source under GPL-3.0.
+
+## The Celtic Tree Calendar (Beth-Luis-Nion)
+
+The Celtic Tree Calendar divides the year into 13 months of 28 days each (364 days total), plus one Year Day (December 23) and a Leap Day in leap years. The year begins on December 24 with Beth (Birch). Each month is named after a sacred tree and its Ogham character, and carries a teaching or keyword.
+
+| # | Name   | Tree      | Keyword        | Gregorian start |
+|---|--------|-----------|----------------|-----------------|
+| 1 | Beth   | Birch     | New Beginnings | Dec 24          |
+| 2 | Luis   | Rowan     | Protection     | Jan 21          |
+| 3 | Nion   | Ash       | Connection     | Feb 18          |
+| 4 | Fearn  | Alder     | Guidance       | Mar 18          |
+| 5 | Saille | Willow    | Intuition      | Apr 15          |
+| 6 | Huath  | Hawthorn  | Cleansing      | May 13          |
+| 7 | Duir   | Oak       | Strength       | Jun 10          |
+| 8 | Tinne  | Holly     | Balance        | Jul 8           |
+| 9 | Coll   | Hazel     | Wisdom         | Aug 5           |
+|10 | Muin   | Vine      | Harvest        | Sep 2           |
+|11 | Gort   | Ivy       | Perseverance   | Sep 30          |
+|12 | Ngetal | Reed      | Healing        | Oct 28          |
+|13 | Ruis   | Elder     | Transition     | Nov 25          |
+
+Year Day (nameless) falls on December 23. In leap years a Leap Day follows it.
+
+## Key features
+
+- Live Celtic calendar with today highlighted; tap any day to see or add events
+- Each month shows its Ogham letter, tree name, keyword, and Gregorian date range
+- 13-month horizontal strip for quick navigation
+- Events stored locally (no server, no account required)
+- Optional Google Calendar sync — reads and writes events directly via OAuth
+- Dark forest aesthetic: deep greens and gold, Cinzel/Lora fonts
+- Free, open-source (GPL-3.0), no ads, no subscription
+
+## Availability
+
+- Platform: Android (Google Play, closed beta)
+- iOS: on the roadmap; not yet available
+- Price: Free
+
+## Beta access
+
+Roots Calendar is currently in closed beta on Android via Google Play. Users can request access at https://celtic-calendar.org/ by submitting their name and Gmail address.
+
+## Common questions
+
+**What is a 13 month calendar?**
+A 13 month calendar divides the year into 13 equal months of 28 days (364 days), with one or two extra days outside the monthly structure. Because 13 x 28 = 364, every month is exactly four weeks. The most well-known 13-month systems are the Celtic Tree Calendar and the International Fixed Calendar.
+
+**Is Roots Calendar really free?**
+Yes. No ads, no subscription, no account required. All data stays on your device.
+
+**Does it work with my existing Google Calendar?**
+Yes. The app syncs bidirectionally with Google Calendar using OAuth. Celtic events appear alongside Gregorian dates.
+
+**Why did we end up with 12 months?**
+The original Roman calendar had 10 months starting in March (explaining why September through December still carry Latin names for 7–10). January and February were added around 713 BC and the calendar was reformed under Julius Caesar and Pope Gregory XIII in 1582, producing the unequal system we use today.
+
+## About the developer
+
+Built by Sebastiaan Castenmiller. Website: https://celtic-calendar.org/

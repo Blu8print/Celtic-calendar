@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roots Calendar — Day Widget</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+
+<!--
+════════════════════════════════════════════════════════════
+  ROOTS CALENDAR — Day Header Widget
+  HTML design reference · April 2026
+
+  Flutter implementation notes are in comments throughout.
+  Search for "FLUTTER:" to find every relevant note.
+════════════════════════════════════════════════════════════
+
+  WIDGET OVERVIEW
+  ───────────────
+  This file contains two variants of the same widget:
+
+  1. DayHeaderCompact  — used in a bottom sheet (DraggableScrollableSheet)
+                         opened when the user taps a day in month view.
+
+  2. DayHeaderFull     — used as the sticky header in the full DayView screen.
+
+  Both share the same data and clock logic. Only the layout differs.
+
+  FLUTTER COMPONENT TREE
+  ──────────────────────
+
+  DayHeaderWidget(
+    compact: bool,          // true = bottom sheet, false = day view
+    celticDay: int,         // e.g. 19
+    celticMonth: CelticMonth,  // { name, tree, ogham, keyword }
+    gregorianDate: DateTime,
+    isToday: bool,          // shows live clock only when true
+    events: List<CalEvent>,
+  )
+  └── if compact → _CompactHeader + _EventList
+      else       → _FullHeader    + _EventList
+
+  _EventList
+  └── ListView of _EventTile (upcoming only, filtered by endTime > now)
+      with "All day" section above timed events
+
+════════════════════════════════════════════════════════════
+-->
+
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/*
+  FLUTTER: Replace CSS variables with AppTheme constants in app_theme.dart
+  --bg      → AppColors.bg       = Color(0xFFF7F3EC)
+  --surf    → AppColors.surface  = Color(0xFFFFFFFF)
+  --bdr     → AppColors.border   = Color(0xFFB8AE9E)
+  --ink     → AppColors.ink      = Color(0xFF111108)
+  --sub     → AppColors.sub      = Color(0xFF5A5040)
+  --green   → AppColors.green    = Color(0xFF1A4018)
+  --gold    → AppColors.gold     = Color(0xFFB07800)
+*/
+:root {
+  --bg:    #f7f3ec;
+  --surf:  #ffffff;
+  --bdr:   #b8ae9e;
+  --ink:   #111108;
+  --sub:   #5a5040;
+  --green: #1a4018;
+  --gold:  #b07800;
+}
+
+body {
+  font-family: 'Lora', Georgia, serif;
+  background: #e8e2d8;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+/* ── Page labels (design reference only, not in Flutter) ── */
+.page-label {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--sub);
+  margin-bottom: 10px;
+  padding-left: 2px;
+}
+.phone-frame {
+  width: 360px;
+  background: var(--bg);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0,0,0,.15);
+}
+
+/* ════════════════════════════════════════════════
+   COMPACT HEADER
+   FLUTTER: Widget _CompactHeader extends StatelessWidget
+   ════════════════════════════════════════════════ */
+.h-compact {
+  /*
+    FLUTTER:
+    Container(
+      color: AppColors.bg,
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(children: [dayNum, Expanded(mid), clock]),
+    )
+  */
+  background: var(--bg);
+  border-bottom: 1.5px solid var(--bdr);
+  padding: .65rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.h-compact-num {
+  /*
+    FLUTTER:
+    Text('19',
+      style: TextStyle(
+        fontFamily: 'Cinzel', fontSize: 26, fontWeight: FontWeight.w700,
+        color: AppColors.green, height: 1,
+      ),
+    )
+  */
+  font-family: 'Cinzel', serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1;
+}
+
+.h-compact-mid {
+  /* FLUTTER: Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, ...)) */
+  flex: 1;
+  min-width: 0;
+}
+
+.h-compact-name {
+  /*
+    FLUTTER:
+    Text('Fearn · Alder',
+      style: TextStyle(fontFamily: 'Cinzel', fontSize: 15, fontWeight: FontWeight.w600,
+        color: AppColors.ink),
+    )
+  */
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.h-compact-sub {
+  /*
+    FLUTTER: RichText combining italic grey + gold keyword
+    TextSpan(text: 'Saturday 4 April · ',
+      style: TextStyle(fontSize: 11, color: AppColors.sub, fontStyle: FontStyle.italic),
+      children: [TextSpan(text: 'GUIDANCE',
+        style: TextStyle(fontFamily:'Cinzel', color: AppColors.gold, fontStyle: FontStyle.normal))]
+    )
+  */
+  font-size: 11px;
+  color: var(--sub);
+  font-style: italic;
+  margin-top: 1px;
+}
+.h-compact-sub .kw {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: .07em;
+  color: var(--gold);
+  font-style: normal;
+  text-transform: uppercase;
+}
+
+.h-clock-compact {
+  /*
+    FLUTTER: StreamBuilder<DateTime>(
+      stream: Stream.periodic(Duration(minutes: 1), (_) => DateTime.now()),
+      builder: (ctx, snap) {
+        final use24 = MediaQuery.of(ctx).alwaysUse24HourFormat;
+        final fmt = use24 ? DateFormat('HH:mm') : DateFormat('h:mm a');
+        return Text(fmt.format(snap.data ?? DateTime.now()), style: ...);
+      },
+    )
+    Only render this widget when isToday == true.
+  */
+  font-family: 'Cinzel', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1;
+  letter-spacing: .03em;
+  flex-shrink: 0;
+}
+
+/* ════════════════════════════════════════════════
+   FULL HEADER
+   FLUTTER: Widget _FullHeader extends StatelessWidget
+   ════════════════════════════════════════════════ */
+.h-full {
+  /*
+    FLUTTER:
+    Container(
+      color: AppColors.bg,
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 14),
+      child: Column(children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(left),
+          if (isToday) _ClockWidget(),
+        ]),
+        _GregDivider(),
+      ]),
+    )
+  */
+  background: var(--bg);
+  border-bottom: 1.5px solid var(--bdr);
+  padding: 1rem 1.25rem .85rem;
+}
+
+.h-full-inner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.h-full-top {
+  /*
+    FLUTTER:
+    Text('CELTIC TREE CALENDAR · DAY',
+      style: TextStyle(fontFamily: 'Cinzel', fontSize: 10,
+        letterSpacing: 1.4, color: AppColors.sub),
+    )
+  */
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--sub);
+  margin-bottom: 4px;
+}
+
+.h-full-row {
+  /* FLUTTER: Row(crossAxisAlignment: CrossAxisAlignment.baseline, ...) */
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.h-full-num {
+  /*
+    FLUTTER:
+    Text('19',
+      style: TextStyle(fontFamily: 'Cinzel', fontSize: 38, fontWeight: FontWeight.w700,
+        color: AppColors.green, height: 1),
+    )
+  */
+  font-family: 'Cinzel', serif;
+  font-size: 38px;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1;
+}
+
+.h-full-name {
+  /*
+    FLUTTER:
+    Text('Fearn',
+      style: TextStyle(fontFamily: 'Cinzel', fontSize: 22, fontWeight: FontWeight.w600,
+        color: AppColors.ink),
+    )
+  */
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.h-full-meaning {
+  /*
+    FLUTTER: Row(children: [ogham, SizedBox(8), tree, _Dot(), keyword])
+    Spacing: mainAxisAlignment: MainAxisAlignment.start, gap via SizedBox
+  */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.h-full-ogham {
+  /* FLUTTER: Text('ᚃ', style: TextStyle(fontSize: 19, color: AppColors.gold)) */
+  font-size: 19px;
+  color: var(--gold);
+}
+
+.h-full-tree {
+  /* FLUTTER: Text('Alder', style: TextStyle(fontSize: 13, color: AppColors.sub, fontStyle: FontStyle.italic)) */
+  font-size: 13px;
+  color: var(--sub);
+  font-style: italic;
+}
+
+.dot-sep {
+  /* FLUTTER: Text('·', style: TextStyle(fontSize: 10, color: AppColors.border)) */
+  color: var(--bdr);
+  font-size: 10px;
+}
+
+.h-full-kw {
+  /*
+    FLUTTER:
+    Text('GUIDANCE',
+      style: TextStyle(fontFamily: 'Cinzel', fontSize: 11,
+        letterSpacing: 1.0, color: AppColors.gold),
+    )
+  */
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: .08em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+.h-full-clock {
+  /*
+    FLUTTER: same StreamBuilder as compact, fontSize: 28
+    Only shown when isToday == true.
+    Align to top of row via CrossAxisAlignment.start on the parent Row.
+  */
+  font-family: 'Cinzel', serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1;
+  letter-spacing: .03em;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.h-full-greg {
+  /*
+    FLUTTER:
+    Container(
+      margin: EdgeInsets.only(top: 10),
+      padding: EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(border: Border(top: BorderSide(color: AppColors.border, width: 1))),
+      child: Text('Saturday, 4 April 2026',
+        style: TextStyle(fontSize: 12, color: AppColors.sub)),
+    )
+
+    Format with: DateFormat.yMMMMEEEEd().format(gregorianDate)
+    e.g. 'Saturday, 4 April 2026' — locale-aware automatically.
+  */
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--sub);
+  border-top: 1px solid var(--bdr);
+  padding-top: 8px;
+}
+
+/* ════════════════════════════════════════════════
+   EVENT LIST
+   FLUTTER: Widget _EventList extends StatelessWidget
+   ════════════════════════════════════════════════ */
+
+/*
+  FLUTTER FILTERING LOGIC:
+  ─────────────────────────
+  final now = DateTime.now();
+
+  final allDay = events.where((e) => e.isAllDay).toList();
+
+  final upcoming = events.where((e) =>
+    !e.isAllDay && e.endTime.isAfter(now)
+  ).toList()
+    ..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+  Render allDay section only if allDay.isNotEmpty.
+  Render upcoming section only if upcoming.isNotEmpty.
+  Show empty state if both are empty.
+*/
+
+.ev-list {
+  /*
+    FLUTTER: ListView (shrinkWrap: true inside Column, or full Expanded ListView)
+    Use CustomScrollView with SliverList for the day view screen.
+  */
+  background: var(--surf);
+  padding: .75rem;
+}
+
+.ev-section {
+  /*
+    FLUTTER:
+    Padding(
+      padding: EdgeInsets.fromLTRB(4, 10, 4, 6),
+      child: Text('ALL DAY', style: TextStyle(fontFamily: 'Cinzel', fontSize: 10,
+        letterSpacing: 1.4, color: AppColors.sub)),
+    )
+    Skip top padding for the first section.
+  */
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--sub);
+  margin: 10px 0 6px;
+  padding-left: 4px;
+}
+.ev-section:first-child { margin-top: 0; }
+
+/* All-day event tile */
+.ev-ad {
+  /*
+    FLUTTER:
+    Container(
+      margin: EdgeInsets.only(bottom: 6),
+      padding: EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+      decoration: BoxDecoration(
+        color: Color(0xFFFEF6DC),
+        border: Border.all(color: Color(0xFFB07800)),
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Row(children: [colorBar, SizedBox(10), info]),
+    )
+  */
+  background: #fef6dc;
+  border: 1px solid var(--gold);
+  border-radius: 9px;
+  padding: 8px 11px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.ev-ad:hover { filter: brightness(.97); }
+.ev-ad-bar {
+  width: 3px; border-radius: 2px; background: var(--gold);
+  align-self: stretch; flex-shrink: 0;
+}
+.ev-ad-title { font-size: 13px; color: #5a3800; font-weight: 500; }
+.ev-ad-lbl {
+  font-family: 'Cinzel', serif; font-size: 9px;
+  color: #8a6000; letter-spacing: .06em; margin-top: 2px;
+}
+
+/* Timed event tile */
+.ev {
+  /*
+    FLUTTER: _EventTile widget — GestureDetector wrapping a Container Row.
+    The color bar width is 3px, color comes from CalEvent.color (mapped to AppColors).
+
+    Event color mapping:
+      'gold' → Color(0xFFB07800)  bar / Color(0xFFFEF6DC) bg
+      'grn'  → Color(0xFF2D6B28)  bar / Color(0xFFE8F5E4) bg
+      'rose' → Color(0xFF8B2040)  bar / Color(0xFFFDE8EE) bg
+      'blue' → Color(0xFF1A4080)  bar / Color(0xFFE4EEFF) bg
+  */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surf);
+  border: 1px solid var(--bdr);
+  border-radius: 9px;
+  padding: 8px 11px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: background .1s;
+}
+.ev:hover { background: #f5f0e8; }
+.ev-bar { width: 3px; border-radius: 2px; align-self: stretch; flex-shrink: 0; }
+.ev-body { flex: 1; min-width: 0; }
+.ev-title { font-size: 13px; color: var(--ink); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ev-time  { font-size: 11px; color: var(--sub); margin-top: 2px; }
+
+/* Empty state */
+.ev-empty {
+  /*
+    FLUTTER:
+    Center(child: Padding(
+      padding: EdgeInsets.symmetric(vertical: 32),
+      child: Text('No events today', style: TextStyle(fontSize: 13,
+        color: AppColors.sub, fontStyle: FontStyle.italic)),
+    ))
+  */
+  text-align: center;
+  font-size: 13px;
+  color: var(--sub);
+  font-style: italic;
+  padding: 2rem 1rem;
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     VARIANT 1: COMPACT (bottom sheet)
+     ══════════════════════════════════════ -->
+<div>
+  <div class="page-label">Compact — bottom sheet</div>
+  <div class="phone-frame">
+
+    <!-- DayHeaderCompact -->
+    <div class="h-compact">
+      <div class="h-compact-num">19</div>
+      <div class="h-compact-mid">
+        <div class="h-compact-name">Fearn · Alder</div>
+        <div class="h-compact-sub">
+          Saturday 4 April · <span class="kw">Guidance</span>
+        </div>
+      </div>
+      <!-- Only shown when isToday == true -->
+      <div class="h-clock-compact" id="clock-compact">—</div>
+    </div>
+
+    <!-- EventList -->
+    <div class="ev-list">
+      <div class="ev-section">All day</div>
+      <div class="ev-ad">
+        <div class="ev-ad-bar"></div>
+        <div>
+          <div class="ev-ad-title">Full moon ritual</div>
+          <div class="ev-ad-lbl">All day</div>
+        </div>
+      </div>
+
+      <div class="ev-section">Upcoming</div>
+      <div class="ev">
+        <div class="ev-bar" style="background:#2d6b28;"></div>
+        <div class="ev-body">
+          <div class="ev-title">Call Frederique</div>
+          <div class="ev-time">10:00 – 11:00</div>
+        </div>
+      </div>
+      <div class="ev">
+        <div class="ev-bar" style="background:#1a4080;"></div>
+        <div class="ev-body">
+          <div class="ev-title">Client meeting</div>
+          <div class="ev-time">14:00 – 15:30</div>
+        </div>
+      </div>
+      <div class="ev">
+        <div class="ev-bar" style="background:#b07800;"></div>
+        <div class="ev-body">
+          <div class="ev-title">Ecstatic Dance</div>
+          <div class="ev-time">19:00 – 22:00</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     VARIANT 2: FULL (day view screen)
+     ══════════════════════════════════════ -->
+<div>
+  <div class="page-label">Full — day view screen</div>
+  <div class="phone-frame">
+
+    <!-- DayHeaderFull -->
+    <div class="h-full">
+      <div class="h-full-inner">
+        <div>
+          <div class="h-full-top">Celtic Tree Calendar · Day</div>
+          <div class="h-full-row">
+            <div class="h-full-num">19</div>
+            <div class="h-full-name">Fearn</div>
+          </div>
+          <div class="h-full-meaning">
+            <span class="h-full-ogham">ᚃ</span>
+            <span class="h-full-tree">Alder</span>
+            <span class="dot-sep">·</span>
+            <span class="h-full-kw">Guidance</span>
+          </div>
+        </div>
+        <!-- Only shown when isToday == true -->
+        <div class="h-full-clock" id="clock-full">—</div>
+      </div>
+      <div class="h-full-greg">Saturday, 4 April 2026</div>
+    </div>
+
+    <!-- EventList -->
+    <div class="ev-list">
+      <div class="ev-section">All day</div>
+      <div class="ev-ad">
+        <div class="ev-ad-bar"></div>
+        <div>
+          <div class="ev-ad-title">Full moon ritual</div>
+          <div class="ev-ad-lbl">All day</div>
+        </div>
+      </div>
+
+      <div class="ev-section">Upcoming</div>
+      <div class="ev">
+        <div class="ev-bar" style="background:#2d6b28;"></div>
+        <div class="ev-body">
+          <div class="ev-title">Call Frederique</div>
+          <div class="ev-time">10:00 – 11:00</div>
+        </div>
+      </div>
+      <div class="ev">
+        <div class="ev-bar" style="background:#1a4080;"></div>
+        <div class="ev-body">
+          <div class="ev-title">Client meeting</div>
+          <div class="ev-time">14:00 – 15:30</div>
+        </div>
+      </div>
+      <div class="ev">
+        <div class="ev-bar" style="background:#b07800;"></div>
+        <div class="ev-body">
+          <div class="ev-title">Ecstatic Dance</div>
+          <div class="ev-time">19:00 – 22:00</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/*
+  FLUTTER EQUIVALENT:
+  ─────────────────────────────────────────────────────────────
+  Stream<String> clockStream() => Stream.periodic(
+    const Duration(minutes: 1),
+    (_) => _formatTime(DateTime.now()),
+  ).startWith(_formatTime(DateTime.now()));
+
+  String _formatTime(DateTime now) {
+    final use24 = MediaQuery.of(context).alwaysUse24HourFormat;
+    return use24
+      ? DateFormat('HH:mm').format(now)
+      : DateFormat('h:mm a').format(now);
+  }
+
+  // In build():
+  if (widget.isToday)
+    StreamBuilder<String>(
+      stream: clockStream(),
+      builder: (ctx, snap) => Text(snap.data ?? ''),
+    )
+  ─────────────────────────────────────────────────────────────
+  The HTML uses toLocaleTimeString() which reads the browser's
+  own 12/24h preference — same principle as alwaysUse24HourFormat.
+*/
+function formatTime() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+function tick() {
+  const t = formatTime();
+  document.getElementById('clock-compact').textContent = t;
+  document.getElementById('clock-full').textContent = t;
+}
+tick();
+setInterval(tick, 10000);
+</script>
+</body>
+</html>

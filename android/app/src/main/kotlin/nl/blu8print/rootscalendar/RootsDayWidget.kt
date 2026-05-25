@@ -18,6 +18,7 @@ class RootsDayWidget : AppWidgetProvider() {
         appWidgetIds: IntArray,
     ) {
         appWidgetIds.forEach { updateWidget(context, appWidgetManager, it) }
+        scheduleNextMinuteTick(context)
     }
 
     /** Re-render when the user resizes the widget. */
@@ -30,7 +31,32 @@ class RootsDayWidget : AppWidgetProvider() {
         updateWidget(context, appWidgetManager, appWidgetId)
     }
 
+    /** Start the per-minute alarm when the first widget instance is added. */
+    override fun onEnabled(context: Context) {
+        scheduleNextMinuteTick(context)
+    }
+
+    /** Cancel the alarm when the last widget instance is removed. */
+    override fun onDisabled(context: Context) {
+        cancelMinuteTick(context)
+    }
+
+    /** Handle the per-minute tick broadcast. */
+    override fun onReceive(context: Context, intent: Intent) {
+        super.onReceive(context, intent)
+        if (intent.action == ACTION_MINUTE_TICK) {
+            val awm = AppWidgetManager.getInstance(context)
+            val ids = awm.getAppWidgetIds(
+                android.content.ComponentName(context, RootsDayWidget::class.java)
+            )
+            ids.forEach { updateWidget(context, awm, it) }
+            scheduleNextMinuteTick(context)
+        }
+    }
+
     companion object {
+
+        const val ACTION_MINUTE_TICK = "nl.blu8print.rootscalendar.MINUTE_TICK"
 
         // ── Colour palettes ───────────────────────────────────────────────
         // Light — matches AppColors.light / roots_day_widget.html
@@ -54,6 +80,10 @@ class RootsDayWidget : AppWidgetProvider() {
         private val DARK_EV_SUB  = Color.parseColor("#FF6A8A60")
         private val DARK_AD_TEXT = Color.parseColor("#FFE8CC88")
         private val DARK_AD_SUB  = Color.parseColor("#FFC9A84C")
+
+        // Gold for solar time label — distinct from the green accent in light mode
+        private val LIGHT_GOLD    = Color.parseColor("#FFB07800")
+        private val DARK_GOLD     = Color.parseColor("#FFC9A84C")
 
         // Fallback bar colour when event colour is missing or unparseable
         private val FALLBACK_BAR  = Color.parseColor("#FFB07800")
@@ -131,11 +161,18 @@ class RootsDayWidget : AppWidgetProvider() {
                 // ── Widget background + structural colours ─────────────────
                 views.setInt(R.id.widget_root,    "setBackgroundColor", bg)
                 views.setInt(R.id.widget_divider, "setBackgroundColor", divider)
-                views.setTextColor(R.id.widget_day_num,    accent)
-                views.setTextColor(R.id.widget_month_name, text)
-                views.setTextColor(R.id.widget_date_line,  sub)
-                views.setTextColor(R.id.widget_clock,      accent)
-                views.setTextColor(R.id.widget_no_events,  sub)
+                views.setTextColor(R.id.widget_day_num,     accent)
+                views.setTextColor(R.id.widget_month_name,  text)
+                views.setTextColor(R.id.widget_date_line,   sub)
+                views.setTextColor(R.id.widget_clock,       accent)
+                views.setTextColor(R.id.widget_no_events,   sub)
+                val gold = if (isLight) LIGHT_GOLD else DARK_GOLD
+                views.setTextColor(R.id.widget_solar_time,  gold)
+
+                // Solar time (true sun) — HH:mm, updated each widget refresh
+                // TODO: write sky_lon to HomeWidgetPreferences from Flutter to use user's location
+                val lon = prefs.getFloat("sky_lon", 4.7f).toDouble()
+                views.setTextViewText(R.id.widget_solar_time, solarTimeHHmm(lon))
 
                 // ── Header text ───────────────────────────────────────────
                 views.setTextViewText(
@@ -195,6 +232,50 @@ class RootsDayWidget : AppWidgetProvider() {
             } catch (e: Exception) {
                 android.util.Log.e("RootsDayWidget", "updateWidget failed: ${e.message}", e)
             }
+        }
+
+        /** Computes true solar time as "HH:mm" for the given longitude (degrees east). */
+        private fun solarTimeHHmm(longitudeDeg: Double): String {
+            val utc = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC"))
+            val utcH = utc.get(java.util.Calendar.HOUR_OF_DAY) +
+                       utc.get(java.util.Calendar.MINUTE) / 60.0 +
+                       utc.get(java.util.Calendar.SECOND) / 3600.0
+            val lmst = utcH + (longitudeDeg / 15.0)
+            val n = utc.get(java.util.Calendar.DAY_OF_YEAR).toDouble()
+            val b = (360.0 / 365.0) * (n - 81) * (Math.PI / 180.0)
+            val eot = 9.87 * Math.sin(2 * b) - 7.53 * Math.cos(b) - 1.5 * Math.sin(b)
+            val raw = (lmst + eot / 60.0) % 24.0
+            val totalMin = ((if (raw < 0) raw + 24.0 else raw) * 60).toInt()
+            val hh = (totalMin / 60).toString().padStart(2, '0')
+            val mm = (totalMin % 60).toString().padStart(2, '0')
+            return "$hh:$mm"
+        }
+
+        /** Returns a PendingIntent for the per-minute tick broadcast. */
+        private fun minuteTickIntent(context: Context): PendingIntent {
+            val intent = Intent(context, RootsDayWidget::class.java).apply {
+                action = ACTION_MINUTE_TICK
+            }
+            return PendingIntent.getBroadcast(
+                context, 0, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        }
+
+        /** Schedules an exact alarm at the next full minute boundary. */
+        private fun scheduleNextMinuteTick(context: Context) {
+            val am = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+            val cal = java.util.Calendar.getInstance()
+            cal.set(java.util.Calendar.SECOND, 0)
+            cal.set(java.util.Calendar.MILLISECOND, 0)
+            cal.add(java.util.Calendar.MINUTE, 1)
+            am.setExact(android.app.AlarmManager.RTC, cal.timeInMillis, minuteTickIntent(context))
+        }
+
+        /** Cancels the per-minute tick alarm. */
+        private fun cancelMinuteTick(context: Context) {
+            val am = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+            am.cancel(minuteTickIntent(context))
         }
 
         /** Applies card background, bar colour, and text to one event slot. */

@@ -68,17 +68,37 @@
 
         </LinearLayout>
 
-        <TextClock
-            android:id="@+id/widget_clock"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:format24Hour="HH:mm"
-            android:format12Hour="h:mm a"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:textColor="@color/widget_accent"
-            android:paddingStart="8dp"
-            android:includeFontPadding="false" />
+            android:orientation="vertical"
+            android:gravity="end">
+
+            <TextClock
+                android:id="@+id/widget_clock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:format24Hour="HH:mm"
+                android:format12Hour="h:mm a"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/widget_accent"
+                android:paddingStart="8dp"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/widget_solar_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/widget_accent"
+                android:paddingStart="8dp"
+                android:gravity="end"
+                android:includeFontPadding="false" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

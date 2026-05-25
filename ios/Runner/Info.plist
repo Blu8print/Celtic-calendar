@@ -74,6 +74,8 @@
 		<string>be.tramckrijte.workmanager.iOSBackgroundAppRefresh</string>
 		<string>be.tramckrijte.workmanager.iOSBackgroundProcessingTask</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Used to calculate local sunrise and sunset times in the Sky panel.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

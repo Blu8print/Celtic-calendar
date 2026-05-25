@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roots Calendar — Celtic Tree Calendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & base ── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg:        #f4efe6;
+  --surface:   #ffffff;
+  --surface2:  #f9f6f0;
+  --border:    #d8cfc0;
+  --border2:   #c8bfb0;
+
+  --green:     #2b5226;   /* primary — 8.4:1 on --bg */
+  --green-mid: #4a7a44;   /* secondary text — 4.8:1 on --bg */
+  --green-dim: #6b9464;   /* muted — 3.1:1 large/UI only */
+
+  --amber:     #7a5a10;   /* accent text — 5.6:1 on --bg */
+  --amber-bg:  #f5e9cc;
+  --amber-bdr: #c9a84c;
+
+  --text:      #1c2b19;   /* body — 14:1 on --bg */
+  --text2:     #3d5238;   /* secondary — 7.2:1 on --bg */
+  --dim:       #5a6b55;   /* captions — 4.6:1 on --bg */
+
+  --today-bg:  #e8f0e4;
+  --today-bdr: #2b5226;
+  --focus:     #1a6fbf;   /* blue focus ring for max visibility */
+
+  --radius:    8px;
+  --shadow:    0 1px 4px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+}
+
+/* ── Skip nav (accessibility) ── */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  background: var(--focus);
+  color: #fff;
+  padding: .5rem 1rem;
+  font-family: 'Cinzel', serif;
+  font-size: .8rem;
+  z-index: 999;
+  border-radius: 0 0 var(--radius) 0;
+  text-decoration: none;
+}
+.skip-link:focus { top: 0; }
+
+html, body {
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Lora', Georgia, serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* ── App shell ── */
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ── App title ── */
+.app-header {
+  text-align: center;
+  padding-bottom: .75rem;
+  border-bottom: 1px solid var(--border);
+}
+.app-header h1 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--green);
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.app-header p {
+  font-size: .72rem;
+  color: var(--dim);
+  margin-top: .15rem;
+  font-style: italic;
+}
+
+/* ── Year navigation ── */
+.year-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
+}
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; height: 44px;   /* WCAG touch target */
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--green);
+  cursor: pointer;
+  border-radius: var(--radius);
+  font-size: 1rem;
+  transition: border-color .15s, background .15s;
+  flex-shrink: 0;
+}
+.icon-btn:hover { border-color: var(--green); background: var(--surface2); }
+.icon-btn:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.year-label {
+  font-family: 'Cinzel', serif;
+  font-size: .75rem;
+  color: var(--text2);
+  letter-spacing: .1em;
+  text-align: center;
+}
+
+/* ── Month hero card ── */
+.month-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.5rem 1.25rem 1.25rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.month-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--amber-bdr), transparent);
+}
+.m-ogham {
+  font-size: 2rem;
+  color: var(--amber-bdr);
+  opacity: .65;
+  line-height: 1;
+  margin-bottom: .4rem;
+  letter-spacing: .3em;
+  aria-hidden: true;
+}
+.m-name {
+  font-family: 'Cinzel', serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1.1;
+  margin-bottom: .2rem;
+}
+.m-tree {
+  font-family: 'Cinzel', serif;
+  font-size: .72rem;
+  color: var(--green-mid);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  margin-bottom: .5rem;
+}
+.m-keyword {
+  display: inline-block;
+  background: var(--amber-bg);
+  color: var(--amber);
+  border: 1px solid var(--amber-bdr);
+  border-radius: 20px;
+  padding: .2rem .85rem;
+  font-size: .82rem;
+  font-style: italic;
+  margin-bottom: .65rem;
+}
+.m-dates {
+  font-family: 'Cinzel', serif;
+  font-size: .68rem;
+  color: var(--dim);
+  letter-spacing: .05em;
+}
+
+/* ── Month navigation ── */
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+.mnav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  min-width: 44px; min-height: 44px;
+  padding: .4rem .75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  cursor: pointer;
+  border-radius: var(--radius);
+  font-family: 'Cinzel', serif;
+  font-size: .7rem;
+  letter-spacing: .04em;
+  transition: border-color .15s, color .15s;
+  white-space: nowrap;
+  max-width: 36%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mnav-btn:hover { border-color: var(--green); color: var(--green); }
+.mnav-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.mnav-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .25rem;
+}
+.month-pos {
+  font-family: 'Cinzel', serif;
+  font-size: .68rem;
+  color: var(--dim);
+  letter-spacing: .05em;
+}
+.today-btn {
+  min-width: 44px; min-height: 36px;
+  padding: .25rem .7rem;
+  background: none;
+  border: 1px solid var(--border2);
+  color: var(--green-mid);
+  cursor: pointer;
+  border-radius: 20px;
+  font-family: 'Cinzel', serif;
+  font-size: .65rem;
+  letter-spacing: .07em;
+  transition: border-color .15s, color .15s;
+}
+.today-btn:hover { border-color: var(--green); color: var(--green); }
+.today-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* ── Calendar grid ── */
+.cal-grid {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.wd-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.wd-cell {
+  text-align: center;
+  padding: .5rem 0;
+  font-family: 'Cinzel', serif;
+  font-size: .62rem;
+  letter-spacing: .07em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+.days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+/* Day cell — min 44px touch target */
+.day-cell {
+  position: relative;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: .35rem .15rem;
+  cursor: pointer;
+  transition: background .12s;
+  /* focus within this cell */
+}
+.day-cell:nth-child(7n)  { border-right: none; }
+.day-cell:nth-last-child(-n+7) { border-bottom: none; }
+.day-cell:hover { background: var(--surface2); }
+
+/* Keyboard / focus state on the inner button */
+.day-cell button {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0;  /* invisible but keyboard-reachable */
+}
+.day-cell button:focus-visible ~ .dn-wrap {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+.day-cell button:focus-visible {
+  /* fallback for browsers that don't support ~ on pseudo */
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+  opacity: 1;
+  border-radius: 4px;
+}
+
+.dn-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.dn {
+  font-family: 'Cinzel', serif;
+  font-size: .95rem;
+  color: var(--text);
+  line-height: 1;
+}
+.gd {
+  font-size: .56rem;
+  color: var(--dim);
+  font-family: 'Lora', serif;
+  line-height: 1;
+}
+
+/* Today */
+.day-cell.is-today {
+  background: var(--today-bg);
+}
+.day-cell.is-today .dn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #fff;
+  font-size: .85rem;
+}
+.day-cell.is-today .gd { color: var(--green-mid); }
+
+/* Event dot — also add visually hidden text */
+.dot-row {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+}
+.ev-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--amber-bdr);
+  flex-shrink: 0;
+}
+.ev-dot.green { background: var(--green-mid); }
+
+/* ── Year day special cell ── */
+.yearday-cell {
+  margin: 1rem;
+  border: 1px solid #a090c8;
+  border-radius: var(--radius);
+  padding: 1.25rem 1rem;
+  text-align: center;
+  background: #f5f0fc;
+}
+.yearday-cell.is-today { border-color: var(--green); }
+.yd-title { font-family: 'Cinzel', serif; color: #5a3a8a; font-size: .9rem; letter-spacing: .1em; margin-bottom: .3rem; }
+.yd-greg  { font-size: .7rem; color: #7a60a0; margin-bottom: .65rem; }
+.yd-desc  { font-size: .82rem; color: #6a5090; font-style: italic; line-height: 1.6; }
+
+/* ── Upcoming events ── */
+.upcoming {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.upcoming-header {
+  padding: .6rem 1rem;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  font-family: 'Cinzel', serif;
+  font-size: .65rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.event-item {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .65rem 1rem;
+  border-bottom: 1px solid var(--border);
+  transition: background .12s;
+  cursor: pointer;
+}
+.event-item:last-child { border-bottom: none; }
+.event-item:hover { background: var(--surface2); }
+.event-item:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.ev-day-badge {
+  flex-shrink: 0;
+  width: 36px;
+  text-align: center;
+}
+.ev-day-n {
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--green);
+  line-height: 1;
+}
+.ev-day-g {
+  font-size: .58rem;
+  color: var(--dim);
+}
+.ev-bar {
+  width: 2px;
+  align-self: stretch;
+  border-radius: 2px;
+  background: var(--amber-bdr);
+  flex-shrink: 0;
+}
+.ev-bar.green { background: var(--green-mid); }
+.ev-title {
+  font-size: .88rem;
+  color: var(--text);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ev-cal {
+  font-size: .62rem;
+  color: var(--dim);
+  margin-top: .1rem;
+}
+
+/* ── Month strip ── */
+.month-strip-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+.strip-label {
+  font-family: 'Cinzel', serif;
+  font-size: .6rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--dim);
+  padding-left: .1rem;
+}
+.month-strip {
+  display: flex;
+  gap: .2rem;
+  overflow-x: auto;
+  padding-bottom: .35rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+.sm {
+  flex: 0 0 auto;
+  min-width: 46px;
+  padding: .35rem .4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: center;
+  background: var(--surface);
+  transition: all .12s;
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.sm:hover { border-color: var(--green-mid); background: var(--surface2); }
+.sm.active { border-color: var(--green); background: #e8f0e4; }
+.sm.has-today { border-color: var(--green-mid); }
+.sm:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.sm-n    { font-family: 'Cinzel', serif; font-size: .52rem; color: var(--dim); display: block; margin-bottom: .1rem; }
+.sm-name { font-family: 'Cinzel', serif; font-size: .65rem; color: var(--text2); display: block; }
+.sm.active .sm-name { color: var(--green); font-weight: 600; }
+
+/* Visually hidden (screen reader only) */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+</style>
+</head>
+<body>
+
+<a href="#main-calendar" class="skip-link">Skip to calendar</a>
+
+<main id="app" role="main">
+
+  <header class="app-header">
+    <h1>Roots Calendar</h1>
+    <p>Celtic Tree Calendar · Beth-Luis-Nion · 13 months of 28 days</p>
+  </header>
+
+  <!-- Year navigation -->
+  <nav class="year-nav" aria-label="Year navigation">
+    <button class="icon-btn" id="prevYear" aria-label="Previous Celtic year">&#9664;</button>
+    <span class="year-label" id="yearLabel" aria-live="polite" aria-atomic="true"></span>
+    <button class="icon-btn" id="nextYear" aria-label="Next Celtic year">&#9654;</button>
+  </nav>
+
+  <!-- Month hero -->
+  <section class="month-card" aria-labelledby="month-heading" id="monthCard">
+  </section>
+
+  <!-- Month navigation -->
+  <nav class="month-nav" aria-label="Month navigation">
+    <button class="mnav-btn" id="prevMonth" aria-label="Previous month">&#9664; <span id="prevName"></span></button>
+    <div class="mnav-center">
+      <span class="month-pos" id="monthPos" aria-live="polite"></span>
+      <button class="today-btn" id="todayBtn">&#9790; Today</button>
+    </div>
+    <button class="mnav-btn" id="nextMonth" aria-label="Next month"><span id="nextName"></span> &#9654;</button>
+  </nav>
+
+  <!-- Calendar grid -->
+  <div id="calGrid" id="main-calendar">
+  </div>
+
+  <!-- Upcoming events -->
+  <section class="upcoming" aria-labelledby="upcoming-heading" id="upcomingSection">
+    <h2 class="upcoming-header" id="upcoming-heading">Upcoming</h2>
+    <div id="upcomingList"></div>
+  </section>
+
+  <!-- Month strip -->
+  <div class="month-strip-wrap">
+    <span class="strip-label" aria-hidden="true">All months</span>
+    <div class="month-strip" role="list" aria-label="Jump to month" id="strip"></div>
+  </div>
+
+</main>
+
+<script>
+const MONTHS = [
+  { n:1,  name:'Beth',   tree:'Birch',    og:'ᚁ', kw:'New Beginnings', start:[12,24] },
+  { n:2,  name:'Luis',   tree:'Rowan',    og:'ᚂ', kw:'Protection'     },
+  { n:3,  name:'Nion',   tree:'Ash',      og:'ᚅ', kw:'Connection'     },
+  { n:4,  name:'Fearn',  tree:'Alder',    og:'ᚃ', kw:'Guidance'       },
+  { n:5,  name:'Saille', tree:'Willow',   og:'ᚄ', kw:'Intuition'      },
+  { n:6,  name:'Huath',  tree:'Hawthorn', og:'ᚆ', kw:'Cleansing'      },
+  { n:7,  name:'Duir',   tree:'Oak',      og:'ᚇ', kw:'Strength'       },
+  { n:8,  name:'Tinne',  tree:'Holly',    og:'ᚈ', kw:'Balance'        },
+  { n:9,  name:'Coll',   tree:'Hazel',    og:'ᚉ', kw:'Wisdom'         },
+  { n:10, name:'Muin',   tree:'Vine',     og:'ᚋ', kw:'Harvest'        },
+  { n:11, name:'Gort',   tree:'Ivy',      og:'ᚌ', kw:'Perseverance'   },
+  { n:12, name:'Ngetal', tree:'Reed',     og:'ᚍ', kw:'Healing'        },
+  { n:13, name:'Ruis',   tree:'Elder',    og:'ᚏ', kw:'Transition'     },
+];
+
+const GMONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const WEEKDAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+// Sample events (replace with real calendar data)
+const SAMPLE_EVENTS = [
+  { celticMonth: 4, celticDay: 7,  title: 'Ecstatic Dance Oss',     cal: 'Personal' },
+  { celticMonth: 4, celticDay: 9,  title: 'Call with Frederique',   cal: 'Work'     },
+  { celticMonth: 4, celticDay: 12, title: "Maria — cosmetics markt", cal: 'Maria'    },
+];
+
+const today = new Date(); today.setHours(0,0,0,0);
+
+function yearStart(y) { return new Date(y, 11, 24); }
+function celticYearOf(d) {
+  return (d.getMonth() === 11 && d.getDate() >= 24) ? d.getFullYear() : d.getFullYear() - 1;
+}
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
+function sameDay(a, b) { return a.toDateString() === b.toDateString(); }
+function fmtG(d) { return d.getDate() + ' ' + GMONTHS[d.getMonth()]; }
+
+function todayInfo() {
+  const ys  = yearStart(celticYearOf(today));
+  const off = Math.round((today - ys) / 86400000);
+  if (off === 364) return { yd: true };
+  return { month: Math.floor(off / 28) + 1, day: (off % 28) + 1, yd: false };
+}
+
+let curYear  = celticYearOf(today);
+let curMonth = todayInfo().yd ? 'yd' : todayInfo().month;
+
+function render() {
+  const ys = yearStart(curYear);
+  document.getElementById('yearLabel').textContent = `Celtic Year ${curYear}–${curYear + 1}`;
+
+  if (curMonth === 'yd') { renderYD(ys); renderStrip(ys); renderUpcoming(null, null); return; }
+
+  const mo = MONTHS[curMonth - 1];
+  const ms = addDays(ys, (curMonth - 1) * 28);
+  const me = addDays(ms, 27);
+
+  // Month card
+  document.getElementById('monthCard').innerHTML =
+    `<div class="m-ogham" aria-hidden="true">${mo.og}</div>
+     <h2 class="m-name" id="month-heading">${mo.name}</h2>
+     <div class="m-tree">The ${mo.tree}</div>
+     <div class="m-keyword">${mo.kw}</div>
+     <div class="m-dates" aria-label="Date range: ${fmtG(ms)} to ${fmtG(me)}">${fmtG(ms)} – ${fmtG(me)}</div>`;
+
+  // Nav labels
+  document.getElementById('prevName').textContent = curMonth > 1 ? MONTHS[curMonth-2].name : '';
+  document.getElementById('nextName').textContent = curMonth < 13 ? MONTHS[curMonth].name : 'Year Day';
+  document.getElementById('monthPos').textContent  = `Month ${curMonth} of 13`;
+  document.getElementById('prevMonth').setAttribute('aria-label',
+    curMonth > 1 ? `Previous month: ${MONTHS[curMonth-2].name}` : 'Previous year');
+  document.getElementById('nextMonth').setAttribute('aria-label',
+    curMonth < 13 ? `Next month: ${MONTHS[curMonth].name}` : 'Year Day');
+
+  // Calendar grid — WCAG role=grid
+  const startDow = ys.getDay();
+  const hdrs = Array.from({length:7}, (_,i) => WEEKDAYS[(startDow+i)%7]);
+
+  const ti = todayInfo();
+  const isCurrentYear = celticYearOf(today) === curYear;
+
+  const days = Array.from({length:28}, (_,i) => {
+    const d       = addDays(ms, i);
+    const isToday = sameDay(d, today);
+    const dayNum  = i + 1;
+    const evs     = SAMPLE_EVENTS.filter(e => e.celticMonth === curMonth && e.celticDay === dayNum);
+    const dots    = evs.map((e,j) =>
+      `<span class="ev-dot${j===0?'':' green'}" aria-hidden="true"></span>`).join('');
+    const evLabel = evs.length ? `, ${evs.length} event${evs.length>1?'s':''}` : '';
+
+    return `<div class="day-cell${isToday?' is-today':''}" role="gridcell"
+                 aria-label="Day ${dayNum}, ${fmtG(d)}${isToday?' (today)':''}${evLabel}"
+                 ${isToday?'aria-current="date"':''}>
+      <button tabindex="${isToday?'0':'-1'}" aria-label="Select day ${dayNum}"
+              onclick="selectDay(${dayNum})"></button>
+      <div class="dn-wrap">
+        <span class="dn">${dayNum}</span>
+        <span class="gd" aria-hidden="true">${fmtG(d)}</span>
+        ${dots ? `<div class="dot-row" aria-hidden="true">${dots}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  const headerCells = hdrs.map(h =>
+    `<div class="wd-cell" role="columnheader" abbr="${h}" scope="col">${h}</div>`).join('');
+
+  document.getElementById('calGrid').innerHTML =
+    `<div class="cal-grid" role="grid" aria-label="${mo.name} calendar, ${fmtG(ms)} to ${fmtG(me)}">
+       <div class="wd-row" role="row">${headerCells}</div>
+       <div class="days-grid" role="rowgroup">${days}</div>
+     </div>`;
+
+  renderUpcoming(curMonth, curYear);
+  renderStrip(ys);
+}
+
+function renderYD(ys) {
+  const yd = addDays(ys, 364);
+  const it = sameDay(yd, today);
+
+  document.getElementById('monthCard').innerHTML =
+    `<div class="m-ogham" aria-hidden="true">&#9790;</div>
+     <h2 class="m-name" id="month-heading">Year Day</h2>
+     <div class="m-tree">The Nameless Day</div>
+     <div class="m-keyword">Between the worlds</div>
+     <div class="m-dates">${fmtG(yd)}</div>`;
+
+  document.getElementById('prevName').textContent = 'Ruis';
+  document.getElementById('nextName').textContent = 'Beth';
+  document.getElementById('monthPos').textContent = 'Day out of time';
+
+  document.getElementById('calGrid').innerHTML =
+    `<div class="yearday-cell${it?' is-today':''}" role="region" aria-label="Year Day — the nameless day">
+       <div class="yd-title">&#9790; &nbsp;YEAR AND A DAY&nbsp; &#9728;</div>
+       <div class="yd-greg">${fmtG(yd)}</div>
+       <div class="yd-desc">This day stands outside the calendar —<br>
+         a threshold between years, belonging to no month.<br>
+         A time for rest, reflection, and passage.</div>
+     </div>`;
+
+  renderUpcoming(null, null);
+}
+
+function renderUpcoming(month, year) {
+  const list = document.getElementById('upcomingList');
+  if (!month) { list.innerHTML = '<div style="padding:.75rem 1rem;font-size:.82rem;color:var(--dim);font-style:italic;">No events in the nameless day.</div>'; return; }
+
+  const ys = yearStart(year);
+  const evs = SAMPLE_EVENTS.filter(e => e.celticMonth === month);
+
+  if (!evs.length) {
+    list.innerHTML = '<div style="padding:.75rem 1rem;font-size:.82rem;color:var(--dim);font-style:italic;">No upcoming events this month.</div>';
+    return;
+  }
+
+  const ms = addDays(ys, (month - 1) * 28);
+
+  list.innerHTML = evs.map((e, i) => {
+    const d = addDays(ms, e.celticDay - 1);
+    const colorClass = i === 0 ? '' : ' green';
+    return `<div class="event-item" role="listitem" tabindex="0"
+                 aria-label="${e.title}, day ${e.celticDay}, ${fmtG(d)}, ${e.cal}">
+      <div class="ev-day-badge" aria-hidden="true">
+        <div class="ev-day-n">${e.celticDay}</div>
+        <div class="ev-day-g">${fmtG(d)}</div>
+      </div>
+      <div class="ev-bar${colorClass}" aria-hidden="true"></div>
+      <div>
+        <div class="ev-title">${e.title}</div>
+        <div class="ev-cal">${e.cal}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderStrip(ys) {
+  const ti = todayInfo();
+  const ty = celticYearOf(today);
+
+  const items = MONTHS.map(mo => {
+    const isActive  = curMonth === mo.n;
+    const hasToday  = ty === curYear && !ti.yd && ti.month === mo.n;
+    return `<div class="sm${isActive?' active':''}${hasToday?' has-today':''}"
+                 role="listitem"
+                 tabindex="0"
+                 aria-label="${mo.name}, month ${mo.n}${isActive?' (current)':''}${hasToday?' (contains today)':''}"
+                 aria-current="${isActive?'true':'false'}"
+                 onclick="go(${mo.n})"
+                 onkeydown="if(event.key==='Enter'||event.key===' ')go(${mo.n})">
+      <span class="sm-n" aria-hidden="true">${mo.n}</span>
+      <span class="sm-name">${mo.name}</span>
+    </div>`;
+  });
+
+  const ydActive  = curMonth === 'yd';
+  const ydHasToday = ty === curYear && ti.yd;
+  items.push(`<div class="sm${ydActive?' active':''}${ydHasToday?' has-today':''}"
+                   role="listitem"
+                   tabindex="0"
+                   aria-label="Year Day${ydActive?' (current)':''}${ydHasToday?' (today)':''}"
+                   aria-current="${ydActive?'true':'false'}"
+                   onclick="go('yd')"
+                   onkeydown="if(event.key==='Enter'||event.key===' ')go('yd')">
+    <span class="sm-n" aria-hidden="true">&#9790;</span>
+    <span class="sm-name">YrDay</span>
+  </div>`);
+
+  const strip = document.getElementById('strip');
+  strip.innerHTML = items.join('');
+
+  // Scroll active into view
+  const active = strip.querySelector('.active');
+  if (active) setTimeout(() => active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }), 50);
+}
+
+function go(m) { curMonth = m; render(); }
+function selectDay(d) { /* hook for event creation / detail view */ }
+
+// Keyboard navigation for grid cells
+document.addEventListener('keydown', e => {
+  if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) return;
+  const cells = [...document.querySelectorAll('.day-cell button')];
+  const idx = cells.indexOf(document.activeElement);
+  if (idx === -1) return;
+  e.preventDefault();
+  let next = idx;
+  if (e.key === 'ArrowRight') next = Math.min(idx + 1, cells.length - 1);
+  if (e.key === 'ArrowLeft')  next = Math.max(idx - 1, 0);
+  if (e.key === 'ArrowDown')  next = Math.min(idx + 7, cells.length - 1);
+  if (e.key === 'ArrowUp')    next = Math.max(idx - 7, 0);
+  cells[next].focus();
+  // Update tabindex
+  cells.forEach((c, i) => c.tabIndex = i === next ? 0 : -1);
+});
+
+document.getElementById('prevMonth').onclick = () => {
+  if (curMonth === 'yd')      curMonth = 13;
+  else if (curMonth > 1)      curMonth--;
+  else { curYear--; curMonth = 13; }
+  render();
+};
+document.getElementById('nextMonth').onclick = () => {
+  if (curMonth === 13)        curMonth = 'yd';
+  else if (curMonth === 'yd') { curYear++; curMonth = 1; }
+  else                        curMonth++;
+  render();
+};
+document.getElementById('prevYear').onclick = () => { curYear--; render(); };
+document.getElementById('nextYear').onclick = () => { curYear++; render(); };
+document.getElementById('todayBtn').onclick  = () => {
+  curYear  = celticYearOf(today);
+  const ti = todayInfo();
+  curMonth = ti.yd ? 'yd' : ti.month;
+  render();
+};
+
+render();
+</script>
+</body>
+</html>

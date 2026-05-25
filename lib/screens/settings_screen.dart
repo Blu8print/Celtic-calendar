@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,6 +10,7 @@ import '../engine/celtic_calendar.dart';
 import '../services/google_calendar_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/moon_settings_notifier.dart';
+import '../theme/sky_settings_notifier.dart';
 import '../theme/theme_notifier.dart';
 import 'onboarding_screen.dart';
 
@@ -36,7 +38,7 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 24),
           const _MoonSection(),
           const SizedBox(height: 24),
-          const _CalendarSystemSection(),
+          const _SkySection(),
           const SizedBox(height: 24),
           const _DangerZoneSection(),
           const SizedBox(height: 24),
@@ -328,119 +330,6 @@ class _ThemeChip extends StatelessWidget {
   }
 }
 
-// TODO: Implement actual IFC and other calendar system switching.
-//       Each system should implement a CalendarSystem interface (see engine/).
-class _CalendarSystemSection extends StatelessWidget {
-  const _CalendarSystemSection();
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return _Section(
-      title: 'Calendar System',
-      children: [
-        _SystemChip(
-          label: 'Celtic Tree (Beth-Luis-Nion)',
-          isSelected: true,
-          onTap: () {},  // no-op: _SystemChip suppresses tap when isSelected
-        ),
-        const SizedBox(height: 6),
-        _SystemChip(
-          label: 'International Fixed Calendar',
-          isSelected: false,
-          onTap: () => _showComingSoon(context, 'International Fixed Calendar'),
-        ),
-        const SizedBox(height: 6),
-        _SystemChip(
-          label: 'Holocene Calendar',
-          isSelected: false,
-          onTap: () => _showComingSoon(context, 'Holocene Calendar'),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Additional calendar systems coming in a future release.',
-          style: AppTextStyles.imFell(size: 12, color: c.dim, italic: true),
-        ),
-      ],
-    );
-  }
-
-  void _showComingSoon(BuildContext context, String name) {
-    final c = context.read<AppColors>();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: c.surface2,
-        content: Text(
-          '$name — coming soon',
-          style: AppTextStyles.imFell(size: 13, color: c.text),
-        ),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          side: BorderSide(color: c.border),
-          borderRadius: BorderRadius.circular(6),
-        ),
-      ),
-    );
-  }
-}
-
-class _SystemChip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _SystemChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Semantics(
-      button: true,
-      label: label,
-      selected: isSelected,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: isSelected ? null : onTap,
-          borderRadius: BorderRadius.circular(6),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-            decoration: BoxDecoration(
-              color: isSelected ? c.surface2 : c.surface,
-              border: Border.all(
-                color: isSelected ? c.gold : c.border,
-              ),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                  size: 16,
-                  color: isSelected ? c.gold : c.dim,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  label,
-                  style: AppTextStyles.cinzel(
-                    size: 13,
-                    color: isSelected ? c.gold : c.muted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 // ─── Shared layout helpers ────────────────────────────────────────────────────
 
 class _Section extends StatelessWidget {
@@ -499,6 +388,138 @@ class _MoonSection extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+// ─── Sky / Astronomical panel ─────────────────────────────────────────────────
+
+class _SkySection extends StatelessWidget {
+  const _SkySection();
+
+  @override
+  Widget build(BuildContext context) {
+    final c        = context.colors;
+    final settings = context.watch<SkySettingsNotifier>();
+    return _Section(
+      title: 'Sky Panel',
+      children: [
+        _ToggleRow(
+          label: 'Moon phase & illumination',
+          value: settings.showMoonPhase,
+          onChanged: settings.setShowMoonPhase,
+          colors: c,
+        ),
+        const SizedBox(height: 8),
+        _ToggleRow(
+          label: 'Zodiac sign',
+          value: settings.showZodiac,
+          onChanged: settings.setShowZodiac,
+          colors: c,
+        ),
+        const SizedBox(height: 8),
+        _ToggleRow(
+          label: 'Sowing indicator',
+          value: settings.showBiodynamic,
+          onChanged: settings.setShowBiodynamic,
+          colors: c,
+        ),
+        const SizedBox(height: 8),
+        _ToggleRow(
+          label: 'Sunrise & sunset times',
+          value: settings.showSunTimes,
+          onChanged: settings.setShowSunTimes,
+          colors: c,
+        ),
+        const SizedBox(height: 8),
+        _ToggleRow(
+          label: 'Clock & solar time',
+          value: settings.showClocks,
+          onChanged: settings.setShowClocks,
+          colors: c,
+        ),
+        const SizedBox(height: 8),
+        _ToggleRow(
+          label: 'Moon distance',
+          value: settings.showMoonDistance,
+          onChanged: settings.setShowMoonDistance,
+          colors: c,
+        ),
+        const SizedBox(height: 8),
+        _ToggleRow(
+          label: 'Next solar event',
+          value: settings.showSolarEvent,
+          onChanged: settings.setShowSolarEvent,
+          colors: c,
+        ),
+        const SizedBox(height: 12),
+        TextButton.icon(
+          onPressed: () => _requestAndStoreLocation(context),
+          icon: Icon(Icons.my_location_outlined, size: 14, color: c.muted),
+          label: Text(
+            'Update location',
+            style: AppTextStyles.cinzel(size: 12, color: c.muted),
+          ),
+          style: TextButton.styleFrom(
+            padding: EdgeInsets.zero,
+            alignment: Alignment.centerLeft,
+          ),
+        ),
+        Text(
+          'Used only for sunrise and sunset. No background location access.',
+          style: AppTextStyles.imFell(size: 12, color: c.dim, italic: true),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _requestAndStoreLocation(BuildContext context) async {
+    LocationPermission perm = await Geolocator.checkPermission();
+    if (perm == LocationPermission.denied) {
+      perm = await Geolocator.requestPermission();
+    }
+    if (perm == LocationPermission.denied ||
+        perm == LocationPermission.deniedForever) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Location permission denied.',
+              style: AppTextStyles.imFell(
+                  size: 13, color: context.read<AppColors>().text),
+            ),
+            backgroundColor: context.read<AppColors>().surface2,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.low,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble('sky_lat', pos.latitude);
+      await prefs.setDouble('sky_lon', pos.longitude);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Location updated.',
+              style: AppTextStyles.imFell(
+                  size: 13, color: context.read<AppColors>().text),
+            ),
+            backgroundColor: context.read<AppColors>().surface2,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      // Location request timed out or failed — fail silently.
+    }
   }
 }
 
@@ -712,15 +733,20 @@ class _DangerZoneSection extends StatelessWidget {
     final gcal  = context.read<GoogleCalendarService>();
     final db    = context.read<AppDatabase>();
     final moon  = context.read<MoonSettingsNotifier>();
+    final sky   = context.read<SkySettingsNotifier>();
     final theme = context.read<ThemeNotifier>();
 
     if (gcal.isSignedIn) await gcal.signOut();
     await db.eventsDao.deleteAllEvents();
     await moon.setShowFullMoons(true);
     await moon.setShowNewMoons(false);
+    await sky.setShowBiodynamic(true);
+    await sky.setShowSunTimes(true);
     await theme.setLight(true);
 
     final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('sky_lat');
+    await prefs.remove('sky_lon');
     await prefs.setBool('onboarding_complete', false);
 
     if (!context.mounted) return;

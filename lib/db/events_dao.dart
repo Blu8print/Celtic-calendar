@@ -186,6 +186,15 @@ class EventsDao extends DatabaseAccessor<AppDatabase> with _$EventsDaoMixin {
         .watch();
   }
 
+  /// Full-text search across event titles and descriptions.
+  Future<List<Event>> searchEvents(String query) {
+    final q = '%${query.toLowerCase()}%';
+    return (select(events)
+          ..where((e) => e.title.lower().like(q) | e.description.lower().like(q))
+          ..orderBy([(e) => OrderingTerm.asc(e.gregorianDate)]))
+        .get();
+  }
+
   /// Looks up a single event by its Google Calendar event ID.
   Future<Event?> getEventByGoogleId(String googleId) {
     return (select(events)

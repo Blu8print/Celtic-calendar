@@ -19,6 +19,7 @@ import 'services/home_widget_service.dart';
 import 'services/reminder_service.dart';
 import 'theme/app_theme.dart';
 import 'theme/moon_settings_notifier.dart';
+import 'theme/sky_settings_notifier.dart';
 import 'theme/theme_notifier.dart';
 
 /// Global navigator key — used to route notification taps from outside the widget tree.
@@ -158,6 +159,7 @@ class _RootsCalendarAppState extends State<RootsCalendarApp>
         ChangeNotifierProvider<GoogleCalendarService>.value(value: _gcal),
         ChangeNotifierProvider<ThemeNotifier>(create: (_) => ThemeNotifier()),
         ChangeNotifierProvider<MoonSettingsNotifier>(create: (_) => MoonSettingsNotifier()),
+        ChangeNotifierProvider<SkySettingsNotifier>(create: (_) => SkySettingsNotifier()),
         // AppColors is derived from ThemeNotifier — rebuilds when theme changes.
         ProxyProvider<ThemeNotifier, AppColors>(
           update: (_, notifier, __) =>

@@ -21,8 +21,10 @@ import '../widgets/time_grid_shared.dart';
 import '../widgets/gregorian_year_view.dart';
 import '../widgets/schedule_view.dart';
 import '../widgets/week_view.dart';
+import '../widgets/sky_strip.dart';
 import '../widgets/year_day_card.dart';
 import 'event_detail_screen.dart';
+import 'event_search_delegate.dart';
 import 'settings_screen.dart';
 
 enum CalendarView { month, threeDay, week, day, schedule, greg12 }
@@ -596,6 +598,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (_curMonth != null)
+                  Builder(builder: (context) {
+                    final today = DateTime.now();
+                    final tc = gregorianToCeltic(today);
+                    final isCurrentMonth = !tc.isYearDay && !tc.isLeapDay &&
+                        tc.celticYear == _curYear && tc.month == _curMonth;
+                    if (!isCurrentMonth) return const SizedBox.shrink();
+                    return SkyStrip(
+                      date: DateTime(today.year, today.month, today.day),
+                      showSolarTime: true,
+                      onSolarEventTap: _openDay,
+                    );
+                  }),
                 if (_curMonth == null)
                   YearDayCard(celticYear: _curYear, onTap: _openYearDay)
                 else
@@ -694,6 +709,24 @@ class _AppDrawer extends StatelessWidget {
                 ],
               ),
             ),
+            // Search
+            ListTile(
+              leading: Icon(Icons.search, color: c.muted, size: 20),
+              title: Text('Search events…',
+                  style: AppTextStyles.imFell(
+                      size: 13, color: c.dim, italic: true)),
+              dense: true,
+              onTap: () async {
+                Navigator.pop(context);
+                await showSearch<Event?>(
+                  context: context,
+                  delegate: EventSearchDelegate(
+                    dao: context.read<AppDatabase>().eventsDao,
+                  ),
+                );
+              },
+            ),
+            Divider(color: c.border, height: 1),
 
             // View section
             _DrawerSection(label: 'View', colors: c),

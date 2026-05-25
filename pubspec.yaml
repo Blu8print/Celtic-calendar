@@ -1,7 +1,7 @@
 name: roots_calendar
 description: Roots Calendar — Celtic Tree Calendar (Beth-Luis-Nion) with local event storage and Google Calendar sync.
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -34,6 +34,8 @@ dependencies:
   uuid: ^4.4.0
   intl: ^0.20.2
   shared_preferences: ^2.3.0
+  geolocator: ^13.0.0
+  daylight: ^3.1.0
 
   # Crash reporting
   firebase_core: ^4.7.0

@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roots Calendar — Celtic Tree Calendar App</title>
+<meta name="description" content="Roots Calendar is a 13-month Celtic Tree Calendar app. 13 months of 28 days each, named after sacred trees. Track moon phases, sync with Google Calendar.">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg:    #070e06;
+  --surf:  #0f1a0e;
+  --surf2: #172615;
+  --bdr:   #1e3019;
+  --bdr2:  #2d4020;
+  --text:  #c0d8b8;
+  --text2: #8aaa80;
+  --sub:   #527048;
+  --green: #2d6b28;
+  --gold:  #c9a84c;
+  --gold2: #e8cc88;
+  --rose:  #8b2040;
+  --radius: 12px;
+}
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: 'Lora', Georgia, serif; overflow-x: hidden; }
+
+/* noise grain */
+body::before {
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.04;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:256px 256px;
+}
+section, nav, footer { position:relative; z-index:1; }
+
+/* ─── NAV ─── */
+nav {
+  position:sticky; top:0; z-index:100;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:.85rem 2rem;
+  background:rgba(7,14,6,.92); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--bdr);
+}
+.nav-logo { font-family:'Cinzel',serif; font-size:.95rem; font-weight:700; color:var(--text); letter-spacing:.08em; }
+.nav-logo span { color:var(--gold); }
+.nav-cta {
+  display:inline-flex; align-items:center;
+  padding:.5rem 1.2rem; background:var(--gold); color:var(--bg);
+  font-family:'Cinzel',serif; font-size:.7rem; letter-spacing:.1em; font-weight:700;
+  border:none; border-radius:8px; cursor:pointer; text-decoration:none; transition:opacity .2s;
+}
+.nav-cta:hover { opacity:.85; }
+
+/* ─── HERO ─── */
+#hero { position:relative; width:100%; aspect-ratio:1024/500; background:var(--bg); overflow:hidden; }
+#hero-inner { position:absolute; top:0; left:0; width:1024px; height:500px; transform-origin:top left; }
+#hero-inner .bg { width:1024px; height:500px; background:#070e06; position:relative; display:flex; align-items:center; justify-content:space-between; padding:0 80px; }
+#hero-inner .glow { position:absolute; width:600px; height:600px; border-radius:50%; background:radial-gradient(circle,rgba(26,64,24,0.35) 0%,transparent 70%); top:50%; left:40%; transform:translate(-50%,-50%); pointer-events:none; }
+#hero-inner .left { position:relative; z-index:2; max-width:420px; }
+#hero-inner .ogham { font-family:'Lora',serif; font-style:italic; font-size:10px; color:#c9a84c; letter-spacing:.04em; margin-bottom:18px; opacity:.6; white-space:nowrap; }
+#hero-inner .app-name { font-family:'Cinzel',serif; font-size:52px; font-weight:700; color:#c0d8b8; line-height:1.05; letter-spacing:.04em; margin-bottom:6px; }
+#hero-inner .tagline { font-family:'Lora',Georgia,serif; font-style:italic; font-size:18px; color:#c9a84c; margin-bottom:28px; letter-spacing:.02em; }
+#hero-inner .desc { font-family:'Lora',Georgia,serif; font-size:14px; color:#527048; line-height:1.8; letter-spacing:.01em; }
+#hero-inner .divider { position:relative; z-index:2; width:1px; height:200px; background:linear-gradient(to bottom,transparent,#1e3019,transparent); flex-shrink:0; margin:0 60px; }
+#hero-inner .right { position:relative; z-index:2; flex-shrink:0; }
+#hero-inner .month-label { font-family:'Cinzel',serif; font-size:11px; color:#c9a84c; letter-spacing:.2em; text-transform:uppercase; text-align:center; margin-bottom:14px; }
+#hero-inner .month-kw { font-family:'Lora',serif; font-style:italic; font-size:12px; color:#527048; text-align:center; margin-bottom:18px; }
+#hero-inner .grid { display:grid; grid-template-columns:repeat(7,36px); gap:4px; }
+#hero-inner .wd { font-family:'Cinzel',serif; font-size:9px; color:#3a5030; text-align:center; letter-spacing:.05em; padding-bottom:6px; }
+#hero-inner .day { width:36px; height:36px; border-radius:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:'Cinzel',serif; font-size:13px; color:#7a9870; gap:2px; border:1px solid #1e3019; background:#0f1a0e; position:relative; }
+#hero-inner .day.today { background:#1a4018; border-color:#2d6b28; color:#c0d8b8; }
+#hero-inner .day.today .day-n { background:#c9a84c; color:#070e06; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; }
+#hero-inner .moon { position:absolute; top:-5px; right:-5px; font-size:10px; opacity:.8; line-height:1; }
+#hero-inner .strip { position:absolute; bottom:32px; left:80px; right:80px; display:flex; gap:8px; z-index:2; }
+#hero-inner .pill { background:#0f1a0e; border:1px solid #1e3019; border-radius:20px; padding:6px 16px; font-family:'Cinzel',serif; font-size:10px; color:#527048; letter-spacing:.1em; white-space:nowrap; }
+#hero-inner .pill.active { border-color:#c9a84c; color:#c9a84c; }
+
+/* ─── SHARED ─── */
+.wrap { max-width:1100px; margin:0 auto; padding:0 clamp(1rem,5vw,2.5rem); }
+.eyebrow {
+  font-family:'Cinzel',serif; font-size:.58rem; letter-spacing:.22em; color:var(--gold);
+  text-transform:uppercase; display:flex; align-items:center; gap:.75rem; margin-bottom:.9rem;
+}
+.eyebrow::after { content:''; display:block; height:1px; flex:1; background:var(--bdr2); }
+h2.section-title {
+  font-family:'Cinzel',serif; font-size:clamp(1.4rem,3vw,2.1rem);
+  color:var(--text); line-height:1.25; margin-bottom:1.25rem; font-weight:600;
+}
+.section-body { font-size:1rem; line-height:1.9; color:var(--text2); max-width:600px; }
+
+/* ─── APP SECTION ─── */
+#app { padding:clamp(3.5rem,9vw,5.5rem) 0; border-bottom:1px solid var(--bdr); overflow:hidden; }
+#app .wrap { margin-bottom:2.25rem; }
+
+/* ─── SCREENSHOTS ─── */
+.shots-scroll {
+  display:flex; gap:1.25rem; overflow-x:auto; padding:1rem clamp(1rem,5vw,2.5rem) 2rem;
+  scroll-snap-type:x mandatory; scrollbar-width:none;
+}
+.shots-scroll::-webkit-scrollbar { display:none; }
+.shot { flex-shrink:0; width:200px; scroll-snap-align:start; display:flex; flex-direction:column; gap:.65rem; cursor:pointer; }
+.shot-frame { background:#0a120a; border-radius:28px; padding:7px; border:1px solid var(--bdr2); filter:drop-shadow(0 8px 24px rgba(0,0,0,.5)); transition:transform .2s, border-color .2s; }
+.shot:hover .shot-frame { transform:translateY(-5px); border-color:var(--gold); }
+.shot-img { width:100%; border-radius:23px; aspect-ratio:9/19.5; object-fit:cover; display:block; }
+.shot-caption { font-family:'Cinzel',serif; font-size:.65rem; color:var(--sub); text-align:center; letter-spacing:.08em; transition:color .2s; }
+.shot:hover .shot-caption { color:var(--gold2); }
+
+/* ─── LIGHTBOX ─── */
+#lightbox {
+  position:fixed; inset:0; z-index:1000;
+  background:rgba(4,9,3,.92);
+  display:flex; align-items:center; justify-content:center;
+  padding:2rem;
+  opacity:0; pointer-events:none;
+  transition:opacity .25s;
+}
+#lightbox.open { opacity:1; pointer-events:all; }
+#lightbox-frame {
+  background:#0a120a; border-radius:40px; padding:10px;
+  border:1px solid var(--bdr2);
+  filter:drop-shadow(0 24px 60px rgba(0,0,0,.8));
+  transform:scale(.9); transition:transform .25s;
+}
+#lightbox.open #lightbox-frame { transform:scale(1); }
+#lightbox-img {
+  display:block; border-radius:32px;
+  max-height:calc(100dvh - 7rem);
+  max-width:calc(100vw - 4rem - 20px);
+  width:auto; height:auto;
+}
+#lightbox-close {
+  position:fixed; top:1.25rem; right:1.25rem;
+  width:2.5rem; height:2.5rem;
+  background:var(--surf2); border:1px solid var(--bdr2); border-radius:50%;
+  color:var(--text2); display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:1.1rem; line-height:1;
+  transition:border-color .2s, color .2s;
+}
+#lightbox-close:hover { border-color:var(--gold); color:var(--gold); }
+#lightbox-caption {
+  position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%);
+  font-family:'Cinzel',serif; font-size:.65rem; color:var(--sub);
+  letter-spacing:.12em; white-space:nowrap;
+}
+
+/* ════ LIVE CALENDAR SECTION ════ */
+#calendar { padding:clamp(3.5rem,9vw,5.5rem) clamp(1rem,5vw,2.5rem); border-bottom:1px solid var(--bdr); }
+#calendar .section-body { margin-bottom:2.5rem; }
+
+.lc-outer { max-width:500px; margin:0 auto; }
+.lc-card {
+  background:var(--surf);
+  border:1px solid var(--bdr2);
+  border-radius:16px;
+  overflow:hidden;
+  box-shadow:0 24px 60px rgba(0,0,0,.5);
+}
+
+/* topbar */
+.lc-topbar {
+  display:grid; grid-template-columns:1fr auto;
+  align-items:center; gap:.5rem;
+  padding:.65rem 1rem;
+  border-bottom:1px solid var(--bdr);
+  background:var(--surf2);
+}
+.lc-month-info { min-width:0; }
+.lc-month-name { font-family:'Cinzel',serif; font-size:.88rem; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lc-month-kw   { font-size:.6rem; color:var(--gold); font-style:italic; margin-top:.05rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lc-navgroup   { display:flex; align-items:center; gap:.15rem; flex-shrink:0; }
+.lc-arr {
+  width:30px; height:36px; border:none; background:none; color:var(--text2);
+  cursor:pointer; border-radius:6px; font-size:.85rem;
+  display:flex; align-items:center; justify-content:center;
+}
+.lc-arr:hover { background:var(--bdr); }
+.lc-today-btn {
+  height:28px; padding:0 .55rem; border:1px solid var(--bdr); border-radius:6px;
+  background:none; color:var(--gold); font-family:'Cinzel',serif;
+  font-size:.56rem; letter-spacing:.05em; cursor:pointer; white-space:nowrap;
+}
+.lc-today-btn:hover { border-color:var(--gold); }
+
+/* meta strip */
+.lc-meta {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:.4rem 1rem; border-bottom:1px solid var(--bdr);
+  background:var(--surf); gap:.5rem;
+}
+.lc-og    { font-size:1.1rem; color:var(--gold); flex-shrink:0; }
+.lc-tree  { font-family:'Cinzel',serif; font-size:.58rem; color:var(--sub); letter-spacing:.06em; }
+.lc-range { font-size:.6rem; color:var(--sub); font-style:italic; white-space:nowrap; }
+
+/* weekday row */
+.lc-wd-row { display:grid; grid-template-columns:repeat(7,1fr); border-bottom:1px solid var(--bdr); background:var(--surf2); }
+.lc-wd { text-align:center; padding:.3rem 0; font-family:'Cinzel',serif; font-size:.52rem; color:var(--sub); letter-spacing:.04em; text-transform:uppercase; }
+
+/* day grid */
+.lc-grid { display:grid; grid-template-columns:repeat(7,1fr); }
+.lc-dc {
+  min-height:54px; border-right:1px solid var(--bdr); border-bottom:1px solid var(--bdr);
+  display:flex; flex-direction:column; align-items:center; padding-top:.32rem;
+  cursor:default; position:relative; transition:background .1s;
+}
+.lc-dc:nth-child(7n) { border-right:none; }
+.lc-dc.lc-last { border-bottom:none; }
+.lc-dc.lc-today { background:rgba(45,107,40,.15); }
+.lc-dc.lc-has-fest { cursor:pointer; }
+.lc-dc.lc-has-fest:hover { background:var(--surf2); }
+.lc-dc-n { font-family:'Cinzel',serif; font-size:.85rem; color:var(--text2); line-height:1; }
+.lc-dc.lc-today .lc-dc-n {
+  width:24px; height:24px; border-radius:50%;
+  background:var(--green); color:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:.72rem;
+}
+.lc-dc-g { font-size:.45rem; color:var(--sub); margin-top:.1rem; line-height:1; }
+.lc-dots { display:flex; gap:2px; margin-top:.2rem; }
+.lc-dot  { width:5px; height:5px; border-radius:50%; }
+.lc-dot-fire  { background:var(--gold); }
+.lc-dot-solar { background:#9b79d0; }
+.lc-moon-badge { position:absolute; top:2px; right:3px; font-size:.7rem; line-height:1; opacity:.85; }
+
+/* festival bar */
+.lc-festbar {
+  border-top:1px solid var(--bdr); padding:.6rem 1rem;
+  background:var(--surf2); min-height:2.4rem;
+}
+.lc-fest-item { display:flex; align-items:center; gap:.55rem; padding:.2rem 0; }
+.lc-fest-dot  { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.lc-fest-name { font-family:'Cinzel',serif; font-size:.66rem; color:var(--text2); flex:1; }
+.lc-fest-day  { font-size:.6rem; color:var(--sub); }
+.lc-no-fest   { font-size:.68rem; color:var(--sub); font-style:italic; padding:.1rem 0; }
+
+/* month strip */
+.lc-mstrip {
+  display:flex; gap:3px; flex-wrap:wrap; justify-content:center;
+  padding:.65rem .85rem .75rem;
+  border-top:1px solid var(--bdr); background:var(--surf2);
+}
+.lc-mpill {
+  padding:.25rem .55rem; border:1px solid var(--bdr); border-radius:20px;
+  font-family:'Cinzel',serif; font-size:.52rem; color:var(--sub);
+  cursor:pointer; background:none; transition:border-color .15s, color .15s;
+  letter-spacing:.03em;
+}
+.lc-mpill:hover { border-color:var(--bdr2); color:var(--text2); }
+.lc-mpill-active { border-color:var(--gold) !important; color:var(--gold) !important; }
+.lc-mpill-today  { border-color:var(--green) !important; color:var(--green) !important; }
+
+/* legend */
+.lc-legend {
+  display:flex; align-items:center; justify-content:center; gap:1.25rem;
+  margin-top:1rem; flex-wrap:wrap;
+}
+.lc-leg-item { display:flex; align-items:center; gap:.4rem; }
+.lc-leg-dot  { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.lc-leg-lbl  { font-family:'Cinzel',serif; font-size:.58rem; color:var(--sub); letter-spacing:.05em; }
+.lc-leg-emoji { font-size:.85rem; line-height:1; }
+
+/* YD special */
+.lc-yd-body { grid-column:1/-1; padding:2rem 1.5rem; text-align:center; }
+.lc-yd-title { font-family:'Cinzel',serif; font-size:.9rem; color:#9b79d0; margin-bottom:.6rem; }
+.lc-yd-text  { font-size:.78rem; color:var(--sub); line-height:1.8; }
+
+/* ─── WAITLIST ─── */
+#waitlist { padding:clamp(4rem,11vw,7rem) clamp(1rem,5vw,2.5rem); text-align:center; }
+#waitlist .eyebrow { justify-content:center; }
+.waitlist-title { font-family:'Cinzel Decorative',serif; font-size:clamp(1.6rem,3.5vw,2.6rem); color:var(--text); margin-bottom:.85rem; line-height:1.2; }
+.waitlist-sub { font-size:.95rem; color:var(--text2); max-width:420px; margin:0 auto 2.5rem; line-height:1.8; font-style:italic; }
+.form-wrap { max-width:460px; margin:0 auto; display:flex; flex-direction:column; gap:.85rem; }
+.form-row { display:flex; flex-direction:column; gap:.75rem; }
+@media(min-width:500px){ .form-row { flex-direction:row; } }
+.form-input {
+  flex:1; padding:.85rem 1.1rem; border:1px solid var(--bdr2); border-radius:8px;
+  background:var(--surf); color:var(--text); font-family:'Lora',serif; font-size:max(1rem,.88rem);
+  outline:none; transition:border-color .2s;
+}
+.form-input:focus { border-color:var(--gold); }
+.form-input::placeholder { color:var(--sub); }
+.form-btn {
+  padding:.9rem 2rem; background:var(--gold); color:var(--bg);
+  font-family:'Cinzel',serif; font-size:.75rem; letter-spacing:.12em; font-weight:700;
+  border:none; border-radius:8px; cursor:pointer; transition:opacity .2s;
+}
+.form-btn:hover { opacity:.85; }
+.form-btn:disabled { opacity:.4; cursor:not-allowed; }
+.form-msg { font-size:.8rem; padding:.7rem 1rem; border-radius:8px; display:none; }
+.form-msg.success { display:block; background:rgba(45,107,40,.2); color:#80c878; border:1px solid rgba(45,107,40,.4); }
+.form-msg.error   { display:block; background:rgba(139,32,64,.2); color:#e87898; border:1px solid rgba(139,32,64,.4); }
+.form-note { font-size:.65rem; color:var(--sub); font-style:italic; }
+
+/* ─── FOOTER ─── */
+footer {
+  padding:1.75rem clamp(1rem,5vw,2.5rem); border-top:1px solid var(--bdr);
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;
+}
+.footer-logo { font-family:'Cinzel',serif; font-size:.75rem; color:var(--sub); letter-spacing:.08em; }
+.footer-links { display:flex; gap:1.5rem; }
+.footer-links a { font-size:.7rem; color:var(--sub); text-decoration:none; font-family:'Cinzel',serif; letter-spacing:.06em; }
+.footer-links a:hover { color:var(--gold); }
+</style>
+</head>
+<body>
+
+<!-- ─── NAV ─── -->
+<nav>
+  <div class="nav-logo">Roots <span>Calendar</span></div>
+  <a href="#waitlist" class="nav-cta">Join the Waitlist</a>
+</nav>
+
+<!-- ─── HERO ─── -->
+<section id="hero" aria-label="Roots Calendar — Celtic Tree Calendar, 13 Months">
+  <div id="hero-inner">
+    <div class="bg">
+      <div class="glow"></div>
+      <div class="left">
+        <div class="ogham">Birch · Rowan · Ash · Alder · Willow · Hawthorn · Oak · Holly · Hazel · Vine · Ivy · Reed · Elder</div>
+        <div class="app-name">Roots<br>Calendar</div>
+        <div class="tagline">Celtic Tree Calendar · 13 Months</div>
+        <div class="desc" id="hero-desc">Loading today's date…</div>
+      </div>
+      <div class="divider"></div>
+      <div class="right">
+        <div class="month-label" id="hero-mlabel">…</div>
+        <div class="month-kw"   id="hero-mkw">…</div>
+        <div class="grid"       id="hero-grid"></div>
+      </div>
+      <div class="strip">
+        <div class="pill active">13 Months</div>
+        <div class="pill">Moon Phases</div>
+        <div class="pill">Google Sync</div>
+        <div class="pill">Local · Private</div>
+        <div class="pill">Dark &amp; Light</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── APP ─── -->
+<section id="app">
+  <div class="wrap">
+    <div class="eyebrow">The App</div>
+    <h2 class="section-title">A calendar you'll actually want to open.</h2>
+    <p class="section-body">Thirteen months. Twenty-eight days each. Every month named after a sacred tree — with its own Ogham character and quiet teaching. Your events stay on your device. Google Calendar sync is optional.</p>
+  </div>
+  <div class="shots-scroll">
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="month-view-light-mode.webp" alt="Month view of Roots Calendar showing all 28 days of a Celtic tree month"></div><div class="shot-caption">Month View · Light</div></div>
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="month-view-dark-mode.webp" alt="Dark mode month view of Roots Calendar"></div><div class="shot-caption">Month View · Dark</div></div>
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="3days-view-light-mode.webp" alt="3-day view in Roots Calendar"></div><div class="shot-caption">3-Day View</div></div>
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="schedule-light-mode.webp" alt="Schedule view in Roots Calendar"></div><div class="shot-caption">Schedule</div></div>
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="new-event-light-mode.webp" alt="Add new event screen in Roots Calendar"></div><div class="shot-caption">Add Event</div></div>
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="settings-light-mode.webp" alt="Settings screen of Roots Calendar"></div><div class="shot-caption">Settings</div></div>
+  </div>
+</section>
+
+<!-- ─── CALENDAR ─── -->
+<section id="calendar">
+  <div class="wrap">
+    <div class="eyebrow">Try It</div>
+    <h2 class="section-title">Thirteen months. Navigate them.</h2>
+    <p class="section-body">This is the actual Celtic Tree Calendar, live. Navigate with the arrows or tap any month name. Today is highlighted in green. Full and new moons are shown as they appear in the app.</p>
+
+    <div class="lc-outer">
+      <div class="lc-card">
+
+        <!-- top bar -->
+        <div class="lc-topbar">
+          <div class="lc-month-info">
+            <div class="lc-month-name" id="lc-name">…</div>
+            <div class="lc-month-kw"   id="lc-kw">…</div>
+          </div>
+          <div class="lc-navgroup">
+            <button class="lc-arr" id="lc-prev" aria-label="Previous month">&#9664;</button>
+            <button class="lc-today-btn" id="lc-today-btn">Today</button>
+            <button class="lc-arr" id="lc-next" aria-label="Next month">&#9654;</button>
+          </div>
+        </div>
+
+        <!-- meta strip -->
+        <div class="lc-meta">
+          <span class="lc-og"   id="lc-og">ᚁ</span>
+          <span class="lc-tree" id="lc-tree">Birch</span>
+          <span class="lc-range" id="lc-range">Dec 24 – Jan 20</span>
+        </div>
+
+        <!-- weekday headers -->
+        <div class="lc-wd-row" id="lc-wd-row"></div>
+
+        <!-- day grid -->
+        <div class="lc-grid" id="lc-grid"></div>
+
+        <!-- festival bar -->
+        <div class="lc-festbar" id="lc-festbar"></div>
+
+        <!-- month strip -->
+        <div class="lc-mstrip" id="lc-mstrip"></div>
+
+      </div>
+
+      <!-- legend -->
+      <div class="lc-legend">
+        <div class="lc-leg-item"><div class="lc-leg-dot" style="background:var(--green)"></div><div class="lc-leg-lbl">Today</div></div>
+        <div class="lc-leg-item"><span class="lc-leg-emoji">&#127761;</span><div class="lc-leg-lbl">New Moon</div></div>
+        <div class="lc-leg-item"><span class="lc-leg-emoji">&#127765;</span><div class="lc-leg-lbl">Full Moon</div></div>
+        <div class="lc-leg-item"><div class="lc-leg-dot lc-dot-fire"></div><div class="lc-leg-lbl">Fire Festival</div></div>
+        <div class="lc-leg-item"><div class="lc-leg-dot lc-dot-solar"></div><div class="lc-leg-lbl">Solar Festival</div></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─── WAITLIST ─── -->
+<section id="waitlist">
+  <div class="wrap">
+    <div class="eyebrow">Waitlist</div>
+    <h2 class="waitlist-title">Join the waitlist.</h2>
+    <p class="waitlist-sub">Be among the first to know when Roots Calendar launches on Android and iOS.</p>
+    <div class="form-wrap">
+      <div class="form-row">
+        <input class="form-input" type="text"  id="f-name"  placeholder="Your name"  autocomplete="name">
+        <input class="form-input" type="email" id="f-email" placeholder="Your email" autocomplete="email">
+      </div>
+      <button class="form-btn" id="f-btn" onclick="submitForm()">Join the Waitlist &#9658;</button>
+      <div class="form-msg" id="f-msg"></div>
+      <p class="form-note">No spam, ever.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─── LIGHTBOX ─── -->
+<div id="lightbox">
+  <div id="lightbox-frame"><img id="lightbox-img" src="" alt=""></div>
+  <button id="lightbox-close" aria-label="Close">&#x2715;</button>
+  <div id="lightbox-caption"></div>
+</div>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <div class="footer-logo">Roots Calendar · Blu8print © 2026</div>
+  <div class="footer-links">
+    <a href="https://play.google.com/store/apps/details?id=nl.blu8print.rootscalendar" target="_blank">Google Play</a>
+    <a href="https://blu8print.github.io/Celtic-calendar/privacy" target="_blank">Privacy</a>
+    <a href="https://github.com/Blu8print/Celtic-calendar" target="_blank">GitHub</a>
+    <a href="mailto:support@blu8print.com">Contact</a>
+  </div>
+</footer>
+
+<script>
+/* ════════════════════════════════════════
+   CELTIC ENGINE + MOON PHASES
+   (UTC-normalised — DST-safe)
+   ════════════════════════════════════════ */
+
+const MONTHS = [
+  {n:1,  name:'Beth',   tree:'Birch',    og:'ᚁ', kw:'New Beginnings'},
+  {n:2,  name:'Luis',   tree:'Rowan',    og:'ᚂ', kw:'Protection'},
+  {n:3,  name:'Nion',   tree:'Ash',      og:'ᚅ', kw:'Connection'},
+  {n:4,  name:'Fearn',  tree:'Alder',    og:'ᚃ', kw:'Guidance'},
+  {n:5,  name:'Saille', tree:'Willow',   og:'ᚄ', kw:'Intuition'},
+  {n:6,  name:'Huath',  tree:'Hawthorn', og:'ᚆ', kw:'Cleansing'},
+  {n:7,  name:'Duir',   tree:'Oak',      og:'ᚇ', kw:'Strength'},
+  {n:8,  name:'Tinne',  tree:'Holly',    og:'ᚈ', kw:'Balance'},
+  {n:9,  name:'Coll',   tree:'Hazel',    og:'ᚉ', kw:'Wisdom'},
+  {n:10, name:'Muin',   tree:'Vine',     og:'ᚋ', kw:'Harvest'},
+  {n:11, name:'Gort',   tree:'Ivy',      og:'ᚌ', kw:'Perseverance'},
+  {n:12, name:'Ngetal', tree:'Reed',     og:'ᚍ', kw:'Healing'},
+  {n:13, name:'Ruis',   tree:'Elder',    og:'ᚏ', kw:'Transition'},
+];
+
+const FESTIVALS = [
+  {cm:2,  cd:12, name:'Imbolc',     type:'fire'},
+  {cm:4,  cd:3,  name:'Ostara',     type:'solar'},
+  {cm:5,  cd:17, name:'Beltane',    type:'fire'},
+  {cm:7,  cd:12, name:'Litha',      type:'solar'},
+  {cm:8,  cd:25, name:'Lughnasadh', type:'fire'},
+  {cm:10, cd:21, name:'Mabon',      type:'solar'},
+  {cm:12, cd:5,  name:'Samhain',    type:'fire'},
+  {cm:13, cd:27, name:'Yule',       type:'solar'},
+];
+
+const GM = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const WD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+/* Celtic calendar helpers */
+function cyStart(cy)  { return new Date(Date.UTC(cy, 11, 24)); }
+function cyOf(d) {
+  return (d.getMonth() === 11 && d.getDate() >= 24) ? d.getFullYear() : d.getFullYear() - 1;
+}
+function addDays(utcD, n) { return new Date(utcD.getTime() + n * 86400000); }
+function sameDay(local, utc) {
+  return local.getFullYear() === utc.getUTCFullYear() &&
+         local.getMonth()    === utc.getUTCMonth()    &&
+         local.getDate()     === utc.getUTCDate();
+}
+function fmtGreg(utcD) { return utcD.getUTCDate() + ' ' + GM[utcD.getUTCMonth()]; }
+
+/* Today as local midnight */
+var today = new Date();
+today.setHours(0, 0, 0, 0);
+
+function getTodayInfo() {
+  var cy  = cyOf(today);
+  var ys  = cyStart(cy);
+  var tUtc = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+  var off  = Math.round((tUtc - ys) / 86400000);
+  if (off === 364) return {yd:true, cy:cy, month:null, day:null};
+  return {yd:false, cy:cy, month:Math.floor(off/28)+1, day:(off%28)+1};
+}
+
+/* Moon phase calculation
+   Reference new moon: 2000-01-06 18:14 UTC (JD 2451549.808)
+   Synodic period: 29.53059 days
+   Returns 0=new moon … 0.5=full moon … 1=new moon */
+var KNOWN_NM  = Date.UTC(2000, 0, 6, 18, 14);
+var SYNODIC   = 29.53059 * 86400000; /* ms */
+
+function moonPhase(utcDate) {
+  var ms = utcDate.getTime();
+  return (((ms - KNOWN_NM) % SYNODIC) + SYNODIC) % SYNODIC / SYNODIC;
+}
+
+/* Returns emoji string or null */
+function moonIcon(utcDate) {
+  var p = moonPhase(utcDate);
+  if (p < 0.04 || p > 0.96) return '\uD83C\uDF11'; /* 🌑 new moon */
+  if (p > 0.46 && p < 0.54) return '\uD83C\uDF15'; /* 🌕 full moon */
+  return null;
+}
+
+/* ════════════════════════════════════════
+   HERO — dynamic grid for current month
+   ════════════════════════════════════════ */
+(function() {
+  var ti = getTodayInfo();
+  if (ti.yd) {
+    document.getElementById('hero-mlabel').textContent = 'Year Day';
+    document.getElementById('hero-mkw').textContent    = 'A day outside of time';
+    document.getElementById('hero-desc').textContent   = 'Year Day · between the worlds';
+    return;
+  }
+  var mo   = MONTHS[ti.month - 1];
+  var cy   = ti.cy;
+  var ys   = cyStart(cy);
+  var ms   = addDays(ys, (ti.month - 1) * 28);
+  var sdow = ms.getUTCDay(); /* weekday of month start */
+
+  document.getElementById('hero-mlabel').textContent = mo.name + ' \u00B7 Month ' + ti.month;
+  document.getElementById('hero-mkw').textContent    = mo.tree + ' \u00B7 ' + mo.kw;
+  document.getElementById('hero-desc').textContent   =
+    'Today is ' + mo.name + ' ' + ti.day + '\nDay ' + ti.day + ' of ' + mo.tree + ' — ' + mo.kw;
+
+  var html = '';
+  /* weekday headers */
+  for (var i = 0; i < 7; i++) {
+    html += '<div class="wd">' + WD[(sdow + i) % 7].slice(0, 2) + '</div>';
+  }
+  /* day cells */
+  for (var j = 0; j < 28; j++) {
+    var d    = addDays(ms, j);
+    var isT  = sameDay(today, d);
+    var moon = moonIcon(d);
+    var dn   = j + 1;
+    var cls  = 'day' + (isT ? ' today' : '');
+    html += '<div class="' + cls + '">';
+    if (isT) {
+      html += '<div class="day-n">' + dn + '</div>';
+    } else {
+      html += '<span>' + dn + '</span>';
+    }
+    if (moon) html += '<div class="moon">' + moon + '</div>';
+    html += '</div>';
+  }
+  document.getElementById('hero-grid').innerHTML = html;
+})();
+
+/* ─── Hero scaling ─── */
+function scaleHero() {
+  document.getElementById('hero-inner').style.transform =
+    'scale(' + (document.getElementById('hero').offsetWidth / 1024) + ')';
+}
+scaleHero();
+window.addEventListener('resize', scaleHero);
+
+/* ════════════════════════════════════════
+   LIVE CALENDAR
+   ════════════════════════════════════════ */
+(function() {
+  var ti   = getTodayInfo();
+  var curM = ti.yd ? 'yd' : ti.month;
+  var curY = ti.cy;
+
+  function render() {
+    var ys   = cyStart(curY);
+    var sdow = ys.getUTCDay(); /* weekday of Dec 24 — same for all months this year */
+
+    if (curM === 'yd') { renderYD(ys); renderStrip(); return; }
+
+    var mo = MONTHS[curM - 1];
+    var ms = addDays(ys, (curM - 1) * 28);
+
+    /* top bar */
+    document.getElementById('lc-name').textContent = mo.name + ' \u00B7 ' + curY + '\u2013' + String(curY + 1).slice(2);
+    document.getElementById('lc-kw').textContent   = 'The ' + mo.tree + ' \u00B7 ' + mo.kw;
+
+    /* meta strip */
+    document.getElementById('lc-og').textContent    = mo.og;
+    document.getElementById('lc-tree').textContent  = mo.tree;
+    document.getElementById('lc-range').textContent = fmtGreg(ms) + ' \u2013 ' + fmtGreg(addDays(ms, 27));
+
+    /* weekday row */
+    var wdHTML = '';
+    for (var i = 0; i < 7; i++) {
+      wdHTML += '<div class="lc-wd">' + WD[(sdow + i) % 7].slice(0, 2) + '</div>';
+    }
+    document.getElementById('lc-wd-row').innerHTML = wdHTML;
+
+    /* day grid */
+    var fests    = FESTIVALS.filter(function(f) { return f.cm === curM; });
+    var daysHTML = '';
+    for (var j = 0; j < 28; j++) {
+      var d    = addDays(ms, j);
+      var isT  = sameDay(today, d);
+      var dn   = j + 1;
+      var df   = fests.filter(function(f) { return f.cd === dn; });
+      var moon = moonIcon(d);
+      var dots = df.map(function(f) {
+        return '<div class="lc-dot lc-dot-' + f.type + '"></div>';
+      }).join('');
+      var cls  = 'lc-dc'
+               + (isT       ? ' lc-today'    : '')
+               + (j >= 21   ? ' lc-last'     : '')
+               + (df.length ? ' lc-has-fest' : '');
+      daysHTML += '<div class="' + cls + '">'
+               + '<div class="lc-dc-n">' + dn + '</div>'
+               + '<div class="lc-dc-g">' + fmtGreg(d) + '</div>'
+               + (dots ? '<div class="lc-dots">' + dots + '</div>' : '')
+               + (moon ? '<div class="lc-moon-badge">' + moon + '</div>' : '')
+               + '</div>';
+    }
+    document.getElementById('lc-grid').innerHTML = daysHTML;
+
+    /* festival bar */
+    var festHTML = fests.length
+      ? fests.map(function(f) {
+          var color = f.type === 'fire' ? 'var(--gold)' : '#9b79d0';
+          return '<div class="lc-fest-item">'
+               + '<div class="lc-fest-dot" style="background:' + color + '"></div>'
+               + '<div class="lc-fest-name">' + f.name + '</div>'
+               + '<div class="lc-fest-day">Day ' + f.cd + '</div>'
+               + '</div>';
+        }).join('')
+      : '<div class="lc-no-fest">No festivals this month</div>';
+    document.getElementById('lc-festbar').innerHTML = festHTML;
+
+    renderStrip();
+  }
+
+  function renderYD(ys) {
+    var yd = addDays(ys, 364);
+    document.getElementById('lc-name').textContent  = 'Year Day \u00B7 ' + curY + '\u2013' + String(curY + 1).slice(2);
+    document.getElementById('lc-kw').textContent    = 'Between the worlds';
+    document.getElementById('lc-og').textContent    = '\u263D';
+    document.getElementById('lc-tree').textContent  = 'Year and a Day';
+    document.getElementById('lc-range').textContent = fmtGreg(yd);
+    document.getElementById('lc-wd-row').innerHTML  = '';
+    document.getElementById('lc-grid').innerHTML    =
+      '<div class="lc-yd-body">'
+      + '<div class="lc-yd-title">\u263D A day outside of time \u263E</div>'
+      + '<div class="lc-yd-text">Belonging to no month.<br>A threshold between Celtic years &mdash;<br>a time for rest and passage.</div>'
+      + '</div>';
+    document.getElementById('lc-festbar').innerHTML = '';
+  }
+
+  function renderStrip() {
+    var ti2 = getTodayInfo();
+    var html = MONTHS.map(function(mo) {
+      var isA = curM === mo.n;
+      var isT = ti2.cy === curY && !ti2.yd && ti2.month === mo.n;
+      var cls = 'lc-mpill' + (isA ? ' lc-mpill-active' : (isT ? ' lc-mpill-today' : ''));
+      return '<button class="' + cls + '" onclick="lcSetM(' + mo.n + ')">' + mo.name + '</button>';
+    }).join('');
+    var ya   = curM === 'yd';
+    var yt   = ti2.cy === curY && ti2.yd;
+    var ycls = 'lc-mpill' + (ya ? ' lc-mpill-active' : (yt ? ' lc-mpill-today' : ''));
+    html += '<button class="' + ycls + '" onclick="lcSetM(\'yd\')">' + 'Year Day \u263D</button>';
+    document.getElementById('lc-mstrip').innerHTML = html;
+  }
+
+  window.lcSetM = function(m) { curM = m; render(); };
+
+  document.getElementById('lc-prev').onclick = function() {
+    if      (curM === 'yd') curM = 13;
+    else if (curM > 1)      curM--;
+    else                    { curY--; curM = 13; }
+    render();
+  };
+  document.getElementById('lc-next').onclick = function() {
+    if      (curM === 13)   curM = 'yd';
+    else if (curM === 'yd') { curY++; curM = 1; }
+    else                    curM++;
+    render();
+  };
+  document.getElementById('lc-today-btn').onclick = function() {
+    var t = getTodayInfo();
+    curY = t.cy; curM = t.yd ? 'yd' : t.month;
+    render();
+  };
+
+  render();
+})();
+
+/* ════════════════════════════════════════
+   WAITLIST FORM
+   ════════════════════════════════════════ */
+var N8N_WEBHOOK = 'https://automation.whiterabbit.earth/webhook/0390010c-6984-4d65-b440-e9af4c1e74a7';
+function submitForm() {
+  var name  = document.getElementById('f-name').value.trim();
+  var email = document.getElementById('f-email').value.trim();
+  var msg   = document.getElementById('f-msg');
+  var btn   = document.getElementById('f-btn');
+  if (!name || !email) {
+    msg.className = 'form-msg error';
+    msg.textContent = 'Please fill in both your name and email address.';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    msg.className = 'form-msg error';
+    msg.textContent = "That doesn't look like a valid email address.";
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Sending\u2026'; msg.className = 'form-msg';
+  fetch(N8N_WEBHOOK, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({name:name, email:email, source:'celtic-calendar.org/waitlist', timestamp:new Date().toISOString()})
+  }).then(function() {
+    msg.className = 'form-msg success';
+    msg.innerHTML = '&#10003; You\'re on the list! We\'ll be in touch.';
+    document.getElementById('f-name').value  = '';
+    document.getElementById('f-email').value = '';
+  }).catch(function() {
+    msg.className = 'form-msg error';
+    msg.textContent = 'Something went wrong. Try emailing support@blu8print.com directly.';
+  }).finally(function() {
+    btn.disabled = false; btn.textContent = 'Join the Waitlist \u25B6';
+  });
+}
+
+/* ════════════════════════════════════════
+   LIGHTBOX
+   ════════════════════════════════════════ */
+(function() {
+  var lb  = document.getElementById('lightbox');
+  var img = document.getElementById('lightbox-img');
+  var cap = document.getElementById('lightbox-caption');
+  function open(src, alt, caption) {
+    img.src = src; img.alt = alt; cap.textContent = caption;
+    lb.classList.add('open'); document.body.style.overflow = 'hidden';
+  }
+  function close() { lb.classList.remove('open'); document.body.style.overflow = ''; }
+  document.querySelector('.shots-scroll').addEventListener('click', function(e) {
+    var shot = e.target.closest('.shot'); if (!shot) return;
+    open(
+      shot.querySelector('.shot-img').src,
+      shot.querySelector('.shot-img').alt,
+      shot.querySelector('.shot-caption').textContent
+    );
+  });
+  document.getElementById('lightbox-close').addEventListener('click', close);
+  lb.addEventListener('click', function(e) { if (e.target === lb) close(); });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') close(); });
+})();
+</script>
+</body>
+</html>

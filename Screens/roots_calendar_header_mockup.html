@@ -1,0 +1,75 @@
+
+<div style="display:flex;justify-content:center;padding:1rem 0;">
+<div style="width:360px;background:#070e06;border-radius:24px;overflow:hidden;border:1px solid #1e3019;font-family:Georgia,serif;">
+
+  <div style="padding:20px 20px 0;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+
+      <div style="flex:0 0 auto;">
+        <div style="font-size:11px;color:#527048;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:2px;font-family:serif;">Month 4 of 13</div>
+        <div style="font-size:28px;color:#e8cc88;line-height:1;margin-bottom:2px;font-family:serif;font-weight:700;">Fearn</div>
+        <div style="font-size:12px;color:#527048;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">The Alder</div>
+        <div style="font-size:11px;color:#c0d8b8;font-style:italic;opacity:0.7;">Guidance</div>
+        <div style="font-size:10px;color:#3a5030;margin-top:4px;">18 Mar – 14 Apr</div>
+      </div>
+
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;padding-top:4px;">
+        <div style="font-size:9px;color:#3a5030;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px;">Upcoming</div>
+
+        <div style="background:#0f1a0e;border:1px solid #1e3019;border-left:2px solid #c9a84c;border-radius:4px;padding:5px 8px;">
+          <div style="font-size:10px;color:#527048;font-family:serif;">Day 7 · 24 Mar</div>
+          <div style="font-size:12px;color:#c0d8b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Ecstatic Dance Oss</div>
+        </div>
+
+        <div style="background:#0f1a0e;border:1px solid #1e3019;border-left:2px solid #527048;border-radius:4px;padding:5px 8px;">
+          <div style="font-size:10px;color:#527048;font-family:serif;">Day 9 · 26 Mar</div>
+          <div style="font-size:12px;color:#c0d8b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Call with Frederique</div>
+        </div>
+
+        <div style="background:#0f1a0e;border:1px solid #1e3019;border-left:2px solid #527048;border-radius:4px;padding:5px 8px;">
+          <div style="font-size:10px;color:#527048;font-family:serif;">Day 12 · 29 Mar</div>
+          <div style="font-size:12px;color:#c0d8b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Maria — cosmetics markt...</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div style="padding:14px 20px 0;">
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;margin-bottom:6px;">
+      <div style="text-align:center;font-size:9px;color:#3a5030;font-family:serif;padding:4px 0;">Su</div>
+      <div style="text-align:center;font-size:9px;color:#3a5030;font-family:serif;padding:4px 0;">Mo</div>
+      <div style="text-align:center;font-size:9px;color:#3a5030;font-family:serif;padding:4px 0;">Tu</div>
+      <div style="text-align:center;font-size:9px;color:#3a5030;font-family:serif;padding:4px 0;">We</div>
+      <div style="text-align:center;font-size:9px;color:#3a5030;font-family:serif;padding:4px 0;">Th</div>
+      <div style="text-align:center;font-size:9px;color:#3a5030;font-family:serif;padding:4px 0;">Fr</div>
+      <div style="text-align:center;font-size:9px;color:#3a5030;font-family:serif;padding:4px 0;">Sa</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;">
+      <script>
+        const days = Array.from({length:28},(_,i)=>i+1);
+        document.currentScript.outerHTML = days.map(d=>{
+          const isToday = d===7;
+          return `<div style="text-align:center;padding:6px 2px;border-radius:4px;${isToday?'background:#2a1508;outline:1px solid #c9a84c;':''}">
+            <div style="font-size:13px;color:${isToday?'#e8cc88':'#c0d8b8'};font-family:serif;">${d}</div>
+            ${d===7||d===9||d===12?`<div style="width:4px;height:4px;background:#c9a84c;border-radius:50%;margin:2px auto 0;"></div>`:'<div style="width:4px;height:4px;margin:2px auto 0;"></div>'}
+          </div>`;
+        }).join('');
+      </script>
+    </div>
+  </div>
+
+  <div style="padding:12px 20px 16px;display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;">
+    <script>
+      const names=['Beth','Luis','Nion','Fearn','Saille','Huath','Duir','Tinne','Coll','Muin','Gort','Ngetal','Ruis'];
+      document.currentScript.outerHTML = names.map((n,i)=>
+        `<div style="flex:0 0 auto;padding:4px 8px;border-radius:4px;border:1px solid ${i===3?'#c9a84c':'#1e3019'};background:${i===3?'#172615':'#0f1a0e'};">
+          <div style="font-size:8px;color:#3a5030;text-align:center;">${i+1}</div>
+          <div style="font-size:10px;color:${i===3?'#c9a84c':'#c0d8b8'};font-family:serif;">${n}</div>
+        </div>`
+      ).join('');
+    </script>
+  </div>
+
+</div>
+</div>

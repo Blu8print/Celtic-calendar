@@ -70,6 +70,17 @@ android {
     }
 }
 
+configurations.all {
+    resolutionStrategy {
+        // home_widget pulls in glance-appwidget alpha which requires compileSdk 37 + AGP 9.1.
+        // Force to the latest stable release that works with compileSdk 36 / AGP 8.x.
+        force("androidx.glance:glance:1.1.1")
+        force("androidx.glance:glance-appwidget:1.1.1")
+        force("androidx.glance:glance-material3:1.1.1")
+        force("androidx.glance:glance-material:1.1.1")
+    }
+}
+
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

@@ -6,11 +6,12 @@ import 'package:intl/intl.dart';
 import '../db/database.dart';
 import '../engine/celtic_calendar.dart';
 import '../engine/celtic_festivals.dart';
-import '../engine/moon_phase.dart';
+
 import '../theme/app_theme.dart';
+import 'sky_strip.dart';
 import 'time_grid_shared.dart';
 
-const double _kApproxHeaderH = 80.0; // all-day + moon + compact header overhead
+const double _kApproxHeaderH = 80.0; // all-day row + sky strip (collapsed) + header overhead
 
 /// Full-day view: compact header + all-day events + timed event timeline.
 class DayView extends StatefulWidget {
@@ -141,7 +142,6 @@ class _DayViewState extends State<DayView> {
     final c        = context.colors;
     final gregDate = celticToGregorian(widget.celticYear, widget.month, widget.day);
     final isToday  = _isToday;
-    final phase     = MoonPhaseCalculator.calculate(gregDate);
     final allDayEvs = widget.events.where((e) => e.startMinutes == null).toList();
     final timedEvs  = widget.events.where((e) => e.startMinutes != null).toList();
     final now  = DateTime.now();
@@ -261,35 +261,8 @@ class _DayViewState extends State<DayView> {
               ),
             ),
 
-            // ── Moon phase line ───────────────────────────────────────────
-            Container(
-              decoration: BoxDecoration(
-                color: c.surface2,
-                border: Border(bottom: BorderSide(color: c.border)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: kTimeGutterW,
-                    decoration: BoxDecoration(
-                      border: Border(
-                          right: BorderSide(color: c.border, width: 0.5)),
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 5),
-                      child: Text(
-                        '${phase.symbol}  ${phase.name}',
-                        style: AppTextStyles.imFell(
-                            size: 11, color: c.dim, italic: true),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // ── Sky strip (moon phase, zodiac, sun times, solar events) ───
+            SkyStrip(date: gregDate),
 
             // ── Time grid ────────────────────────────────────────────────
             Expanded(

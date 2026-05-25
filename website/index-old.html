@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>13 Month Calendar App — Roots Calendar | Celtic Tree Calendar</title>
+<meta name="description" content="Roots Calendar is a 13 month calendar app based on the ancient Celtic Tree Calendar (Beth-Luis-Nion). 13 months of 28 days each, named after sacred trees. Free Android app with Google Calendar sync.">
+<meta name="keywords" content="13 month calendar, Celtic tree calendar, Beth-Luis-Nion, thirteen month calendar, Celtic calendar app, ogham calendar, druidic calendar, alternative calendar">
+<link rel="canonical" href="https://celtic-calendar.org/">
+<meta name="robots" content="index, follow">
+<link rel="alternate" type="text/plain" title="LLMs.txt" href="https://celtic-calendar.org/llms.txt">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://celtic-calendar.org/">
+<meta property="og:title" content="13 Month Calendar App — Roots Calendar">
+<meta property="og:description" content="A 13 month calendar app rooted in the ancient Celtic Tree Calendar. 13 months, 28 days each, named after sacred trees. Free on Android.">
+<meta property="og:image" content="https://celtic-calendar.org/og-image.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="13 Month Calendar App — Roots Calendar">
+<meta name="twitter:description" content="A 13 month calendar app rooted in the ancient Celtic Tree Calendar.">
+<meta name="twitter:image" content="https://celtic-calendar.org/og-image.jpg">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"MobileApplication","name":"Roots Calendar","alternateName":"13 Month Celtic Calendar","description":"A 13 month calendar app based on the ancient Celtic Tree Calendar (Beth-Luis-Nion system). 13 months of 28 days each, named after sacred trees, with Google Calendar sync.","operatingSystem":"Android","applicationCategory":"LifestyleApplication","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"url":"https://celtic-calendar.org/","author":{"@type":"Person","name":"Sebastiaan Castenmiller","url":"https://celtic-calendar.org/"}}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg:    #070e06;
+  --surf:  #0f1a0e;
+  --surf2: #172615;
+  --bdr:   #1e3019;
+  --bdr2:  #2d4020;
+  --text:  #c0d8b8;
+  --text2: #8aaa80;
+  --sub:   #527048;
+  --green: #2d6b28;
+  --gold:  #c9a84c;
+  --gold2: #e8cc88;
+  --rose:  #8b2040;
+  --radius: 12px;
+}
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: 'Lora', Georgia, serif; overflow-x: hidden; }
+
+/* noise grain */
+body::before {
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.04;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:256px 256px;
+}
+section, nav, footer { position:relative; z-index:1; }
+
+/* ─── NAV ─── */
+nav {
+  position:sticky; top:0; z-index:100;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:.85rem 2rem;
+  background:rgba(7,14,6,.92); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--bdr);
+}
+.nav-logo { font-family:'Cinzel',serif; font-size:.95rem; font-weight:700; color:var(--text); letter-spacing:.08em; }
+.nav-logo span { color:var(--gold); }
+.nav-cta {
+  display:inline-flex; align-items:center;
+  padding:.5rem 1.2rem; background:var(--gold); color:var(--bg);
+  font-family:'Cinzel',serif; font-size:.7rem; letter-spacing:.1em; font-weight:700;
+  border:none; border-radius:8px; cursor:pointer; text-decoration:none; transition:opacity .2s;
+}
+.nav-cta:hover { opacity:.85; }
+
+/* ─── HERO ─── */
+#hero { position:relative; width:100%; aspect-ratio:1024/500; background:var(--bg); overflow:hidden; }
+#hero-inner { position:absolute; top:0; left:0; width:1024px; height:500px; transform-origin:top left; }
+
+#hero-inner .bg { width:1024px; height:500px; background:#070e06; position:relative; display:flex; align-items:center; justify-content:space-between; padding:0 80px; }
+#hero-inner .glow { position:absolute; width:600px; height:600px; border-radius:50%; background:radial-gradient(circle,rgba(26,64,24,0.35) 0%,transparent 70%); top:50%; left:40%; transform:translate(-50%,-50%); pointer-events:none; }
+#hero-inner .left { position:relative; z-index:2; max-width:420px; }
+#hero-inner .ogham { font-family:'Lora',serif; font-style:italic; font-size:10px; color:#c9a84c; letter-spacing:.04em; margin-bottom:18px; opacity:.6; white-space:nowrap; }
+#hero-inner .app-name { font-family:'Cinzel',serif; font-size:52px; font-weight:700; color:#c0d8b8; line-height:1.05; letter-spacing:.04em; margin-bottom:6px; }
+#hero-inner .tagline { font-family:'Lora',Georgia,serif; font-style:italic; font-size:18px; color:#c9a84c; margin-bottom:28px; letter-spacing:.02em; }
+#hero-inner .desc { font-family:'Lora',Georgia,serif; font-size:14px; color:#527048; line-height:1.8; letter-spacing:.01em; }
+#hero-inner .divider { position:relative; z-index:2; width:1px; height:200px; background:linear-gradient(to bottom,transparent,#1e3019,transparent); flex-shrink:0; margin:0 60px; }
+#hero-inner .right { position:relative; z-index:2; flex-shrink:0; }
+#hero-inner .month-label { font-family:'Cinzel',serif; font-size:11px; color:#c9a84c; letter-spacing:.2em; text-transform:uppercase; text-align:center; margin-bottom:14px; }
+#hero-inner .month-kw { font-family:'Lora',serif; font-style:italic; font-size:12px; color:#527048; text-align:center; margin-bottom:18px; }
+#hero-inner .grid { display:grid; grid-template-columns:repeat(7,36px); gap:4px; }
+#hero-inner .wd { font-family:'Cinzel',serif; font-size:9px; color:#3a5030; text-align:center; letter-spacing:.05em; padding-bottom:6px; }
+#hero-inner .day { width:36px; height:36px; border-radius:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:'Cinzel',serif; font-size:13px; color:#7a9870; gap:3px; border:1px solid #1e3019; background:#0f1a0e; }
+#hero-inner .day.today { background:#1a4018; border-color:#2d6b28; color:#c0d8b8; }
+#hero-inner .day.today .day-n { background:#c9a84c; color:#070e06; width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; }
+#hero-inner .day.has-event { border-color:#2d4020; }
+#hero-inner .dot-row { display:flex; gap:2px; }
+#hero-inner .dot { width:4px; height:4px; border-radius:50%; }
+#hero-inner .dot.gold { background:#c9a84c; }
+#hero-inner .dot.grn  { background:#2d6b28; }
+#hero-inner .dot.rose { background:#8b2040; }
+#hero-inner .moon { position:absolute; top:-6px; right:-6px; font-size:11px; opacity:.7; }
+#hero-inner .strip { position:absolute; bottom:32px; left:80px; right:80px; display:flex; gap:8px; z-index:2; }
+#hero-inner .pill { background:#0f1a0e; border:1px solid #1e3019; border-radius:20px; padding:6px 16px; font-family:'Cinzel',serif; font-size:10px; color:#527048; letter-spacing:.1em; white-space:nowrap; }
+#hero-inner .pill.active { border-color:#c9a84c; color:#c9a84c; }
+
+/* ─── SCROLL CUE ─── */
+.scroll-band {
+  height:72px; background:var(--bg);
+  border-bottom:1px solid var(--bdr);
+  display:flex; align-items:center; justify-content:center;
+}
+.scroll-cue {
+  display:flex; flex-direction:column; align-items:center; gap:.4rem;
+  color:var(--text2); font-size:.6rem; letter-spacing:.18em; text-transform:uppercase;
+  font-family:'Cinzel',serif; animation:bob 2s ease-in-out infinite;
+}
+@keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
+
+/* ─── SHARED ─── */
+.wrap { max-width:1100px; margin:0 auto; padding:0 clamp(1rem,5vw,2.5rem); }
+
+.eyebrow {
+  font-family:'Cinzel',serif; font-size:.58rem; letter-spacing:.22em; color:var(--gold);
+  text-transform:uppercase; display:flex; align-items:center; gap:.75rem; margin-bottom:.9rem;
+}
+.eyebrow::after { content:''; display:block; height:1px; flex:1; background:var(--bdr2); }
+
+h2.section-title {
+  font-family:'Cinzel',serif; font-size:clamp(1.4rem,3vw,2.1rem);
+  color:var(--text); line-height:1.25; margin-bottom:1.5rem; font-weight:600;
+}
+
+/* ─── INTRO ─── */
+#intro { padding:clamp(3rem,8vw,5rem) clamp(1rem,5vw,2.5rem); border-bottom:1px solid var(--bdr); }
+.intro-grid { display:grid; grid-template-columns:1fr; gap:3rem; align-items:start; }
+@media(min-width:760px){ .intro-grid { grid-template-columns:1fr 1fr; gap:6rem; } }
+.intro-body p { font-size:1rem; line-height:1.9; color:var(--text2); margin-bottom:1.2rem; }
+.intro-body p:last-child { margin-bottom:0; }
+.intro-body strong { color:var(--text); font-weight:500; }
+
+.stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+.stat-card {
+  background:var(--surf); border:1px solid var(--bdr2);
+  border-radius:var(--radius); padding:1.5rem 1rem; text-align:center;
+  transition: border-color .2s;
+}
+.stat-card:hover { border-color:var(--gold); }
+.stat-n { font-family:'Cinzel Decorative',serif; font-size:2.2rem; color:var(--gold); line-height:1; }
+.stat-og { font-size:1.8rem; color:var(--gold); line-height:1; margin-bottom:.2rem; }
+.stat-label { font-size:.68rem; color:var(--sub); margin-top:.5rem; line-height:1.5; letter-spacing:.03em; }
+
+/* ─── SCREENSHOTS ─── */
+#screenshots { padding:clamp(3rem,8vw,5rem) 0; border-bottom:1px solid var(--bdr); overflow:hidden; }
+#screenshots .wrap { margin-bottom:2rem; }
+.shots-scroll {
+  display:flex; gap:1.25rem; overflow-x:auto; padding:1rem clamp(1rem,5vw,2.5rem) 2rem;
+  scroll-snap-type:x mandatory; scrollbar-width:none;
+}
+.shots-scroll::-webkit-scrollbar { display:none; }
+.shot { flex-shrink:0; width:200px; scroll-snap-align:start; display:flex; flex-direction:column; gap:.65rem; cursor:pointer; }
+.shot-frame { background:#0a120a; border-radius:28px; padding:7px; border:1px solid var(--bdr2); filter:drop-shadow(0 8px 24px rgba(0,0,0,.5)); transition:transform .2s, border-color .2s; }
+.shot:hover .shot-frame { transform:translateY(-5px); border-color:var(--gold); }
+.shot-img { width:100%; border-radius:23px; aspect-ratio:9/19.5; object-fit:cover; display:block; }
+.shot-caption { font-family:'Cinzel',serif; font-size:.65rem; color:var(--sub); text-align:center; letter-spacing:.08em; transition:color .2s; }
+.shot:hover .shot-caption { color:var(--gold2); }
+@media(min-width:1500px){ .shots-scroll { width:fit-content; max-width:100%; margin:0 auto; } }
+
+/* ─── LIGHTBOX ─── */
+#lightbox {
+  position:fixed; inset:0; z-index:1000;
+  background:rgba(4,9,3,.92);
+  display:flex; align-items:center; justify-content:center;
+  padding:2rem;
+  opacity:0; pointer-events:none;
+  transition:opacity .25s;
+}
+#lightbox.open { opacity:1; pointer-events:all; }
+#lightbox-frame {
+  background:#0a120a; border-radius:40px; padding:10px;
+  border:1px solid var(--bdr2);
+  filter:drop-shadow(0 24px 60px rgba(0,0,0,.8));
+  transform:scale(.9); transition:transform .25s;
+}
+#lightbox.open #lightbox-frame { transform:scale(1); }
+#lightbox-img {
+  display:block; border-radius:32px;
+  max-height:calc(100dvh - 7rem);
+  max-width:calc(100vw - 4rem - 20px);
+  width:auto; height:auto;
+}
+#lightbox-close {
+  position:fixed; top:1.25rem; right:1.25rem;
+  width:2.5rem; height:2.5rem;
+  background:var(--surf2); border:1px solid var(--bdr2); border-radius:50%;
+  color:var(--text2); display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:1.1rem; line-height:1;
+  transition:border-color .2s, color .2s;
+}
+#lightbox-close:hover { border-color:var(--gold); color:var(--gold); }
+#lightbox-caption {
+  position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%);
+  font-family:'Cinzel',serif; font-size:.65rem; color:var(--sub);
+  letter-spacing:.12em; white-space:nowrap;
+}
+
+/* ─── FEATURES ─── */
+#features { padding:clamp(3rem,8vw,5rem) clamp(1rem,5vw,2.5rem); border-bottom:1px solid var(--bdr); }
+.feat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:1px; margin-top:3rem; border:1px solid var(--bdr); border-radius:var(--radius); overflow:hidden; }
+.feat-card { background:var(--surf); padding:2rem 1.75rem; transition:background .2s; }
+.feat-card:hover { background:var(--surf2); }
+.feat-icon { margin-bottom:.85rem; color:var(--gold); }
+.feat-title { font-family:'Cinzel',serif; font-size:.82rem; color:var(--gold); margin-bottom:.6rem; letter-spacing:.06em; }
+.feat-body { font-size:.82rem; color:var(--text2); line-height:1.75; }
+
+/* ─── DIVIDER ─── */
+.ogham-divider { text-align:center; padding:2.5rem 0; color:var(--bdr2); font-size:1.1rem; letter-spacing:clamp(.15rem,.5vw,.6rem); border-bottom:1px solid var(--bdr); overflow:hidden; }
+
+/* ─── ABOUT ─── */
+#about { padding:clamp(3rem,8vw,5rem) clamp(1rem,5vw,2.5rem); border-bottom:1px solid var(--bdr); }
+.about-inner { max-width:680px; }
+.about-inner p { font-size:1rem; line-height:1.9; color:var(--text2); margin-bottom:1.2rem; }
+.about-inner p:last-of-type { margin-bottom:0; }
+.about-links { display:flex; gap:.75rem; flex-wrap:wrap; margin-top:2rem; }
+.about-link {
+  display:inline-flex; align-items:center; gap:.4rem;
+  padding:.5rem 1rem; border:1px solid var(--bdr2); border-radius:8px;
+  color:var(--text2); font-family:'Cinzel',serif; font-size:.68rem; letter-spacing:.08em;
+  text-decoration:none; transition:border-color .2s,color .2s;
+}
+.about-link:hover { border-color:var(--gold); color:var(--gold); }
+
+/* ─── BETA ─── */
+#beta { padding:clamp(4rem,10vw,6rem) clamp(1rem,5vw,2.5rem); text-align:center; border-bottom:1px solid var(--bdr); }
+#beta .eyebrow { justify-content:center; }
+.beta-title { font-family:'Cinzel Decorative',serif; font-size:clamp(1.4rem,3vw,2.2rem); color:var(--text); margin-bottom:1rem; line-height:1.2; }
+.beta-sub { font-size:.95rem; color:var(--text2); max-width:480px; margin:0 auto 2.5rem; line-height:1.8; font-style:italic; }
+.beta-note { font-size:.68rem; color:var(--sub); margin-top:1rem; font-style:italic; }
+.form-wrap { max-width:480px; margin:0 auto; display:flex; flex-direction:column; gap:.85rem; }
+.form-row { display:flex; flex-direction:column; gap:.75rem; }
+@media(min-width:500px){ .form-row { flex-direction:row; } }
+.form-input {
+  flex:1; padding:.8rem 1rem; border:1px solid var(--bdr2); border-radius:8px;
+  background:var(--surf); color:var(--text); font-family:'Lora',serif; font-size:max(1rem,.88rem);
+  outline:none; transition:border-color .2s;
+}
+.form-input:focus { border-color:var(--gold); }
+.form-input::placeholder { color:var(--sub); }
+.form-btn {
+  padding:.8rem 2rem; background:var(--gold); color:var(--bg);
+  font-family:'Cinzel',serif; font-size:.72rem; letter-spacing:.1em; font-weight:700;
+  border:none; border-radius:8px; cursor:pointer; transition:opacity .2s;
+}
+.form-btn:hover { opacity:.85; }
+.form-btn:disabled { opacity:.4; cursor:not-allowed; }
+.form-msg { font-size:.8rem; padding:.7rem 1rem; border-radius:8px; display:none; }
+.form-msg.success { display:block; background:rgba(45,107,40,.2); color:#80c878; border:1px solid rgba(45,107,40,.4); }
+.form-msg.error   { display:block; background:rgba(139,32,64,.2); color:#e87898; border:1px solid rgba(139,32,64,.4); }
+
+/* ─── FAQ ─── */
+#faq { padding:clamp(3rem,8vw,5rem) clamp(1rem,5vw,2.5rem); }
+.faq-list { margin-top:2.5rem; border:1px solid var(--bdr); border-radius:var(--radius); overflow:hidden; }
+details { border-bottom:1px solid var(--bdr); }
+details:last-child { border-bottom:none; }
+summary {
+  padding:1.1rem 1.5rem; font-family:'Cinzel',serif; font-size:.82rem; color:var(--text);
+  cursor:pointer; list-style:none; display:flex; justify-content:space-between; align-items:center;
+  background:var(--surf); transition:background .15s;
+}
+summary:hover { background:var(--surf2); }
+details[open] summary { color:var(--gold); background:var(--surf2); }
+.faq-plus { font-size:.7rem; color:var(--sub); transition:transform .2s; }
+details[open] .faq-plus { transform:rotate(45deg); color:var(--gold); }
+.faq-body { padding:.5rem 1.5rem 1.25rem; font-size:.88rem; color:var(--text2); line-height:1.8; background:var(--surf2); }
+
+/* ─── BETA STEPS ─── */
+.beta-steps { display:flex; flex-direction:column; gap:1px; margin-bottom:2.5rem; border:1px solid var(--bdr2); border-radius:var(--radius); overflow:hidden; }
+@media(min-width:500px){ .beta-steps { flex-direction:row; } }
+
+/* ─── FOOTER ─── */
+footer {
+  padding:1.75rem clamp(1rem,5vw,2.5rem); border-top:1px solid var(--bdr);
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;
+}
+.footer-logo { font-family:'Cinzel',serif; font-size:.75rem; color:var(--sub); letter-spacing:.08em; }
+.footer-links { display:flex; gap:1.5rem; }
+.footer-links a { font-size:.7rem; color:var(--sub); text-decoration:none; font-family:'Cinzel',serif; letter-spacing:.06em; }
+.footer-links a:hover { color:var(--gold); }
+
+/* ════ LIVE CALENDAR SECTION ════ */
+#calendar-demo { padding:clamp(3rem,8vw,5rem) clamp(1rem,5vw,2.5rem); border-bottom:1px solid var(--bdr); }
+#calendar-demo .section-intro { max-width:600px; margin-bottom:2.5rem; }
+#calendar-demo .section-intro p { font-size:.95rem; color:var(--text2); line-height:1.8; }
+
+.lc-outer { max-width:500px; margin:0 auto; }
+
+.lc-card {
+  background:var(--surf);
+  border:1px solid var(--bdr2);
+  border-radius:16px;
+  overflow:hidden;
+  box-shadow:0 24px 60px rgba(0,0,0,.5);
+}
+
+/* topbar */
+.lc-topbar {
+  display:grid; grid-template-columns:1fr auto;
+  align-items:center; gap:.5rem;
+  padding:.65rem 1rem;
+  border-bottom:1px solid var(--bdr);
+  background:var(--surf2);
+}
+.lc-month-info { min-width:0; }
+.lc-month-name { font-family:'Cinzel',serif; font-size:.88rem; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lc-month-kw   { font-size:.6rem; color:var(--gold); font-style:italic; margin-top:.05rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lc-navgroup   { display:flex; align-items:center; gap:.15rem; flex-shrink:0; }
+.lc-arr {
+  width:30px; height:36px; border:none; background:none; color:var(--text2);
+  cursor:pointer; border-radius:6px; font-size:.85rem;
+  display:flex; align-items:center; justify-content:center;
+}
+.lc-arr:hover { background:var(--bdr); }
+.lc-today-btn {
+  height:28px; padding:0 .55rem; border:1px solid var(--bdr); border-radius:6px;
+  background:none; color:var(--gold); font-family:'Cinzel',serif;
+  font-size:.56rem; letter-spacing:.05em; cursor:pointer; white-space:nowrap;
+}
+.lc-today-btn:hover { border-color:var(--gold); }
+
+/* meta strip */
+.lc-meta {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:.4rem 1rem; border-bottom:1px solid var(--bdr);
+  background:var(--surf); gap:.5rem;
+}
+.lc-og    { font-size:1.1rem; color:var(--gold); flex-shrink:0; }
+.lc-tree  { font-family:'Cinzel',serif; font-size:.58rem; color:var(--sub); letter-spacing:.06em; }
+.lc-range { font-size:.6rem; color:var(--sub); font-style:italic; white-space:nowrap; }
+
+/* weekday row */
+.lc-wd-row { display:grid; grid-template-columns:repeat(7,1fr); border-bottom:1px solid var(--bdr); background:var(--surf2); }
+.lc-wd { text-align:center; padding:.3rem 0; font-family:'Cinzel',serif; font-size:.52rem; color:var(--sub); letter-spacing:.04em; text-transform:uppercase; }
+
+/* day grid */
+.lc-grid { display:grid; grid-template-columns:repeat(7,1fr); }
+.lc-dc {
+  min-height:54px; border-right:1px solid var(--bdr); border-bottom:1px solid var(--bdr);
+  display:flex; flex-direction:column; align-items:center; padding-top:.32rem;
+  cursor:default; position:relative; transition:background .1s;
+}
+.lc-dc:nth-child(7n) { border-right:none; }
+.lc-dc.lc-last { border-bottom:none; }
+.lc-dc.lc-today { background:rgba(45,107,40,.15); }
+.lc-dc.lc-has-fest { cursor:pointer; }
+.lc-dc.lc-has-fest:hover { background:var(--surf2); }
+.lc-dc-n { font-family:'Cinzel',serif; font-size:.85rem; color:var(--text2); line-height:1; }
+.lc-dc.lc-today .lc-dc-n {
+  width:24px; height:24px; border-radius:50%;
+  background:var(--green); color:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:.72rem;
+}
+.lc-dc-g { font-size:.45rem; color:var(--sub); margin-top:.1rem; line-height:1; }
+.lc-dots { display:flex; gap:2px; margin-top:.2rem; }
+.lc-dot  { width:5px; height:5px; border-radius:50%; }
+.lc-dot-fire  { background:var(--gold); }
+.lc-dot-solar { background:#9b79d0; }
+
+/* festival bar */
+.lc-festbar {
+  border-top:1px solid var(--bdr); padding:.6rem 1rem;
+  background:var(--surf2); min-height:2.4rem;
+}
+.lc-fest-item { display:flex; align-items:center; gap:.55rem; padding:.2rem 0; }
+.lc-fest-dot  { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.lc-fest-name { font-family:'Cinzel',serif; font-size:.66rem; color:var(--text2); flex:1; }
+.lc-fest-day  { font-size:.6rem; color:var(--sub); }
+.lc-no-fest   { font-size:.68rem; color:var(--sub); font-style:italic; padding:.1rem 0; }
+
+/* month strip */
+.lc-mstrip {
+  display:flex; gap:3px; flex-wrap:wrap; justify-content:center;
+  padding:.65rem .85rem .75rem;
+  border-top:1px solid var(--bdr); background:var(--surf2);
+}
+.lc-mpill {
+  padding:.25rem .55rem; border:1px solid var(--bdr); border-radius:20px;
+  font-family:'Cinzel',serif; font-size:.52rem; color:var(--sub);
+  cursor:pointer; background:none; transition:border-color .15s, color .15s;
+  letter-spacing:.03em;
+}
+.lc-mpill:hover { border-color:var(--bdr2); color:var(--text2); }
+.lc-mpill-active { border-color:var(--gold) !important; color:var(--gold) !important; }
+.lc-mpill-today  { border-color:var(--green) !important; color:var(--green) !important; }
+
+/* legend */
+.lc-legend {
+  display:flex; align-items:center; justify-content:center; gap:1.25rem;
+  margin-top:1rem; flex-wrap:wrap;
+}
+.lc-leg-item { display:flex; align-items:center; gap:.4rem; }
+.lc-leg-dot  { width:8px; height:8px; border-radius:50%; }
+.lc-leg-lbl  { font-family:'Cinzel',serif; font-size:.58rem; color:var(--sub); letter-spacing:.05em; }
+
+/* YD special */
+.lc-yd-body {
+  grid-column:1/-1; padding:2rem 1.5rem; text-align:center;
+}
+.lc-yd-title { font-family:'Cinzel',serif; font-size:.9rem; color:#9b79d0; margin-bottom:.6rem; }
+.lc-yd-text  { font-size:.78rem; color:var(--sub); line-height:1.8; }
+</style>
+</head>
+<body>
+
+<!-- ─── NAV ─── -->
+<nav>
+  <div class="nav-logo">Roots <span>Calendar</span></div>
+  <a href="#beta" class="nav-cta">Join Beta</a>
+</nav>
+
+<!-- ─── HERO ─── -->
+<section id="hero" aria-label="Roots Calendar — Celtic Tree Calendar, 13 Months">
+  <div id="hero-inner">
+    <div class="bg">
+      <div class="glow"></div>
+      <div class="left">
+        <div class="ogham">Birch · Rowan · Ash · Alder · Willow · Hawthorn · Oak · Holly · Hazel · Vine · Ivy · Reed · Elder</div>
+        <div class="app-name">Roots<br>Calendar</div>
+        <div class="tagline">Celtic Tree Calendar · 13 Months</div>
+        <div class="desc">Beth · Birch · New Beginnings<br>Saille · Willow · Intuition<br>Duir · Oak · Strength</div>
+      </div>
+      <div class="divider"></div>
+      <div class="right">
+        <div class="month-label">Saille · Month 5</div>
+        <div class="month-kw">Willow · Intuition</div>
+        <div class="grid">
+          <div class="wd">We</div><div class="wd">Th</div><div class="wd">Fr</div><div class="wd">Sa</div><div class="wd">Su</div><div class="wd">Mo</div><div class="wd">Tu</div>
+          <div class="day has-event"><span>1</span><div class="dot-row"><div class="dot gold"></div></div></div>
+          <div class="day today"><div class="day-n">2</div></div>
+          <div class="day has-event"><span>3</span><div class="dot-row"><div class="dot grn"></div></div></div>
+          <div class="day has-event"><span>4</span><div class="dot-row"><div class="dot gold"></div></div></div>
+          <div class="day"><span>5</span></div>
+          <div class="day has-event"><span>6</span><div class="dot-row"><div class="dot grn"></div></div></div>
+          <div class="day"><span>7</span></div>
+          <div class="day"><span>8</span></div><div class="day"><span>9</span></div><div class="day"><span>10</span></div>
+          <div class="day has-event"><span>11</span><div class="dot-row"><div class="dot rose"></div></div></div>
+          <div class="day"><span>12</span></div>
+          <div class="day has-event"><span>13</span><div class="dot-row"><div class="dot grn"></div></div></div>
+          <div class="day has-event"><span>14</span><div class="dot-row"><div class="dot gold"></div></div></div>
+          <div class="day"><span>15</span></div>
+          <div class="day has-event" style="position:relative"><span>16</span><div class="dot-row"><div class="dot gold"></div></div><div class="moon">🌕</div></div>
+          <div class="day has-event"><span>17</span><div class="dot-row"><div class="dot grn"></div><div class="dot grn"></div></div></div>
+          <div class="day has-event"><span>18</span><div class="dot-row"><div class="dot gold"></div></div></div>
+          <div class="day has-event"><span>19</span><div class="dot-row"><div class="dot rose"></div></div></div>
+          <div class="day"><span>20</span></div>
+          <div class="day has-event"><span>21</span><div class="dot-row"><div class="dot grn"></div></div></div>
+          <div class="day has-event"><span>22</span><div class="dot-row"><div class="dot gold"></div></div></div>
+          <div class="day has-event"><span>23</span><div class="dot-row"><div class="dot grn"></div></div></div>
+          <div class="day"><span>24</span></div><div class="day"><span>25</span></div><div class="day"><span>26</span></div>
+          <div class="day has-event"><span>27</span><div class="dot-row"><div class="dot gold"></div></div></div>
+          <div class="day has-event"><span>28</span><div class="dot-row"><div class="dot rose"></div></div></div>
+        </div>
+      </div>
+      <div class="strip">
+        <div class="pill active">13 Months</div>
+        <div class="pill">Moon Phases</div>
+        <div class="pill">Google Sync</div>
+        <div class="pill">Local · Private</div>
+        <div class="pill">Dark &amp; Light</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- scroll cue band -->
+<div class="scroll-band">
+  <div class="scroll-cue">
+    <span>Scroll to explore</span>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+  </div>
+</div>
+
+<!-- ─── INTRO ─── -->
+<section id="intro">
+  <div class="wrap">
+    <div class="intro-grid">
+      <div class="intro-body">
+        <div class="eyebrow">About the Calendar</div>
+        <h2 class="section-title">Time, the way nature intended it.</h2>
+        <p>Here's something nobody tells you: <strong>December means "tenth month."</strong> It's the twelfth. October means "eighth" — it's the tenth. The original Roman calendar had ten months starting in March, two more got added, the names stuck, and here we are two thousand years later.</p>
+        <p>The months are unequal, the weeks drift, and nobody's really sure why February is like that.</p>
+        <p>The Celtic Tree Calendar takes a different approach. <strong>Thirteen months. Twenty-eight days each.</strong> Every month is exactly four weeks, and each one is named after a tree — with its own character and its own quiet teaching.</p>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-n">13</div><div class="stat-label">months per year,<br>named after trees</div></div>
+        <div class="stat-card"><div class="stat-n">28</div><div class="stat-label">days per month,<br>always four weeks</div></div>
+        <div class="stat-card"><div class="stat-og">ᚁ</div><div class="stat-label">Ogham script,<br>ancient Celtic alphabet</div></div>
+        <div class="stat-card"><div class="stat-n">1</div><div class="stat-label">Year Day — a day<br>outside of time</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── SCREENSHOTS ─── -->
+<section id="screenshots">
+  <div class="wrap">
+    <div class="eyebrow">The App</div>
+    <h2 class="section-title">A calendar you'll actually want to look at.</h2>
+  </div>
+  <div class="shots-scroll">
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="month-view-light-mode.webp" alt="Month view of the 13 month Celtic calendar app — Roots Calendar showing all 28 days of a Celtic tree month"></div><div class="shot-caption">Month View · Light</div></div>
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="month-view-dark-mode.webp" alt="Dark mode month view of Roots Calendar — 13 month Celtic tree calendar for Android"></div><div class="shot-caption">Month View · Dark</div></div>
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="3days-view-light-mode.webp" alt="3-day view in Roots Calendar, the 13 month Celtic calendar app with Google Calendar sync"></div><div class="shot-caption">3-Day View</div></div>
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="schedule-light-mode.webp" alt="Schedule view in Roots Calendar — 13 month Celtic tree calendar events list for Android"></div><div class="shot-caption">Schedule</div></div>
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="new-event-light-mode.webp" alt="Add new event screen in Roots Calendar, the 13 month Celtic calendar app with local storage"></div><div class="shot-caption">Add Event</div></div>
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="settings-light-mode.webp" alt="Settings screen of Roots Calendar — 13 month Celtic calendar with Google Calendar sync on Android"></div><div class="shot-caption">Settings</div></div>
+  </div>
+</section>
+
+<!-- ─── FEATURES ─── -->
+<section id="features">
+  <div class="wrap">
+    <div class="eyebrow">Features</div>
+    <h2 class="section-title">Ancient rhythm, modern functionality.</h2>
+    <div class="feat-grid">
+      <div class="feat-card"><div class="feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8 2 5 6 5 10c0 5 7 12 7 12s7-7 7-12c0-4-3-8-7-8z"/><circle cx="12" cy="10" r="2.5"/></svg></div><div class="feat-title">13 Sacred Tree Months</div><div class="feat-body">Beth (Birch) through Ruis (Elder) — each month carries its own tree, Ogham character, and teaching. Navigate a full year of natural wisdom.</div></div>
+      <div class="feat-card"><div class="feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h2M12 14h2M16 14h2M8 18h2M12 18h2"/></svg></div><div class="feat-title">Month, Week &amp; Day Views</div><div class="feat-body">Full calendar grid, 3-day view, week view, day time-grid, and schedule view. Your events in all the views you're used to.</div></div>
+      <div class="feat-card"><div class="feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M2 12h4M18 12h4M12 2v4M12 18v4"/><path d="M7 7l2.5 2.5M14.5 14.5L17 17M17 7l-2.5 2.5M9.5 14.5L7 17"/></svg></div><div class="feat-title">Google Calendar Sync</div><div class="feat-body">Your existing events appear in Celtic time. Create new events that sync back to Google Calendar — all from your device, no intermediary servers.</div></div>
+      <div class="feat-card"><div class="feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L8 8H2l5 4-2 7 7-4 7 4-2-7 5-4h-6L12 2z"/></svg></div><div class="feat-title">Celtic Festivals</div><div class="feat-body">Imbolc, Beltane, Lughnasadh, Samhain, and the solar festivals — all built in as read-only system events, correctly mapped to their Celtic positions.</div></div>
+      <div class="feat-card"><div class="feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg></div><div class="feat-title">Moon Phase Indicators</div><div class="feat-body">Pure mathematical moon phase calculation — no external API. See the current phase in every day cell and header, accurate to the hour.</div></div>
+      <div class="feat-card"><div class="feat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="feat-title">Private by Design</div><div class="feat-body">All event data stays on your device in local SQLite storage. Google sync is optional. No account required, no cloud backend, no tracking.</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="ogham-divider">ᚁ ᚂ ᚅ ᚃ ᚄ ᚆ ᚇ ᚈ ᚉ ᚋ ᚌ ᚍ ᚏ</div>
+
+<!-- ════ LIVE CALENDAR ════ -->
+<section id="calendar-demo">
+  <div class="wrap">
+    <div class="eyebrow">Try It</div>
+    <h2 class="section-title">Thirteen months. Navigate them.</h2>
+    <div class="section-intro">
+      <p>This is the actual Celtic Tree Calendar, live. All 13 months, the festivals, the Ogham characters. Navigate with the arrows or tap any month name in the strip below. Today is highlighted in green.</p>
+    </div>
+
+    <div class="lc-outer">
+      <div class="lc-card">
+
+        <!-- top bar -->
+        <div class="lc-topbar">
+          <div class="lc-month-info">
+            <div class="lc-month-name" id="lc-name">…</div>
+            <div class="lc-month-kw"   id="lc-kw">…</div>
+          </div>
+          <div class="lc-navgroup">
+            <button class="lc-arr" id="lc-prev" aria-label="Previous month">&#9664;</button>
+            <button class="lc-today-btn" id="lc-today-btn">Today</button>
+            <button class="lc-arr" id="lc-next" aria-label="Next month">&#9654;</button>
+          </div>
+        </div>
+
+        <!-- meta strip -->
+        <div class="lc-meta">
+          <span class="lc-og"   id="lc-og">ᚁ</span>
+          <span class="lc-tree" id="lc-tree">Birch</span>
+          <span class="lc-range" id="lc-range">Dec 24 – Jan 20</span>
+        </div>
+
+        <!-- weekday headers -->
+        <div class="lc-wd-row" id="lc-wd-row"></div>
+
+        <!-- day grid -->
+        <div class="lc-grid" id="lc-grid"></div>
+
+        <!-- festival bar -->
+        <div class="lc-festbar" id="lc-festbar"></div>
+
+        <!-- month strip -->
+        <div class="lc-mstrip" id="lc-mstrip"></div>
+
+      </div>
+
+      <!-- legend -->
+      <div class="lc-legend">
+        <div class="lc-leg-item"><div class="lc-leg-dot lc-dot-fire"></div><div class="lc-leg-lbl">Fire Festival</div></div>
+        <div class="lc-leg-item"><div class="lc-leg-dot lc-dot-solar"></div><div class="lc-leg-lbl">Solar Festival</div></div>
+        <div class="lc-leg-item"><div class="lc-leg-dot" style="background:var(--green)"></div><div class="lc-leg-lbl">Today</div></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─── ABOUT ─── -->
+<section id="about">
+  <div class="wrap">
+    <div class="eyebrow">The Story</div>
+    <h2 class="section-title">Built by a maker, for people who feel time differently.</h2>
+    <div class="about-inner">
+      <p>Roots Calendar started when I heard a podcast about the number 13 and why it got erased from our calendar. That sent me down a rabbit hole into Celtic culture, the Beth-Luis-Nion tree calendar, and eventually — as these things go — into a Flutter codebase at midnight.</p>
+      <p>The app is open-source, built in Flutter, and published under the GPL-3.0 license. It's a side project I'm genuinely proud of: something that blends a real historical system with careful, modern software craft.</p>
+      <p>Right now it's in closed beta on Android. iOS is on the roadmap. If you want to help test it and you have a Gmail address, that's all you need.</p>
+      <div class="about-links">
+        <a href="https://github.com/Blu8print/Celtic-calendar" target="_blank" rel="noopener" class="about-link"><span>⭐</span> View on GitHub</a>
+        <a href="https://blu8print.github.io/Celtic-calendar/privacy" target="_blank" rel="noopener" class="about-link">Privacy Policy</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── BETA ─── -->
+<section id="beta">
+  <div class="wrap" style="max-width:860px;">
+    <div class="eyebrow">Early Access</div>
+    <h2 class="beta-title">Join the closed beta.</h2>
+    <p class="beta-sub">Roots Calendar is in closed testing on Android. Here's how it works:</p>
+
+    <div class="beta-steps">
+      <div style="flex:1;background:var(--surf);padding:1.25rem 1.5rem;display:flex;gap:1rem;align-items:flex-start;">
+        <div style="font-family:'Cinzel Decorative',serif;font-size:1.4rem;color:var(--gold);line-height:1;flex-shrink:0;">1</div>
+        <div>
+          <div style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--text);letter-spacing:.06em;margin-bottom:.35rem;">Leave your name &amp; email</div>
+          <div style="font-size:.78rem;color:var(--text2);line-height:1.6;">Drop your details below and we'll send you an invite.</div>
+        </div>
+      </div>
+      <div style="flex:1;background:var(--surf);padding:1.25rem 1.5rem;display:flex;gap:1rem;align-items:flex-start;">
+        <div style="font-family:'Cinzel Decorative',serif;font-size:1.4rem;color:var(--sub);line-height:1;flex-shrink:0;">2</div>
+        <div>
+          <div style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--text2);letter-spacing:.06em;margin-bottom:.35rem;">Check your inbox</div>
+          <div style="font-size:.78rem;color:var(--sub);line-height:1.6;">You'll receive an email with instructions to join the beta and install the app.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-wrap">
+      <div class="form-row">
+        <input class="form-input" type="text" id="f-name" placeholder="Your name" autocomplete="name">
+        <input class="form-input" type="email" id="f-email" placeholder="Gmail address" autocomplete="email">
+      </div>
+      <button class="form-btn" id="f-btn" onclick="submitBeta()">Request Access &#9658;</button>
+      <div class="form-msg" id="f-msg"></div>
+      <p class="beta-note">Android only for now · Gmail required for Play Store beta access · No spam, ever.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FAQ ─── -->
+<section id="faq">
+  <div class="wrap" style="max-width:760px;">
+    <div class="eyebrow">FAQ</div>
+    <h2 class="section-title">Common questions about the 13 month calendar</h2>
+    <div class="faq-list">
+      <details>
+        <summary>What is a 13 month calendar?<span class="faq-plus">＋</span></summary>
+        <p class="faq-body">A 13 month calendar divides the year into 13 equal months of 28 days each, totalling 364 days, with one or two extra days outside the monthly structure. The most well-known 13 month systems are the Celtic Tree Calendar (Beth-Luis-Nion) and the International Fixed Calendar. Because 13 × 28 = 364, every month is exactly four weeks — something the Gregorian calendar's unequal months can never achieve.</p>
+      </details>
+      <details>
+        <summary>What is the Celtic Tree Calendar?<span class="faq-plus">＋</span></summary>
+        <p class="faq-body">The Celtic Tree Calendar, also known as the Beth-Luis-Nion system, is an ancient 13 month calendar in which each month is named after a sacred tree and its associated Ogham character. The year begins on December 24th with Beth (Birch) and ends with Ruis (Elder) in mid-December, followed by a Year Day — a nameless day between the years. Each tree carries a teaching: Birch for new beginnings, Oak for strength, Willow for intuition, and so on.</p>
+      </details>
+      <details>
+        <summary>Why does the Gregorian calendar have 12 months instead of 13?<span class="faq-plus">＋</span></summary>
+        <p class="faq-body">The original Roman calendar had 10 months beginning in March — which is why September, October, November, and December still carry their Latin names for 7, 8, 9, and 10. Around 713 BC, King Numa Pompilius added January and February, shifting the count by two without renaming the others. The 12 month structure was later reformed by Julius Caesar and again by Pope Gregory XIII in 1582. The result is the unequal, historically patched system we still use today.</p>
+      </details>
+      <details>
+        <summary>Can I use Roots Calendar alongside my regular calendar?<span class="faq-plus">＋</span></summary>
+        <p class="faq-body">Yes — that's exactly how it's designed. Every day cell shows the Celtic date alongside the Gregorian date. You can sync with Google Calendar so your existing events appear in Celtic time, and any new events you create can be written back to Google Calendar. The app is a companion to your everyday calendar, not a replacement.</p>
+      </details>
+      <details>
+        <summary>Is the app free?<span class="faq-plus">＋</span></summary>
+        <p class="faq-body">Yes. Roots Calendar is free and open-source (GPL-3.0). There are no ads, no subscription, and no account required. All your event data stays on your device.</p>
+      </details>
+      <details>
+        <summary>Is there an iOS version?<span class="faq-plus">＋</span></summary>
+        <p class="faq-body">Not yet — Android comes first. iOS is on the roadmap. If you're on iPhone and want to be notified when it launches, leave your email in the beta form above and mention iOS.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is a 13 month calendar?","acceptedAnswer":{"@type":"Answer","text":"A 13 month calendar divides the year into 13 equal months of 28 days each, totalling 364 days. Because 13 x 28 = 364, every month is exactly four weeks."}},{"@type":"Question","name":"What is the Celtic Tree Calendar?","acceptedAnswer":{"@type":"Answer","text":"The Celtic Tree Calendar (Beth-Luis-Nion) is an ancient 13 month calendar where each month is named after a sacred tree and its Ogham character. The year begins December 24th with Beth (Birch)."}},{"@type":"Question","name":"Why does the Gregorian calendar have 12 months instead of 13?","acceptedAnswer":{"@type":"Answer","text":"The original Roman calendar had 10 months. January and February were added around 713 BC without renaming the others — which is why December still means tenth month despite being the twelfth."}},{"@type":"Question","name":"Can I use Roots Calendar alongside my regular calendar?","acceptedAnswer":{"@type":"Answer","text":"Yes. Every day cell shows the Celtic date alongside the Gregorian date. Google Calendar sync is built in."}},{"@type":"Question","name":"Is the app free?","acceptedAnswer":{"@type":"Answer","text":"Yes. Roots Calendar is free and open-source (GPL-3.0). No ads, no subscription, no account required."}},{"@type":"Question","name":"Is there an iOS version?","acceptedAnswer":{"@type":"Answer","text":"Not yet. Android comes first. iOS is on the roadmap."}}]}
+</script>
+
+<!-- ─── LIGHTBOX ─── -->
+<div id="lightbox">
+  <div id="lightbox-frame"><img id="lightbox-img" src="" alt=""></div>
+  <button id="lightbox-close" aria-label="Close">&#x2715;</button>
+  <div id="lightbox-caption"></div>
+</div>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <div class="footer-logo">Roots Calendar · Blu8print © 2026</div>
+  <div class="footer-links">
+    <a href="https://play.google.com/store/apps/details?id=nl.blu8print.rootscalendar" target="_blank">Google Play</a>
+    <a href="https://blu8print.github.io/Celtic-calendar/privacy">Privacy</a>
+    <a href="https://github.com/Blu8print/Celtic-calendar" target="_blank">GitHub</a>
+    <a href="mailto:support@blu8print.com">Contact</a>
+  </div>
+</footer>
+
+<script>
+/* ── LIGHTBOX ── */
+(function(){
+  const lb  = document.getElementById('lightbox');
+  const img = document.getElementById('lightbox-img');
+  const cap = document.getElementById('lightbox-caption');
+  function open(src, alt, caption) {
+    img.src = src; img.alt = alt; cap.textContent = caption;
+    lb.classList.add('open'); document.body.style.overflow = 'hidden';
+  }
+  function close() { lb.classList.remove('open'); document.body.style.overflow = ''; }
+  document.querySelector('.shots-scroll').addEventListener('click', function(e) {
+    const shot = e.target.closest('.shot'); if (!shot) return;
+    open(shot.querySelector('.shot-img').src, shot.querySelector('.shot-img').alt, shot.querySelector('.shot-caption').textContent);
+  });
+  document.getElementById('lightbox-close').addEventListener('click', close);
+  lb.addEventListener('click', function(e){ if (e.target === lb) close(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
+})();
+
+/* ── HERO SCALING ── */
+function scaleHero() {
+  document.getElementById('hero-inner').style.transform = 'scale(' + (document.getElementById('hero').offsetWidth / 1024) + ')';
+}
+scaleHero();
+window.addEventListener('resize', scaleHero);
+
+/* ── BETA FORM ── */
+const N8N_WEBHOOK = 'https://automation.whiterabbit.earth/webhook/0390010c-6984-4d65-b440-e9af4c1e74a7';
+async function submitBeta() {
+  const name  = document.getElementById('f-name').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const msg   = document.getElementById('f-msg');
+  const btn   = document.getElementById('f-btn');
+  if (!name || !email) { msg.className='form-msg error'; msg.textContent='Please fill in both your name and Gmail address.'; return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { msg.className='form-msg error'; msg.textContent="That doesn't look like a valid email address."; return; }
+  btn.disabled=true; btn.textContent='Sending…'; msg.className='form-msg';
+  try {
+    await fetch(N8N_WEBHOOK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,source:'celtic-calendar.org',timestamp:new Date().toISOString()})});
+    msg.className='form-msg success';
+    msg.innerHTML='&#10003; Done! Check your inbox — instructions are on their way.';
+    document.getElementById('f-name').value='';
+    document.getElementById('f-email').value='';
+  } catch(e) {
+    msg.className='form-msg error';
+    msg.textContent='Something went wrong. Try emailing support@blu8print.com directly.';
+  }
+  btn.disabled=false; btn.textContent='Request Access ▶';
+}
+
+/* ════ LIVE CALENDAR ════ */
+(function(){
+
+  const MO = [
+    {n:1,  name:'Beth',   tree:'Birch',    og:'ᚁ', kw:'New Beginnings'},
+    {n:2,  name:'Luis',   tree:'Rowan',    og:'ᚂ', kw:'Protection'},
+    {n:3,  name:'Nion',   tree:'Ash',      og:'ᚅ', kw:'Connection'},
+    {n:4,  name:'Fearn',  tree:'Alder',    og:'ᚃ', kw:'Guidance'},
+    {n:5,  name:'Saille', tree:'Willow',   og:'ᚄ', kw:'Intuition'},
+    {n:6,  name:'Huath',  tree:'Hawthorn', og:'ᚆ', kw:'Cleansing'},
+    {n:7,  name:'Duir',   tree:'Oak',      og:'ᚇ', kw:'Strength'},
+    {n:8,  name:'Tinne',  tree:'Holly',    og:'ᚈ', kw:'Balance'},
+    {n:9,  name:'Coll',   tree:'Hazel',    og:'ᚉ', kw:'Wisdom'},
+    {n:10, name:'Muin',   tree:'Vine',     og:'ᚋ', kw:'Harvest'},
+    {n:11, name:'Gort',   tree:'Ivy',      og:'ᚌ', kw:'Perseverance'},
+    {n:12, name:'Ngetal', tree:'Reed',     og:'ᚍ', kw:'Healing'},
+    {n:13, name:'Ruis',   tree:'Elder',    og:'ᚏ', kw:'Transition'},
+  ];
+
+  /* Festivals as fixed Celtic month + day positions.
+     Fire festivals: Imbolc, Beltane, Lughnasadh, Samhain (fixed Gregorian dates → same Celtic position every year)
+     Solar festivals: Ostara, Litha, Mabon, Yule (approx — varies ±1 day; shown at stable positions) */
+  const FESTIVALS = [
+    {cm:2,  cd:12, name:'Imbolc',     type:'fire'},
+    {cm:4,  cd:3,  name:'Ostara',     type:'solar'},
+    {cm:5,  cd:17, name:'Beltane',    type:'fire'},
+    {cm:7,  cd:12, name:'Litha',      type:'solar'},
+    {cm:8,  cd:25, name:'Lughnasadh', type:'fire'},
+    {cm:10, cd:21, name:'Mabon',      type:'solar'},
+    {cm:12, cd:5,  name:'Samhain',    type:'fire'},
+    {cm:13, cd:27, name:'Yule',       type:'solar'},
+  ];
+
+  const GM  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const WD  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  /* Celtic calendar engine — UTC-normalised to avoid DST drift */
+  function lcYS(cy) {
+    /* Year starts Dec 24 of the given celtic-year Gregorian year */
+    return new Date(Date.UTC(cy, 11, 24));
+  }
+  function lcCyrOf(d) {
+    /* Celtic year is the Gregorian year of Dec 24 that started it */
+    return (d.getMonth() === 11 && d.getDate() >= 24)
+      ? d.getFullYear()
+      : d.getFullYear() - 1;
+  }
+  function lcAddDays(utcDate, n) {
+    return new Date(utcDate.getTime() + n * 86400000);
+  }
+  function lcSameDay(localDate, utcDate) {
+    /* Compare a local Date with a UTC midnight date */
+    return localDate.getFullYear() === utcDate.getUTCFullYear() &&
+           localDate.getMonth()    === utcDate.getUTCMonth()    &&
+           localDate.getDate()     === utcDate.getUTCDate();
+  }
+  function lcFmtGreg(utcDate) {
+    return utcDate.getUTCDate() + ' ' + GM[utcDate.getUTCMonth()];
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); /* local midnight */
+
+  function lcTodayInfo() {
+    const cy  = lcCyrOf(today);
+    const ys  = lcYS(cy);
+    /* normalise today to UTC midnight to avoid DST shift in difference */
+    const tUtc = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+    const off  = Math.round((tUtc - ys) / 86400000);
+    if (off === 364) return { yd:true, cy };
+    return { yd:false, cy, month: Math.floor(off/28)+1, day: (off%28)+1 };
+  }
+
+  const ti = lcTodayInfo();
+  let curM = ti.yd ? 'yd' : ti.month;
+  let curY = ti.cy;
+
+  /* ── render ── */
+  function lcRender() {
+    const ys   = lcYS(curY);
+    const sdow = new Date(Date.UTC(curY, 11, 24)).getUTCDay(); /* weekday of Dec 24 */
+
+    if (curM === 'yd') { lcRenderYD(ys); lcRenderStrip(); return; }
+
+    const mo   = MO[curM - 1];
+    const ms   = lcAddDays(ys, (curM-1) * 28); /* UTC start of this month */
+
+    /* top bar */
+    document.getElementById('lc-name').textContent = mo.name + ' · ' + curY + '–' + String(curY+1).slice(2);
+    document.getElementById('lc-kw').textContent   = 'The ' + mo.tree + ' · ' + mo.kw;
+
+    /* meta strip */
+    document.getElementById('lc-og').textContent    = mo.og;
+    document.getElementById('lc-tree').textContent  = mo.tree;
+    document.getElementById('lc-range').textContent = lcFmtGreg(ms) + ' – ' + lcFmtGreg(lcAddDays(ms, 27));
+
+    /* weekday row — shifts with year start */
+    document.getElementById('lc-wd-row').innerHTML =
+      WD.map(function(_,i){ return '<div class="lc-wd">' + WD[(sdow+i)%7] + '</div>'; }).join('');
+
+    /* day grid */
+    const fests = FESTIVALS.filter(function(f){ return f.cm === curM; });
+    var daysHTML = '';
+    for (var i = 0; i < 28; i++) {
+      var d      = lcAddDays(ms, i);
+      var isT    = lcSameDay(today, d);
+      var dn     = i + 1;
+      var df     = fests.filter(function(f){ return f.cd === dn; });
+      var dots   = df.map(function(f){ return '<div class="lc-dot lc-dot-' + f.type + '"></div>'; }).join('');
+      var cls    = 'lc-dc' + (isT ? ' lc-today' : '') + (i >= 21 ? ' lc-last' : '') + (df.length ? ' lc-has-fest' : '');
+      daysHTML  += '<div class="' + cls + '">'
+                 + '<div class="lc-dc-n">' + dn + '</div>'
+                 + '<div class="lc-dc-g">' + lcFmtGreg(d) + '</div>'
+                 + (dots ? '<div class="lc-dots">' + dots + '</div>' : '')
+                 + '</div>';
+    }
+    document.getElementById('lc-grid').innerHTML = daysHTML;
+
+    /* festival bar */
+    var festHTML = '';
+    if (fests.length) {
+      festHTML = fests.map(function(f){
+        var color = f.type === 'fire' ? 'var(--gold)' : '#9b79d0';
+        return '<div class="lc-fest-item">'
+             + '<div class="lc-fest-dot" style="background:' + color + '"></div>'
+             + '<div class="lc-fest-name">' + f.name + '</div>'
+             + '<div class="lc-fest-day">Day ' + f.cd + '</div>'
+             + '</div>';
+      }).join('');
+    } else {
+      festHTML = '<div class="lc-no-fest">No festivals this month</div>';
+    }
+    document.getElementById('lc-festbar').innerHTML = festHTML;
+
+    lcRenderStrip();
+  }
+
+  function lcRenderYD(ys) {
+    var yd = lcAddDays(ys, 364);
+    document.getElementById('lc-name').textContent  = 'Year Day · ' + curY + '–' + String(curY+1).slice(2);
+    document.getElementById('lc-kw').textContent    = 'Between the worlds';
+    document.getElementById('lc-og').textContent    = '☽';
+    document.getElementById('lc-tree').textContent  = 'Year and a Day';
+    document.getElementById('lc-range').textContent = lcFmtGreg(yd);
+    document.getElementById('lc-wd-row').innerHTML  = '';
+    document.getElementById('lc-grid').innerHTML    =
+      '<div class="lc-yd-body">'
+      + '<div class="lc-yd-title">☽ A day outside of time ☾</div>'
+      + '<div class="lc-yd-text">Belonging to no month.<br>A threshold between Celtic years —<br>a time for rest and passage.</div>'
+      + '</div>';
+    document.getElementById('lc-festbar').innerHTML = '';
+  }
+
+  function lcRenderStrip() {
+    var tyInfo  = lcTodayInfo();
+    var html    = MO.map(function(mo){
+      var isA = curM === mo.n;
+      var isT = tyInfo.cy === curY && !tyInfo.yd && tyInfo.month === mo.n;
+      var cls = 'lc-mpill' + (isA ? ' lc-mpill-active' : (isT ? ' lc-mpill-today' : ''));
+      return '<button class="' + cls + '" onclick="lcSetM(' + mo.n + ')">' + mo.name + '</button>';
+    }).join('');
+    var ya  = curM === 'yd';
+    var yt  = tyInfo.cy === curY && tyInfo.yd;
+    var ycls= 'lc-mpill' + (ya ? ' lc-mpill-active' : (yt ? ' lc-mpill-today' : ''));
+    html += '<button class="' + ycls + '" onclick="lcSetM(\'yd\')">Year Day ☽</button>';
+    document.getElementById('lc-mstrip').innerHTML = html;
+  }
+
+  /* expose to inline onclick */
+  window.lcSetM = function(m) { curM = m; lcRender(); };
+
+  document.getElementById('lc-prev').onclick = function() {
+    if      (curM === 'yd') curM = 13;
+    else if (curM > 1)      curM--;
+    else                    { curY--; curM = 13; }
+    lcRender();
+  };
+  document.getElementById('lc-next').onclick = function() {
+    if      (curM === 13)   curM = 'yd';
+    else if (curM === 'yd') { curY++; curM = 1; }
+    else                    curM++;
+    lcRender();
+  };
+  document.getElementById('lc-today-btn').onclick = function() {
+    var t = lcTodayInfo();
+    curY = t.cy; curM = t.yd ? 'yd' : t.month;
+    lcRender();
+  };
+
+  lcRender();
+
+})();
+</script>
+</body>
+</html>

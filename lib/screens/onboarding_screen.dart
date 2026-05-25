@@ -7,6 +7,7 @@ import '../engine/celtic_calendar.dart';
 import '../services/google_calendar_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/moon_settings_notifier.dart';
+import '../theme/sky_settings_notifier.dart';
 import '../theme/theme_notifier.dart';
 import 'calendar_screen.dart';
 
@@ -48,7 +49,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           PageView(
             controller: _ctrl,
             onPageChanged: (p) => setState(() => _page = p),
-            children: [_Page1(), _Page2(), _Page3(), _Page4()],
+            children: [_Page1(), _Page2(), _Page3(), _Page4(), _Page5()],
           ),
           Positioned(
             bottom: 32,
@@ -636,6 +637,168 @@ class _MoonToggleRow extends StatelessWidget {
   }
 }
 
+// ── Page 5 — The Sky Panel ────────────────────────────────────────────────────
+
+class _Page5 extends StatelessWidget {
+  const _Page5();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 48),
+            Text(
+              '✦',
+              style: AppTextStyles.cinzel(size: 32, color: c.gold)
+                  .copyWith(color: c.gold.withValues(alpha: 0.5)),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'The Sky above the forest.',
+              style: AppTextStyles.cinzel(
+                  size: 24, weight: FontWeight.w700, color: c.text),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 310),
+              child: Text(
+                'A living strip above the calendar shows astronomical data in real time. '
+                'Turn off anything you don\'t need.',
+                style:
+                    AppTextStyles.imFell(size: 14, color: c.dim, italic: true),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 32),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'SKY PANEL',
+                style: AppTextStyles.cinzel(
+                    size: 10, color: c.dim, letterSpacing: 2),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Consumer<SkySettingsNotifier>(
+              builder: (context, sky, _) {
+                return Column(
+                  children: [
+                    _SkyToggleRow(
+                      label: 'Moon phase',
+                      subtitle: 'Current lunar phase and illumination percentage.',
+                      value: sky.showMoonPhase,
+                      onChanged: sky.setShowMoonPhase,
+                    ),
+                    const SizedBox(height: 8),
+                    _SkyToggleRow(
+                      label: 'Zodiac sign',
+                      subtitle: 'The constellation the moon currently occupies.',
+                      value: sky.showZodiac,
+                      onChanged: sky.setShowZodiac,
+                    ),
+                    const SizedBox(height: 8),
+                    _SkyToggleRow(
+                      label: 'Sowing indicator',
+                      subtitle: 'Biodynamic guide: root, flower, fruit or leaf day.',
+                      value: sky.showBiodynamic,
+                      onChanged: sky.setShowBiodynamic,
+                    ),
+                    const SizedBox(height: 8),
+                    _SkyToggleRow(
+                      label: 'Sunrise & sunset',
+                      subtitle: 'Local rise and set times. Requires location access.',
+                      value: sky.showSunTimes,
+                      onChanged: sky.setShowSunTimes,
+                    ),
+                    const SizedBox(height: 8),
+                    _SkyToggleRow(
+                      label: 'Solar time',
+                      subtitle: 'True sun time at your longitude.',
+                      value: sky.showClocks,
+                      onChanged: sky.setShowClocks,
+                    ),
+                    const SizedBox(height: 8),
+                    _SkyToggleRow(
+                      label: 'Moon distance',
+                      subtitle: 'How close the moon is today. Includes supermoon alerts.',
+                      value: sky.showMoonDistance,
+                      onChanged: sky.setShowMoonDistance,
+                    ),
+                    const SizedBox(height: 8),
+                    _SkyToggleRow(
+                      label: 'Next solar event',
+                      subtitle: 'Countdown to the next solstice or equinox.',
+                      value: sky.showSolarEvent,
+                      onChanged: sky.setShowSolarEvent,
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 120), // space for nav overlay
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SkyToggleRow extends StatelessWidget {
+  final String label;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _SkyToggleRow({
+    required this.label,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: c.surface,
+        border: Border.all(color: c.border),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: AppTextStyles.cinzel(size: 13, color: c.text)),
+                const SizedBox(height: 2),
+                Text(subtitle,
+                    style: AppTextStyles.imFell(
+                        size: 12, color: c.dim, italic: true)),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: c.muted,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Navigation overlay ────────────────────────────────────────────────────────
 
 class _NavOverlay extends StatelessWidget {
@@ -655,11 +818,11 @@ class _NavOverlay extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _DotIndicator(count: 4, current: page),
+        _DotIndicator(count: 5, current: page),
         const SizedBox(height: 16),
         Row(
           children: [
-            if (page < 3)
+            if (page < 4)
               TextButton(
                 onPressed: onFinish,
                 child: Text(
@@ -670,7 +833,7 @@ class _NavOverlay extends StatelessWidget {
               ),
             const Spacer(),
             ElevatedButton(
-              onPressed: page < 3 ? onNext : onFinish,
+              onPressed: page < 4 ? onNext : onFinish,
               style: ElevatedButton.styleFrom(
                 backgroundColor: c.muted,
                 foregroundColor: Colors.white,
@@ -680,7 +843,7 @@ class _NavOverlay extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12)),
               ),
               child: Text(
-                page < 3 ? 'Continue' : 'Begin',
+                page < 4 ? 'Continue' : 'Begin',
                 style: AppTextStyles.cinzel(size: 14, color: Colors.white),
               ),
             ),

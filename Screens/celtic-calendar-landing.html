@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roots Calendar — The Celtic Tree Calendar</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg:     #f7f3ec;
+  --surf:   #ffffff;
+  --bdr:    #b8ae9e;
+  --ink:    #111108;
+  --ink2:   #3a3226;
+  --sub:    #5a5040;
+  --green:  #1a4018;
+  --green2: #2d6b28;
+  --gold:   #b07800;
+  --gold2:  #c9a84c;
+  --today:  #1a4018;
+  --slot:   56px;
+  --radius: 16px;
+}
+
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--ink); font-family: 'Lora', Georgia, serif; overflow-x: hidden; }
+
+/* ─── NOISE TEXTURE OVERLAY ─── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  opacity: .025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
+section, nav, footer { position: relative; z-index: 1; }
+
+/* ─── NAV ─── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .85rem 2rem;
+  background: rgba(247,243,236,.92); backdrop-filter: blur(12px);
+  border-bottom: 1.5px solid var(--bdr);
+}
+.nav-logo { font-family: 'Cinzel', serif; font-size: .95rem; font-weight: 700; color: var(--green); letter-spacing: .08em; }
+.nav-logo span { color: var(--gold); }
+.nav-cta {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .55rem 1.2rem; background: var(--green); color: #fff;
+  font-family: 'Cinzel', serif; font-size: .7rem; letter-spacing: .1em;
+  border: none; border-radius: 8px; cursor: pointer; text-decoration: none;
+  transition: background .2s;
+}
+.nav-cta:hover { background: var(--green2); }
+
+/* ─── HERO ─── */
+#hero {
+  min-height: 100dvh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 4rem 1.5rem 5rem;
+  background: radial-gradient(ellipse 90% 70% at 50% 40%, #e8f0e5 0%, var(--bg) 70%);
+}
+
+.hero-kicker {
+  font-family: 'Cinzel', serif; font-size: .65rem; letter-spacing: .22em;
+  color: var(--gold); text-transform: uppercase; margin-bottom: 1.25rem;
+  display: flex; align-items: center; gap: .75rem;
+}
+.hero-kicker::before, .hero-kicker::after {
+  content: ''; display: block; height: 1px; width: 40px; background: var(--gold2);
+}
+
+.hero-title {
+  font-family: 'Cinzel Decorative', serif; font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 700; color: var(--green); line-height: 1.15;
+  text-align: center; margin-bottom: .75rem; letter-spacing: -.01em;
+}
+.hero-title em { color: var(--gold); font-style: normal; }
+
+.hero-sub {
+  font-size: clamp(.9rem, 2vw, 1.1rem); color: var(--sub);
+  text-align: center; max-width: 480px; line-height: 1.7;
+  margin-bottom: 3rem; font-style: italic;
+}
+
+/* ─── CALENDAR CARD ─── */
+.cal-card-wrap {
+  width: min(780px, 96vw);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(20,40,18,.18), 0 4px 16px rgba(20,40,18,.1);
+  border: 1.5px solid var(--bdr);
+}
+#cal-shell {
+  display: flex; flex-direction: column;
+  background: var(--bg);
+  max-height: 72vh;
+}
+
+/* ─── SCROLL CUE ─── */
+.scroll-cue {
+  margin-top: 2.5rem;
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  color: var(--sub); font-size: .65rem; letter-spacing: .15em; text-transform: uppercase;
+  font-family: 'Cinzel', serif; animation: bob 2s ease-in-out infinite;
+}
+.scroll-cue svg { opacity: .5; }
+@keyframes bob { 0%,100%{ transform:translateY(0)} 50%{transform:translateY(6px)} }
+
+/* ─── SECTION SHARED ─── */
+.section-wrap { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+
+.section-label {
+  font-family: 'Cinzel', serif; font-size: .6rem; letter-spacing: .22em;
+  color: var(--gold); text-transform: uppercase;
+  display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem;
+}
+.section-label::after { content: ''; display: block; height: 1px; flex: 1; background: var(--gold2); opacity: .4; }
+
+.section-title {
+  font-family: 'Cinzel', serif; font-size: clamp(1.5rem, 3vw, 2.25rem);
+  color: var(--green); line-height: 1.25; margin-bottom: 1.25rem;
+}
+
+/* ─── INTRO ─── */
+#intro {
+  padding: 6rem 2rem;
+  border-bottom: 1.5px solid var(--bdr);
+}
+.intro-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 5rem; align-items: center;
+}
+@media(max-width:720px){ .intro-grid { grid-template-columns:1fr; gap:2.5rem; } }
+.intro-body p { font-size: 1.05rem; line-height: 1.85; color: var(--ink2); margin-bottom: 1.25rem; }
+.intro-body p:last-child { margin-bottom: 0; }
+.intro-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+.stat-card {
+  background: var(--surf); border: 1.5px solid var(--bdr); border-radius: 12px;
+  padding: 1.25rem 1rem; text-align: center;
+}
+.stat-n { font-family: 'Cinzel Decorative', serif; font-size: 2rem; color: var(--green); line-height: 1; }
+.stat-label { font-size: .7rem; color: var(--sub); margin-top: .4rem; letter-spacing: .05em; }
+.stat-card .stat-og { font-size: 1.6rem; color: var(--gold); line-height: 1; margin-bottom: .25rem; }
+
+/* ─── SCREENSHOTS ─── */
+#screenshots {
+  padding: 6rem 2rem;
+  background: linear-gradient(180deg, var(--bg) 0%, #edeae2 100%);
+  border-bottom: 1.5px solid var(--bdr);
+  overflow: hidden;
+}
+.shots-scroll {
+  display: flex; gap: 1.5rem; overflow-x: auto; padding: 2rem 0 2.5rem;
+  scroll-snap-type: x mandatory; scrollbar-width: none;
+}
+.shots-scroll::-webkit-scrollbar { display: none; }
+.shot {
+  flex-shrink: 0; width: 220px; scroll-snap-align: start;
+  display: flex; flex-direction: column; gap: .75rem;
+}
+.shot-frame {
+  background: #1a1f19; border-radius: 32px; padding: 8px;
+  border: 1.5px solid #2d3a2b;
+  filter: drop-shadow(0 12px 32px rgba(0,0,0,.18));
+}
+.shot-img {
+  width: 100%; border-radius: 26px; aspect-ratio: 9/19.5;
+  background: var(--bg); display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: .5rem;
+  border: 1px solid rgba(0,0,0,.05);
+}
+.shot-placeholder {
+  font-family: 'Cinzel', serif; font-size: .6rem; color: var(--bdr);
+  letter-spacing: .1em; text-align: center; padding: 1rem;
+}
+.shot-caption { font-family: 'Cinzel', serif; font-size: .7rem; color: var(--sub); text-align: center; letter-spacing: .05em; }
+
+/* ─── FEATURES ─── */
+#features {
+  padding: 6rem 2rem;
+  border-bottom: 1.5px solid var(--bdr);
+}
+.features-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem; margin-top: 3rem;
+}
+.feat-card {
+  background: var(--surf); border: 1.5px solid var(--bdr); border-radius: var(--radius);
+  padding: 1.75rem 1.5rem;
+  transition: border-color .2s, transform .2s;
+}
+.feat-card:hover { border-color: var(--green2); transform: translateY(-3px); }
+.feat-icon { font-size: 1.5rem; margin-bottom: .9rem; }
+.feat-title { font-family: 'Cinzel', serif; font-size: .88rem; color: var(--green); margin-bottom: .5rem; letter-spacing: .04em; }
+.feat-body { font-size: .83rem; color: var(--sub); line-height: 1.7; }
+
+/* ─── ABOUT ─── */
+#about {
+  padding: 6rem 2rem;
+  background: var(--green);
+  color: #c0d8b8;
+  border-bottom: 1.5px solid #0e2a0d;
+}
+#about .section-label { color: var(--gold2); }
+#about .section-label::after { background: var(--gold2); }
+#about .section-title { color: #e8f0e4; }
+.about-body { max-width: 680px; }
+.about-body p { font-size: 1rem; line-height: 1.85; color: #a8c8a0; margin-bottom: 1.25rem; }
+.about-body p:last-child { margin-bottom: 0; }
+.about-links { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 2rem; }
+.about-link {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .55rem 1.1rem; border: 1.5px solid rgba(200,220,180,.3);
+  border-radius: 8px; color: #c0d8b8;
+  font-family: 'Cinzel', serif; font-size: .7rem; letter-spacing: .08em;
+  text-decoration: none; transition: border-color .2s, color .2s;
+}
+.about-link:hover { border-color: var(--gold2); color: var(--gold2); }
+
+/* ─── BETA SIGNUP ─── */
+#beta {
+  padding: 7rem 2rem;
+  text-align: center;
+  background: radial-gradient(ellipse 80% 60% at 50% 50%, #e4ede2 0%, var(--bg) 70%);
+}
+.beta-title {
+  font-family: 'Cinzel Decorative', serif; font-size: clamp(1.5rem, 3vw, 2.5rem);
+  color: var(--green); margin-bottom: 1rem; line-height: 1.2;
+}
+.beta-sub {
+  font-size: 1rem; color: var(--sub); max-width: 480px; margin: 0 auto 2.5rem;
+  line-height: 1.75; font-style: italic;
+}
+.beta-note {
+  font-size: .72rem; color: var(--sub); margin-top: 1rem; font-style: italic;
+}
+.form-wrap {
+  max-width: 480px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 1rem;
+}
+.form-row { display: flex; gap: .75rem; }
+@media(max-width:500px){ .form-row { flex-direction: column; } }
+.form-input {
+  flex: 1; padding: .85rem 1rem;
+  border: 1.5px solid var(--bdr); border-radius: 10px;
+  background: var(--surf); color: var(--ink);
+  font-family: 'Lora', serif; font-size: .9rem;
+  outline: none; transition: border-color .2s;
+}
+.form-input:focus { border-color: var(--green); }
+.form-input::placeholder { color: var(--bdr); }
+.form-btn {
+  padding: .85rem 2rem; background: var(--green); color: #fff;
+  font-family: 'Cinzel', serif; font-size: .75rem; letter-spacing: .1em;
+  border: none; border-radius: 10px; cursor: pointer; white-space: nowrap;
+  transition: background .2s;
+}
+.form-btn:hover { background: var(--green2); }
+.form-btn:disabled { opacity: .6; cursor: not-allowed; }
+.form-msg { font-size: .82rem; padding: .75rem 1rem; border-radius: 8px; display: none; }
+.form-msg.success { display: block; background: #e4ede2; color: var(--green); border: 1px solid var(--green2); }
+.form-msg.error   { display: block; background: #fde8ee; color: #5a0820; border: 1px solid #8b2040; }
+
+/* ─── FOOTER ─── */
+footer {
+  padding: 2rem;
+  border-top: 1.5px solid var(--bdr);
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+}
+.footer-logo { font-family: 'Cinzel', serif; font-size: .8rem; color: var(--sub); letter-spacing: .08em; }
+.footer-links { display: flex; gap: 1.5rem; }
+.footer-links a { font-size: .75rem; color: var(--sub); text-decoration: none; font-family: 'Cinzel', serif; letter-spacing: .06em; }
+.footer-links a:hover { color: var(--green); }
+
+/* ─── DECORATIVE DIVIDER ─── */
+.ogham-divider {
+  text-align: center; padding: 1rem 0; color: var(--gold2);
+  font-size: 1.25rem; letter-spacing: .5rem; opacity: .5;
+}
+
+/* ══════════════════════════════════════════
+   EMBEDDED CALENDAR WIDGET
+══════════════════════════════════════════ */
+#cal-shell {
+  display: flex; flex-direction: column; height: 100%;
+}
+#cal-topbar {
+  display: grid; grid-template-columns: 44px 1fr auto;
+  align-items: center; gap: .25rem;
+  padding: 0 1rem 0 .5rem; height: 56px;
+  background: var(--surf); border-bottom: 1.5px solid var(--bdr); flex-shrink: 0;
+}
+#cal-menu { display: none; }
+#cal-period { min-width: 0; overflow: hidden; }
+#cal-pl-name { font-family: 'Cinzel', serif; font-size: .88rem; font-weight: 700; color: var(--ink); letter-spacing: .03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#cal-pl-kw   { font-size: .62rem; color: var(--gold); font-style: italic; white-space: normal; display:flex; align-items:center; flex-wrap:wrap; }
+#cal-navgroup { display: flex; align-items: center; gap: 0; flex-shrink: 0; }
+.c-arr { width: 34px; height: 44px; border: none; background: none; color: var(--ink2); font-size: .9rem; cursor: pointer; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+.c-arr:hover { background: #eee8dc; }
+#cal-today-btn { height: 30px; padding: 0 .55rem; border: 1.5px solid var(--bdr); border-radius: 6px; background: none; color: var(--green); font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: .05em; cursor: pointer; }
+#cal-today-btn:hover { border-color: var(--green); }
+
+#cal-wd {
+  display: grid; grid-template-columns: repeat(7,1fr);
+  background: var(--surf); border-bottom: 1.5px solid var(--bdr); flex-shrink: 0;
+}
+.c-wd { text-align: center; padding: .25rem 0; font-family: 'Cinzel', serif; font-size: .58rem; color: var(--sub); font-weight: 600; letter-spacing: .06em; }
+
+#cal-body { flex: 1; overflow-y: auto; overflow-x: hidden; }
+.c-grid { display: grid; grid-template-columns: repeat(7,1fr); }
+.c-dc {
+  position: relative; min-height: 70px; border-right: 1px solid var(--bdr);
+  border-bottom: 1px solid var(--bdr);
+  display: flex; flex-direction: column; align-items: center;
+  padding-top: .35rem; cursor: pointer;
+}
+.c-dc:nth-child(7n) { border-right: none; }
+.c-dc.c-last-row    { border-bottom: none; }
+.c-dc:hover         { background: #eee8dc; }
+.c-dc-inner         { pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.c-dc-n             { font-family: 'Cinzel', serif; font-size: 1.05rem; color: var(--ink); line-height: 1; }
+.c-dc.c-today       { background: #e4ede2; }
+.c-dc.c-today .c-dc-n { width: 28px; height: 28px; border-radius: 50%; background: var(--today); color: #fff; display: flex; align-items: center; justify-content: center; font-size: .78rem; }
+.c-dots { display: flex; gap: 2px; }
+.c-dot  { width: 5px; height: 5px; border-radius: 50%; }
+
+.c-upcoming { border-top: 1.5px solid var(--bdr); background: var(--surf); }
+.c-up-hdr   { padding: .45rem .875rem; font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: .1em; text-transform: uppercase; color: var(--sub); border-bottom: 1px solid var(--bdr); background: #f0ece4; }
+.c-up-item  { display: flex; align-items: center; gap: .55rem; padding: .5rem .875rem; border-bottom: 1px solid var(--bdr); }
+.c-up-item:last-child { border-bottom: none; }
+.c-up-dn    { font-family: 'Cinzel', serif; font-size: .85rem; font-weight: 700; color: var(--green); }
+.c-up-bar   { width: 3px; align-self: stretch; border-radius: 2px; flex-shrink: 0; }
+.c-up-title { font-size: .78rem; color: var(--ink); }
+.c-up-time  { font-size: .62rem; color: var(--sub); }
+.c-up-empty { padding: .75rem .875rem; font-size: .75rem; color: var(--sub); font-style: italic; }
+</style>
+</head>
+<body>
+
+<!-- ─── NAV ─── -->
+<nav>
+  <div class="nav-logo">Roots <span>Calendar</span></div>
+  <a href="#beta" class="nav-cta">Join Beta</a>
+</nav>
+
+<!-- ─── HERO ─── -->
+<section id="hero">
+  <div class="hero-kicker">Celtic Tree Calendar · Beth-Luis-Nion</div>
+  <h1 class="hero-title">Thirteen months.<br><em>Twenty-eight days</em> each.</h1>
+  <p class="hero-sub">A calendar rooted in the rhythm of trees and moons — not the patchwork of emperors and popes.</p>
+
+  <div class="cal-card-wrap">
+        <div id="cal-shell">
+        <!-- topbar -->
+        <div id="cal-topbar">
+          <div></div><!-- spacer for grid alignment -->
+          <div id="cal-period">
+            <div id="cal-pl-name"></div>
+            <div id="cal-pl-kw"></div>
+          </div>
+          <div id="cal-navgroup">
+            <button class="c-arr" id="c-prev">&#9664;</button>
+            <button id="cal-today-btn" onclick="calGoToday()">Today</button>
+            <button class="c-arr" id="c-next">&#9654;</button>
+          </div>
+        </div>
+
+        <!-- weekday headers -->
+        <div id="cal-wd"></div>
+
+        <!-- calendar body -->
+        <div id="cal-body"></div>
+      </div><!-- /#cal-shell -->
+    </div><!-- /.cal-card-wrap -->
+
+  <div class="scroll-cue">
+    <span>Scroll to explore</span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 5v14M5 12l7 7 7-7"/>
+    </svg>
+  </div>
+</section>
+
+<!-- ─── INTRO ─── -->
+<section id="intro">
+  <div class="section-wrap">
+    <div class="intro-grid">
+      <div class="intro-body">
+        <div class="section-label">About the Calendar</div>
+        <h2 class="section-title">Time, the way nature intended it.</h2>
+        <p>The Gregorian calendar is a political artifact. December means "tenth month" — it is the twelfth. October means "eighth" — it is the tenth. The original Roman calendar had ten months starting in March. Two more were inserted, the names were never updated, and nobody has questioned it in over two thousand years. The months are unequal, the weeks drift, and the whole system exists because a committee of emperors and popes kept patching it.</p>
+        <p>The Celtic Tree Calendar is different. Thirteen months. Twenty-eight days each. Every month is exactly four weeks, every week begins on the same day of the year, and each month is named for a sacred tree carrying its own teaching.</p>
+        <p>Roots Calendar brings this ancient system to your pocket — as a fully functional calendar alongside your everyday life.</p>
+      </div>
+      <div class="intro-stat-grid">
+        <div class="stat-card">
+          <div class="stat-n">13</div>
+          <div class="stat-label">months per year,<br>named after trees</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">28</div>
+          <div class="stat-label">days per month,<br>always four weeks</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-og">ᚁ</div>
+          <div class="stat-label">Ogham script,<br>ancient Celtic alphabet</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-n">1</div>
+          <div class="stat-label">Year Day — a day<br>outside of time</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── SCREENSHOTS ─── -->
+<section id="screenshots">
+  <div class="section-wrap">
+    <div class="section-label">The App</div>
+    <h2 class="section-title">A calendar you'll actually want to look at.</h2>
+  </div>
+  <div class="shots-scroll" style="padding-left: calc(50vw - 540px + 2rem);">
+    <div class="shot">
+      <div class="shot-frame">
+        <div class="shot-img">
+          <div class="shot-placeholder">📸<br>Month View<br>Screenshot</div>
+        </div>
+      </div>
+      <div class="shot-caption">Month View</div>
+    </div>
+    <div class="shot">
+      <div class="shot-frame">
+        <div class="shot-img">
+          <div class="shot-placeholder">📸<br>Day View<br>Screenshot</div>
+        </div>
+      </div>
+      <div class="shot-caption">Day View</div>
+    </div>
+    <div class="shot">
+      <div class="shot-frame">
+        <div class="shot-img">
+          <div class="shot-placeholder">📸<br>Week View<br>Screenshot</div>
+        </div>
+      </div>
+      <div class="shot-caption">Week View</div>
+    </div>
+    <div class="shot">
+      <div class="shot-frame">
+        <div class="shot-img">
+          <div class="shot-placeholder">📸<br>Schedule View<br>Screenshot</div>
+        </div>
+      </div>
+      <div class="shot-caption">Schedule</div>
+    </div>
+    <div class="shot">
+      <div class="shot-frame">
+        <div class="shot-img">
+          <div class="shot-placeholder">📸<br>Celtic Festivals<br>Screenshot</div>
+        </div>
+      </div>
+      <div class="shot-caption">Celtic Festivals</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FEATURES ─── -->
+<section id="features">
+  <div class="section-wrap">
+    <div class="section-label">Features</div>
+    <h2 class="section-title">Ancient rhythm, modern functionality.</h2>
+    <div class="features-grid">
+      <div class="feat-card">
+        <div class="feat-icon">🌳</div>
+        <div class="feat-title">13 Sacred Tree Months</div>
+        <div class="feat-body">Beth (Birch) through Ruis (Elder) — each month carries its own tree, Ogham character, and teaching. Navigate a full year of natural wisdom.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📅</div>
+        <div class="feat-title">Month, Week & Day Views</div>
+        <div class="feat-body">Full calendar grid, 3-day view, week view, day time-grid, and schedule view. Your events in all the views you're used to.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔄</div>
+        <div class="feat-title">Google Calendar Sync</div>
+        <div class="feat-body">Your existing events appear in Celtic time. Create new events that sync back to Google Calendar — all from your device, no intermediary servers.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔥</div>
+        <div class="feat-title">Celtic Festivals</div>
+        <div class="feat-body">Imbolc, Beltane, Lughnasadh, Samhain, and the solar festivals — all built in as read-only system events, correctly mapped to their Celtic positions.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🌙</div>
+        <div class="feat-title">Moon Phase Indicators</div>
+        <div class="feat-body">Pure mathematical moon phase calculation — no external API. See the current phase in every day cell and header, accurate to the hour.</div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔒</div>
+        <div class="feat-title">Private by Design</div>
+        <div class="feat-body">All event data stays on your device in local SQLite storage. Google sync is optional. No account required, no cloud backend, no tracking.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── DIVIDER ─── -->
+<div class="ogham-divider">ᚁ ᚂ ᚅ ᚃ ᚄ ᚆ ᚇ</div>
+
+<!-- ─── ABOUT ─── -->
+<section id="about">
+  <div class="section-wrap">
+    <div class="section-label">The Story</div>
+    <h2 class="section-title">Built by a maker, for people who feel time differently.</h2>
+    <div class="about-body">
+      <p>Roots Calendar started when I heard a podcast about the number 13 and why it got erased from our calendar. That sent me down a rabbit hole into Celtic culture, the Beth-Luis-Nion tree calendar, and eventually — as these things go — into a Flutter codebase at midnight.</p>
+      <p>The app is open-source, built in Flutter, and published under the GPL-3.0 license. It's a side project I'm genuinely proud of: something that blends a real historical system with careful, modern software craft.</p>
+      <p>Right now it's in closed beta on Android. iOS is on the roadmap. If you want to help test it and you have a Gmail address, that's all you need.</p>
+      <div class="about-links">
+        <a href="https://github.com/Blu8print/Celtic-calendar" target="_blank" rel="noopener" class="about-link">
+          <span>⭐</span> View on GitHub
+        </a>
+        <a href="https://blu8print.github.io/Celtic-calendar/privacy" target="_blank" rel="noopener" class="about-link">
+          Privacy Policy
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── BETA SIGNUP ─── -->
+<section id="beta">
+  <div class="section-wrap" style="max-width:620px;">
+    <div class="section-label" style="justify-content:center;">Early Access</div>
+    <h2 class="beta-title">Join the closed beta.</h2>
+    <p class="beta-sub">Roots Calendar is currently in closed testing on Android. Leave your name and Gmail address and I'll add you to the tester list.</p>
+
+    <div class="form-wrap">
+      <div class="form-row">
+        <input class="form-input" type="text"  id="f-name"  placeholder="Your name" autocomplete="name">
+        <input class="form-input" type="email" id="f-email" placeholder="Gmail address" autocomplete="email">
+      </div>
+      <button class="form-btn" id="f-btn" onclick="submitBeta()">Request Access &#9658;</button>
+      <div class="form-msg" id="f-msg"></div>
+      <p class="beta-note">Android only for now · Gmail required for Play Store beta access · No spam, ever.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <div class="footer-logo">Roots Calendar · Blu8print © 2026</div>
+  <div class="footer-links">
+    <a href="https://blu8print.github.io/Celtic-calendar/privacy">Privacy</a>
+    <a href="https://github.com/Blu8print/Celtic-calendar" target="_blank">GitHub</a>
+    <a href="mailto:support@blu8print.com">Contact</a>
+  </div>
+</footer>
+
+<!-- ══════════════════════════════════════════
+     CALENDAR WIDGET SCRIPT
+══════════════════════════════════════════ -->
+<script>
+/* ── DATA ── */
+const MO = [
+  {n:1,  name:'Beth',   tree:'Birch',    og:'ᚁ', kw:'New Beginnings'},
+  {n:2,  name:'Luis',   tree:'Rowan',    og:'ᚂ', kw:'Protection'},
+  {n:3,  name:'Nion',   tree:'Ash',      og:'ᚅ', kw:'Connection'},
+  {n:4,  name:'Fearn',  tree:'Alder',    og:'ᚃ', kw:'Guidance'},
+  {n:5,  name:'Saille', tree:'Willow',   og:'ᚄ', kw:'Intuition'},
+  {n:6,  name:'Huath',  tree:'Hawthorn', og:'ᚆ', kw:'Cleansing'},
+  {n:7,  name:'Duir',   tree:'Oak',      og:'ᚇ', kw:'Strength'},
+  {n:8,  name:'Tinne',  tree:'Holly',    og:'ᚈ', kw:'Balance'},
+  {n:9,  name:'Coll',   tree:'Hazel',    og:'ᚉ', kw:'Wisdom'},
+  {n:10, name:'Muin',   tree:'Vine',     og:'ᚋ', kw:'Harvest'},
+  {n:11, name:'Gort',   tree:'Ivy',      og:'ᚌ', kw:'Perseverance'},
+  {n:12, name:'Ngetal', tree:'Reed',     og:'ᚍ', kw:'Healing'},
+  {n:13, name:'Ruis',   tree:'Elder',    og:'ᚏ', kw:'Transition'},
+];
+const GM  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const WD  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DOT  = {gold:'#b07800', grn:'#2d6b28', rose:'#8b2040', blue:'#1a4080'};
+const EVS = [
+  /* ── Month 1 Beth ── */
+  {cm:1,  cd:9,  t:"New Year's Day",        s:'blue', ad:true},
+  /* ── Month 2 Luis ── */
+  {cm:2,  cd:12, t:'Imbolc',                s:'gold', ad:true},
+  {cm:2,  cd:13, t:"St Brigid's Day",       s:'grn',  ad:true},
+  /* ── Month 3 Nion ── */
+  {cm:3,  cd:28, t:"St Patrick's Day",      s:'grn',  ad:true},
+  /* ── Month 4 Fearn ── */
+  {cm:4,  cd:3,  t:'Spring Equinox · Ostara', s:'gold', ad:true},
+  {cm:4,  cd:17, t:'Good Friday',           s:'blue', ad:true},
+  {cm:4,  cd:21, t:'Easter Monday',         s:'blue', ad:true},
+  /* ── Month 5 Saille ── */
+  {cm:5,  cd:17, t:'Beltane',               s:'gold', ad:true},
+  {cm:5,  cd:20, t:'May Bank Holiday',      s:'grn',  ad:true},
+  /* ── Month 6 Huath ── */
+  {cm:6,  cd:20, t:'June Bank Holiday',     s:'grn',  ad:true},
+  /* ── Month 7 Duir ── */
+  {cm:7,  cd:12, t:'Summer Solstice · Litha', s:'gold', ad:true},
+  /* ── Month 8 Tinne ── */
+  {cm:8,  cd:25, t:'Lughnasadh',            s:'gold', ad:true},
+  {cm:8,  cd:27, t:'August Bank Holiday',   s:'grn',  ad:true},
+  /* ── Month 10 Muin ── */
+  {cm:10, cd:21, t:'Autumn Equinox · Mabon',s:'gold', ad:true},
+  /* ── Month 11 Gort ── */
+  {cm:11, cd:27, t:'October Bank Holiday',  s:'grn',  ad:true},
+  /* ── Month 12 Ngetal ── */
+  {cm:12, cd:5,  t:'Samhain',               s:'gold', ad:true},
+  /* ── Month 13 Ruis ── */
+  {cm:13, cd:27, t:'Winter Solstice · Yule',s:'gold', ad:true},
+];
+
+/* ── HELPERS ── */
+const today = new Date(); today.setHours(0,0,0,0);
+function ys(y)     { return new Date(y,11,24); }
+function cyr(d)    { return (d.getMonth()===11&&d.getDate()>=24)?d.getFullYear():d.getFullYear()-1; }
+function add(d,n)  { const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function same(a,b) { return a.toDateString()===b.toDateString(); }
+function fg(d)     { return d.getDate()+' '+GM[d.getMonth()]; }
+function todayInfo() {
+  const s=ys(cyr(today)), off=Math.round((today-s)/86400000);
+  return off===364 ? {yd:true} : {month:Math.floor(off/28)+1, day:(off%28)+1, yd:false};
+}
+function evsDay(m,d) { return EVS.filter(e=>e.cm===m&&e.cd===d); }
+function ft(h)     { if(!h&&h!==0)return''; const hh=Math.floor(h),mm=Math.round((h-hh)*60); return `${hh}:${mm.toString().padStart(2,'0')}`; }
+
+/* ── STATE ── */
+let calY = cyr(today);
+const _ti = todayInfo();
+let calM = _ti.yd ? 'yd' : _ti.month;
+
+/* ── RENDER ── */
+function calRender() {
+  const s = ys(calY);
+  // topbar label
+  const nm = document.getElementById('cal-pl-name');
+  const kw = document.getElementById('cal-pl-kw');
+  if (calM === 'yd') {
+    nm.textContent = 'Year Day';
+    kw.textContent = 'Between the worlds';
+  } else {
+    const mo = MO[calM-1];
+    const ms2 = add(s, (calM-1)*28);
+    const me  = add(ms2, 27);
+    const gr  = `${fg(ms2)} – ${fg(me)}`;
+    nm.textContent = `${mo.og} ${mo.name}`;
+    kw.innerHTML = `${mo.tree} · ${mo.kw}<span style="margin-left:.75rem;padding-left:.75rem;border-left:1px solid var(--bdr);color:var(--sub);font-style:normal">${gr}</span>`;
+  }
+
+  // weekday headers
+  const sdow = s.getDay();
+  document.getElementById('cal-wd').innerHTML =
+    Array.from({length:7},(_,i)=>`<div class="c-wd">${WD[(sdow+i)%7]}</div>`).join('');
+
+  // body
+  const body = document.getElementById('cal-body');
+  if (calM === 'yd') {
+    const yd = add(s, 364);
+    body.innerHTML = `<div style="padding:2rem 1.25rem;text-align:center">
+      <div style="font-family:'Cinzel',serif;color:#4a3080;font-size:1rem;margin-bottom:.5rem">☽ Year and a Day ☀</div>
+      <div style="font-size:.75rem;color:#6a50a0;margin-bottom:.5rem">${fg(yd)}</div>
+      <div style="font-size:.82rem;color:#5a4090;font-style:italic;line-height:1.7">A threshold between years,<br>belonging to no month.<br>A time for rest and passage.</div>
+    </div>`;
+    return;
+  }
+
+  const mo = MO[calM-1];
+  const ms = add(s, (calM-1)*28);
+
+  const days = Array.from({length:28},(_,i) => {
+    const d = add(ms,i), isT = same(d,today), dn = i+1;
+    const evs = evsDay(calM, dn);
+    const dots = evs.slice(0,3).map(e=>`<span class="c-dot" style="background:${DOT[e.s]}"></span>`).join('');
+    return `<div class="c-dc${isT?' c-today':''}${i>=21?' c-last-row':''}" onclick="void(0)">
+      <div class="c-dc-inner">
+        <span class="c-dc-n">${dn}</span>
+        ${dots?`<div class="c-dots">${dots}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  const upcoming = EVS.filter(e=>e.cm===calM).sort((a,b)=>a.cd-b.cd);
+  const upHTML = upcoming.length
+    ? upcoming.map(e => {
+        const d = add(ms, e.cd-1);
+        const ts = e.ad ? 'All day' : `${ft(e.sh)} – ${ft(e.eh)}`;
+        return `<div class="c-up-item">
+          <div style="flex-shrink:0;width:28px;text-align:center">
+            <div class="c-up-dn">${e.cd}</div>
+            <div style="font-size:.56rem;color:var(--sub)">${fg(d)}</div>
+          </div>
+          <div class="c-up-bar" style="background:${DOT[e.s]}"></div>
+          <div><div class="c-up-title">${e.t}</div><div class="c-up-time">${ts}</div></div>
+        </div>`;
+      }).join('')
+    : `<div class="c-up-empty">No events this month</div>`;
+
+  body.innerHTML = `
+    <div class="c-grid">${days}</div>
+    <div class="c-upcoming">
+      <div class="c-up-hdr">Events this month</div>
+      ${upHTML}
+    </div>`;
+}
+
+function calPrev() {
+  if (calM === 'yd') calM = 13;
+  else if (calM > 1) calM--;
+  else { calY--; calM = 13; }
+  calRender();
+}
+function calNext() {
+  if (calM === 13) calM = 'yd';
+  else if (calM === 'yd') { calY++; calM = 1; }
+  else calM++;
+  calRender();
+}
+function calGoToday() {
+  calY = cyr(today);
+  const t2 = todayInfo();
+  calM = t2.yd ? 'yd' : t2.month;
+  calRender();
+}
+
+document.getElementById('c-prev').onclick = calPrev;
+document.getElementById('c-next').onclick = calNext;
+
+calRender();
+
+/* ── BETA FORM ── */
+const N8N_WEBHOOK = 'https://YOUR_N8N_INSTANCE/webhook/YOUR_WEBHOOK_ID';
+
+async function submitBeta() {
+  const name  = document.getElementById('f-name').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const msg   = document.getElementById('f-msg');
+  const btn   = document.getElementById('f-btn');
+
+  if (!name || !email) {
+    msg.className = 'form-msg error';
+    msg.textContent = 'Please fill in both your name and Gmail address.';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    msg.className = 'form-msg error';
+    msg.textContent = 'That doesn\'t look like a valid email address.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  msg.className = 'form-msg';
+
+  try {
+    await fetch(N8N_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, source: 'celtic-calendar.org', timestamp: new Date().toISOString() })
+    });
+    msg.className = 'form-msg success';
+    msg.textContent = '✓ Request received! I\'ll add you to the beta and send the Play Store invite link.';
+    document.getElementById('f-name').value  = '';
+    document.getElementById('f-email').value = '';
+  } catch(e) {
+    msg.className = 'form-msg error';
+    msg.textContent = 'Something went wrong. Try emailing support@blu8print.com directly.';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Request Access ▶';
+}
+</script>
+</body>
+</html>

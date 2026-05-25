@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lora:ital,wght@0,400;1,400&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:1080px; height:1080px; overflow:hidden; background:#070e06; display:block; }
+
+  .bg {
+    width:1080px; height:1080px;
+    background: #070e06;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+  }
+
+  /* radial glow top-center */
+  .glow {
+    position:absolute;
+    width:800px; height:800px;
+    border-radius:50%;
+    background: radial-gradient(circle, rgba(26,64,24,0.4) 0%, transparent 68%);
+    top: 30%; left: 50%;
+    transform: translate(-50%,-50%);
+    pointer-events:none;
+  }
+
+  /* corner accents */
+  .corner {
+    position:absolute;
+    width:80px; height:80px;
+    border-color: #1e3019;
+    border-style: solid;
+    opacity: 0.6;
+  }
+  .corner.tl { top:36px; left:36px; border-width:1px 0 0 1px; }
+  .corner.tr { top:36px; right:36px; border-width:1px 1px 0 0; }
+  .corner.bl { bottom:36px; left:36px; border-width:0 0 1px 1px; }
+  .corner.br { bottom:36px; right:36px; border-width:0 1px 1px 0; }
+
+  /* top: ogham strip */
+  .ogham {
+    position: relative;
+    z-index: 2;
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 11px;
+    color: #c9a84c;
+    letter-spacing: 0.18em;
+    opacity: 0.45;
+    margin-bottom: 36px;
+    white-space: nowrap;
+  }
+
+  /* app name */
+  .app-name {
+    position: relative;
+    z-index: 2;
+    font-family: 'Cinzel', serif;
+    font-size: 88px;
+    font-weight: 700;
+    color: #c0d8b8;
+    line-height: 1.0;
+    letter-spacing: 0.06em;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+
+  .tagline {
+    position: relative;
+    z-index: 2;
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 20px;
+    color: #c9a84c;
+    letter-spacing: 0.08em;
+    text-align: center;
+    margin-bottom: 56px;
+  }
+
+  /* divider line */
+  .divider {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 680px;
+    margin-bottom: 48px;
+  }
+  .div-line { flex:1; height:1px; background: linear-gradient(to right, transparent, #2d6b28, transparent); }
+  .div-mark { font-size:14px; color:#2d6b28; opacity:0.7; }
+
+  /* calendar grid block */
+  .grid-wrap {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 52px;
+  }
+
+  .month-label {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    color: #c9a84c;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+
+  .month-kw {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: #527048;
+    text-align: center;
+    margin-bottom: 18px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(7, 44px);
+    gap: 5px;
+  }
+
+  .wd {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    color: #2d4a20;
+    text-align: center;
+    letter-spacing: 0.06em;
+    padding-bottom: 8px;
+  }
+
+  .day {
+    width: 44px; height: 44px;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    color: #6a8860;
+    gap: 3px;
+    border: 1px solid #1a2e18;
+    background: #0d170c;
+  }
+
+  .day.today {
+    background: #1a4018;
+    border-color: #2d6b28;
+    color: #c0d8b8;
+  }
+
+  .day.today .day-n {
+    background: #c9a84c;
+    color: #070e06;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .day.has-event {
+    border-color: #243820;
+  }
+
+  .dot-row {
+    display: flex;
+    gap: 2px;
+  }
+
+  .dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+  }
+  .dot.gold { background: #c9a84c; }
+  .dot.grn  { background: #2d6b28; }
+  .dot.rose { background: #8b2040; }
+
+  .moon {
+    position: absolute;
+    top: -5px; right: -5px;
+    font-size: 11px;
+    opacity: 0.75;
+  }
+
+  /* bottom pills */
+  .strip {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 760px;
+  }
+
+  .pill {
+    background: #0f1a0e;
+    border: 1px solid #1e3019;
+    border-radius: 20px;
+    padding: 8px 20px;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    color: #527048;
+    letter-spacing: 0.12em;
+    white-space: nowrap;
+  }
+  .pill.active {
+    border-color: #c9a84c;
+    color: #c9a84c;
+  }
+</style>
+</head>
+<body>
+<div class="bg">
+  <div class="glow"></div>
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+
+  <div class="ogham">Beth · Luis · Nion · Fearn · Saille · Huath · Duir · Tinne · Coll · Muin · Gort · Ngetal · Ruis</div>
+
+  <div class="app-name">Roots<br>Calendar</div>
+  <div class="tagline">Celtic Tree Calendar · 13 Months</div>
+
+  <div class="divider">
+    <div class="div-line"></div>
+    <div class="div-mark">✦</div>
+    <div class="div-line"></div>
+  </div>
+
+  <div class="grid-wrap">
+    <div class="month-label">Saille · Month V</div>
+    <div class="month-kw">Willow · Intuition</div>
+    <div class="grid">
+      <div class="wd">We</div><div class="wd">Th</div><div class="wd">Fr</div>
+      <div class="wd">Sa</div><div class="wd">Su</div><div class="wd">Mo</div><div class="wd">Tu</div>
+
+      <div class="day has-event"><span>1</span><div class="dot-row"><div class="dot gold"></div></div></div>
+      <div class="day today"><div class="day-n">2</div></div>
+      <div class="day has-event"><span>3</span><div class="dot-row"><div class="dot grn"></div></div></div>
+      <div class="day has-event"><span>4</span><div class="dot-row"><div class="dot gold"></div></div></div>
+      <div class="day"><span>5</span></div>
+      <div class="day has-event"><span>6</span><div class="dot-row"><div class="dot grn"></div></div></div>
+      <div class="day"><span>7</span></div>
+
+      <div class="day"><span>8</span></div>
+      <div class="day"><span>9</span></div>
+      <div class="day"><span>10</span></div>
+      <div class="day has-event"><span>11</span><div class="dot-row"><div class="dot rose"></div></div></div>
+      <div class="day"><span>12</span></div>
+      <div class="day has-event"><span>13</span><div class="dot-row"><div class="dot grn"></div></div></div>
+      <div class="day has-event"><span>14</span><div class="dot-row"><div class="dot gold"></div></div></div>
+
+      <div class="day"><span>15</span></div>
+      <div class="day has-event" style="position:relative"><span>16</span><div class="dot-row"><div class="dot gold"></div></div><div class="moon">🌕</div></div>
+      <div class="day has-event"><span>17</span><div class="dot-row"><div class="dot grn"></div><div class="dot grn"></div></div></div>
+      <div class="day has-event"><span>18</span><div class="dot-row"><div class="dot gold"></div></div></div>
+      <div class="day has-event"><span>19</span><div class="dot-row"><div class="dot rose"></div></div></div>
+      <div class="day"><span>20</span></div>
+      <div class="day has-event"><span>21</span><div class="dot-row"><div class="dot grn"></div></div></div>
+
+      <div class="day has-event"><span>22</span><div class="dot-row"><div class="dot gold"></div></div></div>
+      <div class="day has-event"><span>23</span><div class="dot-row"><div class="dot grn"></div></div></div>
+      <div class="day"><span>24</span></div>
+      <div class="day"><span>25</span></div>
+      <div class="day"><span>26</span></div>
+      <div class="day has-event"><span>27</span><div class="dot-row"><div class="dot gold"></div></div></div>
+      <div class="day has-event"><span>28</span><div class="dot-row"><div class="dot rose"></div></div></div>
+    </div>
+  </div>
+
+  <div class="strip">
+    <div class="pill active">13 Months</div>
+    <div class="pill">Moon Phases</div>
+    <div class="pill">Google Sync</div>
+    <div class="pill">Local · Private</div>
+    <div class="pill">Dark &amp; Light</div>
+  </div>
+</div>
+</body>
+</html>
