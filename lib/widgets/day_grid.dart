@@ -64,17 +64,12 @@ class DayGrid extends StatelessWidget {
     final today    = DateTime.now();
     final headers  = List.generate(7, (i) => _weekdays[(startDow + i) % 7]);
 
-    // Build upcoming items — events + festivals, filtered to today-or-future,
-    // sorted by Celtic day.
-    final todayDate = DateTime(today.year, today.month, today.day);
-
-    final upcomingEvents = [...events]
-      ..removeWhere((e) => e.gregorianDate.isBefore(todayDate))
+    // Build all items for this month — events + festivals, sorted by Celtic day.
+    final monthEvents = [...events]
       ..sort((a, b) => (a.celticDay ?? 0).compareTo(b.celticDay ?? 0));
 
     // Convert festivals to _UpcomingItem — compute Celtic day on the fly.
-    final upcomingFestivals = festivalsThisMonth
-        .where((f) => !f.gregorianDate.toLocal().isBefore(todayDate))
+    final monthFestivals = festivalsThisMonth
         .map((f) {
           final cd = gregorianToCeltic(f.gregorianDate);
           return _UpcomingItem.festival(f, cd.day ?? 1);
@@ -86,8 +81,8 @@ class DayGrid extends StatelessWidget {
     // Festivals are always available synchronously; keeping them last avoids
     // a visual jump when the events stream emits after a month swipe.
     final allUpcoming = [
-      ...upcomingEvents.map((e) => _UpcomingItem.event(e)),
-      ...upcomingFestivals,
+      ...monthEvents.map((e) => _UpcomingItem.event(e)),
+      ...monthFestivals,
     ];
 
     return Column(
