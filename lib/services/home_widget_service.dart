@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../db/database.dart' show Event;
 import '../db/events_dao.dart';
@@ -25,31 +26,40 @@ class HomeWidgetService {
       final themeVal = await _storage.read(key: 'app_theme');
       final isLight  = themeVal != 'dark'; // default: light
 
+      // Read location so the widget can show solar time only when available.
+      final prefs  = await SharedPreferences.getInstance();
+      final skyLon = prefs.getDouble('sky_lon');
+      final hasLoc = skyLon != null;
+
       // Fetch up to 5 upcoming events from today onwards.
       final upcoming = await dao.getUpcomingEvents(now, limit: 5);
 
       if (celticDate.isYearDay || celticDate.isLeapDay) {
         await _push(
-          celticDay: 0,
-          monthName: 'Year Day',
-          tree:      '',
-          keyword:   '',
-          gregDate:  DateFormat('EEE, d MMM').format(now),
-          events:    upcoming,
-          now:       now,
-          isLight:   isLight,
+          celticDay:   0,
+          monthName:   'Year Day',
+          tree:        '',
+          keyword:     '',
+          gregDate:    DateFormat('EEE, d MMM').format(now),
+          events:      upcoming,
+          now:         now,
+          isLight:     isLight,
+          hasLocation: hasLoc,
+          skyLon:      skyLon ?? 0.0,
         );
       } else {
         final month = celticMonths[celticDate.month! - 1];
         await _push(
-          celticDay: celticDate.day ?? 0,
-          monthName: month.name,
-          tree:      month.tree,
-          keyword:   month.keyword,
-          gregDate:  DateFormat('EEE, d MMM').format(now),
-          events:    upcoming,
-          now:       now,
-          isLight:   isLight,
+          celticDay:   celticDate.day ?? 0,
+          monthName:   month.name,
+          tree:        month.tree,
+          keyword:     month.keyword,
+          gregDate:    DateFormat('EEE, d MMM').format(now),
+          events:      upcoming,
+          now:         now,
+          isLight:     isLight,
+          hasLocation: hasLoc,
+          skyLon:      skyLon ?? 0.0,
         );
       }
 
@@ -71,6 +81,8 @@ class HomeWidgetService {
     required List<Event> events,
     required DateTime now,
     required bool     isLight,
+    required bool     hasLocation,
+    required double   skyLon,
   }) async {
     final saves = <Future>[
       HomeWidget.saveWidgetData<int>   ('celtic_day',        celticDay),
@@ -79,6 +91,10 @@ class HomeWidgetService {
       HomeWidget.saveWidgetData<String>('celtic_keyword',    keyword),
       HomeWidget.saveWidgetData<String>('greg_date',         gregDate),
       HomeWidget.saveWidgetData<bool>  ('is_light',          isLight),
+      HomeWidget.saveWidgetData<bool>  ('has_location',      hasLocation),
+      HomeWidget.saveWidgetData<double>('sky_lon',           skyLon),
+      // 'user_longitude' is the key the widget uses for its offset-cache lookup.
+      if (hasLocation) HomeWidget.saveWidgetData<double>('user_longitude', skyLon),
     ];
 
     // Write slots 1–5; unused slots get empty strings so the widget hides them.

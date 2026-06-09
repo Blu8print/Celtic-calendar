@@ -167,12 +167,40 @@ class RootsDayWidget : AppWidgetProvider() {
                 views.setTextColor(R.id.widget_clock,       accent)
                 views.setTextColor(R.id.widget_no_events,   sub)
                 val gold = if (isLight) LIGHT_GOLD else DARK_GOLD
-                views.setTextColor(R.id.widget_solar_time,  gold)
+                views.setTextColor(R.id.widget_solar_time, gold)
 
-                // Solar time (true sun) — HH:mm, updated each widget refresh
-                // TODO: write sky_lon to HomeWidgetPreferences from Flutter to use user's location
-                val lon = prefs.getFloat("sky_lon", 4.7f).toDouble()
-                views.setTextViewText(R.id.widget_solar_time, solarTimeHHmm(lon))
+                // Solar time — isolated in its own try/catch so any failure here
+                // never prevents the Celtic date or event data from rendering.
+                val solarTimeStr: String? = try {
+                    val hasLocation = prefs.getBoolean("has_location", false) ||
+                                      prefs.contains("user_longitude")
+                    if (hasLocation) {
+                        // home_widget 0.9.1 stores Double as raw Long bits (doubleToRawLongBits).
+                        // Using getFloat() here causes a ClassCastException → null solar time.
+                        val lon = if (prefs.contains("user_longitude"))
+                            java.lang.Double.longBitsToDouble(prefs.getLong("user_longitude", 0L))
+                        else
+                            java.lang.Double.longBitsToDouble(prefs.getLong("sky_lon", 0L))
+                        val cachePrefs = SolarTimeHelper.prefsFile(context)
+                        if (SolarTimeHelper.shouldRecalculate(cachePrefs)) {
+                            SolarTimeHelper.recalculateSolarOffset(lon, cachePrefs)
+                        }
+                        val offsetMs = cachePrefs.getLong("solar_offset_ms", 0L)
+                        SolarTimeHelper.formatUtcAsHHmm(
+                            System.currentTimeMillis() + offsetMs,
+                            useDeviceTimezone = false,
+                        )
+                    } else null
+                } catch (e: Exception) {
+                    android.util.Log.e("RootsDayWidget", "solar time failed: ${e.message}", e)
+                    null
+                }
+                if (solarTimeStr != null) {
+                    views.setTextViewText(R.id.widget_solar_time, solarTimeStr)
+                    views.setViewVisibility(R.id.widget_solar_time, View.VISIBLE)
+                } else {
+                    views.setViewVisibility(R.id.widget_solar_time, View.GONE)
+                }
 
                 // ── Header text ───────────────────────────────────────────
                 views.setTextViewText(
@@ -232,23 +260,6 @@ class RootsDayWidget : AppWidgetProvider() {
             } catch (e: Exception) {
                 android.util.Log.e("RootsDayWidget", "updateWidget failed: ${e.message}", e)
             }
-        }
-
-        /** Computes true solar time as "HH:mm" for the given longitude (degrees east). */
-        private fun solarTimeHHmm(longitudeDeg: Double): String {
-            val utc = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC"))
-            val utcH = utc.get(java.util.Calendar.HOUR_OF_DAY) +
-                       utc.get(java.util.Calendar.MINUTE) / 60.0 +
-                       utc.get(java.util.Calendar.SECOND) / 3600.0
-            val lmst = utcH + (longitudeDeg / 15.0)
-            val n = utc.get(java.util.Calendar.DAY_OF_YEAR).toDouble()
-            val b = (360.0 / 365.0) * (n - 81) * (Math.PI / 180.0)
-            val eot = 9.87 * Math.sin(2 * b) - 7.53 * Math.cos(b) - 1.5 * Math.sin(b)
-            val raw = (lmst + eot / 60.0) % 24.0
-            val totalMin = ((if (raw < 0) raw + 24.0 else raw) * 60).toInt()
-            val hh = (totalMin / 60).toString().padStart(2, '0')
-            val mm = (totalMin % 60).toString().padStart(2, '0')
-            return "$hh:$mm"
         }
 
         /** Returns a PendingIntent for the per-minute tick broadcast. */

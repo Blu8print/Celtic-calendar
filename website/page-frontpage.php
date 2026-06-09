@@ -1,13 +1,20 @@
-<!DOCTYPE html>
-<html lang="en">
+<?php
+/**
+ * Template Name: Frontpage
+ *
+ * Full-page static template for the Roots Calendar landing page.
+ * Assign this template to a page, then set that page as the static
+ * front page in Settings → Reading.
+ *
+ * Images: https://rootscalendar.org/wp-content/uploads/2026/05/
+ */
+?><!DOCTYPE html>
+<html <?php language_attributes(); ?>>
 <head>
-<meta charset="UTF-8">
-<link rel="icon" type="image/png" href="favicon.png">
-<link rel="apple-touch-icon" href="favicon.png">
+<meta charset="<?php bloginfo( 'charset' ); ?>">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Roots Calendar — Celtic Tree Calendar App</title>
-<meta name="description" content="Roots Calendar is a 13-month Celtic Tree Calendar app. 13 months of 28 days each, named after sacred trees. Track moon phases, sync with Google Calendar.">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<?php wp_head(); /* SEO title/description, plugins, favicon via Site Identity */ ?>
 <style>
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 :root {
@@ -303,6 +310,22 @@ h2.section-title {
 .form-msg.error   { display:block; background:rgba(139,32,64,.2); color:#e87898; border:1px solid rgba(139,32,64,.4); }
 .form-note { font-size:.65rem; color:var(--sub); font-style:italic; }
 
+/* ─── PRIVACY ─── */
+#privacy { padding:clamp(3rem,8vw,5rem) clamp(1rem,5vw,2.5rem); border-bottom:1px solid var(--bdr); }
+.privacy-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-top:2rem; }
+@media(max-width:640px){ .privacy-grid { grid-template-columns:1fr; } }
+.privacy-card { background:var(--surf); border:1px solid var(--bdr2); border-radius:var(--radius); padding:1.5rem; }
+.privacy-card-title { font-family:'Cinzel',serif; font-size:.72rem; color:var(--gold); letter-spacing:.1em; margin-bottom:.75rem; text-transform:uppercase; }
+.privacy-card-body { font-size:.85rem; color:var(--text2); line-height:1.85; }
+.privacy-policy-link {
+  display:inline-flex; align-items:center; gap:.4rem; margin-top:1.75rem;
+  font-family:'Cinzel',serif; font-size:.65rem; letter-spacing:.08em;
+  color:var(--gold); text-decoration:none;
+  border:1px solid var(--bdr2); border-radius:6px; padding:.55rem 1.1rem;
+  transition:border-color .2s;
+}
+.privacy-policy-link:hover { border-color:var(--gold); }
+
 /* ─── FOOTER ─── */
 footer {
   padding:1.75rem clamp(1rem,5vw,2.5rem); border-top:1px solid var(--bdr);
@@ -314,7 +337,8 @@ footer {
 .footer-links a:hover { color:var(--gold); }
 </style>
 </head>
-<body>
+<body <?php body_class(); ?>>
+<?php wp_body_open(); ?>
 
 <!-- ─── NAV ─── -->
 <nav>
@@ -358,12 +382,13 @@ footer {
     <p class="section-body">Thirteen months. Twenty-eight days each. Every month named after a sacred tree — with its own Ogham character and quiet teaching. Your events stay on your device. Google Calendar sync is optional.</p>
   </div>
   <div class="shots-scroll">
-    <div class="shot"><div class="shot-frame"><img class="shot-img" src="month-view-light-mode.webp" alt="Month view of Roots Calendar showing all 28 days of a Celtic tree month"></div><div class="shot-caption">Month View · Light</div></div>
-    <div class="shot"><div class="shot-frame"><img class="shot-img" src="month-view-dark-mode.webp" alt="Dark mode month view of Roots Calendar"></div><div class="shot-caption">Month View · Dark</div></div>
-    <div class="shot"><div class="shot-frame"><img class="shot-img" src="3days-view-light-mode.webp" alt="3-day view in Roots Calendar"></div><div class="shot-caption">3-Day View</div></div>
-    <div class="shot"><div class="shot-frame"><img class="shot-img" src="schedule-light-mode.webp" alt="Schedule view in Roots Calendar"></div><div class="shot-caption">Schedule</div></div>
-    <div class="shot"><div class="shot-frame"><img class="shot-img" src="new-event-light-mode.webp" alt="Add new event screen in Roots Calendar"></div><div class="shot-caption">Add Event</div></div>
-    <div class="shot"><div class="shot-frame"><img class="shot-img" src="settings-light-mode.webp" alt="Settings screen of Roots Calendar"></div><div class="shot-caption">Settings</div></div>
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="https://rootscalendar.org/wp-content/uploads/2026/05/month-view.jpg" alt="Month view of Roots Calendar showing all 28 days of a Celtic tree month"></div><div class="shot-caption">Month View</div></div>
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="https://rootscalendar.org/wp-content/uploads/2026/05/dark-mode-month-view.jpg" alt="Dark mode month view of Roots Calendar"></div><div class="shot-caption">Month View · Dark</div></div>
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="https://rootscalendar.org/wp-content/uploads/2026/05/3day-view.jpg" alt="3-day view in Roots Calendar"></div><div class="shot-caption">3-Day View</div></div>
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="https://rootscalendar.org/wp-content/uploads/2026/05/day-view.jpg" alt="Day view in Roots Calendar"></div><div class="shot-caption">Day View</div></div>
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="https://rootscalendar.org/wp-content/uploads/2026/05/menu-view.jpg" alt="Menu view in Roots Calendar"></div><div class="shot-caption">Menu</div></div>
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="https://rootscalendar.org/wp-content/uploads/2026/05/dark-mode-menu-view.jpg" alt="Dark mode menu in Roots Calendar"></div><div class="shot-caption">Menu · Dark</div></div>
+    <div class="shot"><div class="shot-frame"><img class="shot-img" src="https://rootscalendar.org/wp-content/uploads/2026/05/12month-view.jpg" alt="All 13 Celtic months overview in Roots Calendar"></div><div class="shot-caption">13 Months</div></div>
   </div>
 </section>
 
@@ -424,6 +449,26 @@ footer {
   </div>
 </section>
 
+<!-- ─── PRIVACY & DATA ─── -->
+<section id="privacy">
+  <div class="wrap">
+    <div class="eyebrow">Privacy &amp; Data</div>
+    <h2 class="section-title">Your data stays yours.</h2>
+    <p class="section-body">Roots Calendar is a Celtic Tree Calendar app for iOS and Android. All your events are stored locally on your device. No account is required.</p>
+    <div class="privacy-grid">
+      <div class="privacy-card">
+        <div class="privacy-card-title">Google Calendar Sync</div>
+        <div class="privacy-card-body">If you choose to connect Google Calendar, the app requests read and write access to your Google Calendar events. This access is used solely to display your existing Google Calendar events alongside the Celtic calendar, and to optionally sync events you create in Roots Calendar back to Google Calendar. This feature is entirely optional — the app works fully without it.</div>
+      </div>
+      <div class="privacy-card">
+        <div class="privacy-card-title">What We Don't Do</div>
+        <div class="privacy-card-body">Roots Calendar operates no server or backend. Your events and Google Calendar data are never sent to Blu8print or any third party. All Google API calls go directly from your device to Google's servers. We do not collect, sell, or share your personal data.</div>
+      </div>
+    </div>
+    <a href="https://rootscalendar.org/privacy-policy/" class="privacy-policy-link">Read the full Privacy Policy &#9658;</a>
+  </div>
+</section>
+
 <!-- ─── WAITLIST ─── -->
 <section id="waitlist">
   <div class="wrap">
@@ -460,7 +505,7 @@ footer {
   <div class="footer-links">
     <a href="https://testflight.apple.com/join/uNVzfR9u" target="_blank">TestFlight</a>
     <a href="https://play.google.com/store/apps/details?id=nl.blu8print.rootscalendar" target="_blank">Google Play</a>
-    <a href="https://blu8print.github.io/Celtic-calendar/privacy" target="_blank">Privacy</a>
+    <a href="https://rootscalendar.org/privacy-policy/">Privacy</a>
     <a href="https://github.com/Blu8print/Celtic-calendar" target="_blank">GitHub</a>
     <a href="mailto:support@blu8print.com">Contact</a>
   </div>
@@ -810,5 +855,7 @@ function submitForm() {
   });
 })();
 </script>
+
+<?php wp_footer(); ?>
 </body>
 </html>

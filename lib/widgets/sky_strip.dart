@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -92,10 +93,8 @@ class _SkyStripState extends State<SkyStrip> {
     final pct         = (phase.illumination * 100).round();
     final isSupermoon = proximity > 0.92;
 
-    // Solar time value (updated every second via _timer)
-    // TODO: expose longitude in Settings UI for user adjustment
-    final lon      = _lon ?? 4.7;
-    final solarStr = _fmtHms(_solarTime(_now, lon));
+    // Solar time value (updated every second via _timer) — only when location is known
+    final solarStr = _lon != null ? _fmtHms(_solarTime(_now, _lon!)) : '';
 
     // Celtic month name for expanded header.
     final cd         = gregorianToCeltic(widget.date);
@@ -136,7 +135,7 @@ class _SkyStripState extends State<SkyStrip> {
                           style: AppTextStyles.cinzel(size: 11, color: c.text),
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (settings.showClocks && widget.showSolarTime)
+                        if (settings.showClocks && widget.showSolarTime && _lon != null)
                           Text(
                             'Solar time  \u00b7  ${solarStr.substring(0, 5)}',
                             style: AppTextStyles.cinzel(size: 11, color: c.gold),
@@ -219,11 +218,18 @@ class _SkyStripState extends State<SkyStrip> {
 
                       // 4b. Solar time (true sun)
                       if (settings.showClocks && widget.showSolarTime)
-                        _InstrumentRow(
-                          symbol: '\u23f2',
-                          text: 'Solar time (true sun)  \u00b7  $solarStr',
-                          c: c,
-                        ),
+                        _lon != null
+                            ? _InstrumentRow(
+                                symbol: '\u23f2',
+                                text: 'Solar time (true sun)  \u00b7  $solarStr',
+                                c: c,
+                              )
+                            : _TapRow(
+                                symbol: '\u23f2',
+                                text: 'Enable location for solar time',
+                                c: c,
+                                onTap: () => _requestLocation(context),
+                              ),
 
                       // 5. Moon distance
                       if (settings.showMoonDistance)
@@ -314,20 +320,29 @@ class _SkyStripState extends State<SkyStrip> {
     }
     if (perm == LocationPermission.denied ||
         perm == LocationPermission.deniedForever) return;
-    final pos = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.low,
-        timeLimit: Duration(seconds: 15),
-      ),
-    );
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble('sky_lat', pos.latitude);
-    await prefs.setDouble('sky_lon', pos.longitude);
-    if (mounted) {
+    try {
+      // Don't use timeLimit inside LocationSettings — the geolocator package
+      // throws it via an internal zone, bypassing try/catch. Use Dart's own
+      // .timeout() instead so the exception is catchable normally.
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.low),
+      ).timeout(const Duration(seconds: 15));
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble('sky_lat', pos.latitude);
+      await prefs.setDouble('sky_lon', pos.longitude);
+      if (!mounted) return;
       setState(() {
         _lat = pos.latitude;
         _lon = pos.longitude;
       });
+      // Push the new location to the widget immediately — don't wait for the
+      // next app restart or background Workmanager tick.
+      await HomeWidget.saveWidgetData<bool>  ('has_location',  true);
+      await HomeWidget.saveWidgetData<double>('sky_lon',       pos.longitude);
+      await HomeWidget.saveWidgetData<double>('user_longitude', pos.longitude);
+      await HomeWidget.updateWidget(androidName: 'RootsDayWidget');
+    } catch (e) {
+      debugPrint('_requestLocation failed: $e');
     }
   }
 }
