@@ -501,9 +501,12 @@ class _SkySection extends StatelessWidget {
           timeLimit: Duration(seconds: 15),
         ),
       );
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setDouble('sky_lat', pos.latitude);
-      await prefs.setDouble('sky_lon', pos.longitude);
+      if (context.mounted) {
+        await context.read<SkySettingsNotifier>().updateLocation(
+          pos.latitude,
+          pos.longitude,
+        );
+      }
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -744,9 +747,9 @@ class _DangerZoneSection extends StatelessWidget {
     await sky.setShowSunTimes(true);
     await theme.setLight(true);
 
+    await sky.clearLocation();
+
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('sky_lat');
-    await prefs.remove('sky_lon');
     await prefs.setBool('onboarding_complete', false);
 
     if (!context.mounted) return;

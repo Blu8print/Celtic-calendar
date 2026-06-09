@@ -11,22 +11,28 @@ class SkySettingsNotifier extends ChangeNotifier {
   static const _kMoonDistance = 'sky_moon_distance';
   static const _kSolarEvent   = 'sky_solar_event';
   static const _kClocks       = 'sky_clocks';
+  static const _kLat          = 'sky_lat';
+  static const _kLon          = 'sky_lon';
 
-  bool _showMoonPhase    = true;
-  bool _showZodiac       = true;
-  bool _showBiodynamic   = true;
-  bool _showSunTimes     = true;
-  bool _showMoonDistance = true;
-  bool _showSolarEvent   = true;
-  bool _showClocks       = true;
+  bool    _showMoonPhase    = true;
+  bool    _showZodiac       = true;
+  bool    _showBiodynamic   = true;
+  bool    _showSunTimes     = true;
+  bool    _showMoonDistance = true;
+  bool    _showSolarEvent   = true;
+  bool    _showClocks       = true;
+  double? _latitude;
+  double? _longitude;
 
-  bool get showMoonPhase    => _showMoonPhase;
-  bool get showZodiac       => _showZodiac;
-  bool get showBiodynamic   => _showBiodynamic;
-  bool get showSunTimes     => _showSunTimes;
-  bool get showMoonDistance => _showMoonDistance;
-  bool get showSolarEvent   => _showSolarEvent;
-  bool get showClocks       => _showClocks;
+  bool    get showMoonPhase    => _showMoonPhase;
+  bool    get showZodiac       => _showZodiac;
+  bool    get showBiodynamic   => _showBiodynamic;
+  bool    get showSunTimes     => _showSunTimes;
+  bool    get showMoonDistance => _showMoonDistance;
+  bool    get showSolarEvent   => _showSolarEvent;
+  bool    get showClocks       => _showClocks;
+  double? get latitude         => _latitude;
+  double? get longitude        => _longitude;
 
   /// True if at least one row is enabled; false hides the strip entirely.
   bool get showSkyPanel =>
@@ -51,7 +57,27 @@ class SkySettingsNotifier extends ChangeNotifier {
     _showMoonDistance = p.getBool(_kMoonDistance)  ?? true;
     _showSolarEvent   = p.getBool(_kSolarEvent)    ?? true;
     _showClocks       = p.getBool(_kClocks)        ?? true;
+    _latitude         = p.getDouble(_kLat);
+    _longitude        = p.getDouble(_kLon);
     notifyListeners();
+  }
+
+  Future<void> updateLocation(double lat, double lon) async {
+    _latitude  = lat;
+    _longitude = lon;
+    notifyListeners();
+    final p = await SharedPreferences.getInstance();
+    await p.setDouble(_kLat, lat);
+    await p.setDouble(_kLon, lon);
+  }
+
+  Future<void> clearLocation() async {
+    _latitude  = null;
+    _longitude = null;
+    notifyListeners();
+    final p = await SharedPreferences.getInstance();
+    await p.remove(_kLat);
+    await p.remove(_kLon);
   }
 
   Future<void> setShowMoonPhase(bool v) async {

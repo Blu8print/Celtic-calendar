@@ -169,7 +169,6 @@ class _RootsCalendarAppState extends State<RootsCalendarApp>
       child: Consumer<ThemeNotifier>(
         builder: (context, notifier, _) {
           SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-            systemNavigationBarColor: Colors.transparent,
             systemNavigationBarIconBrightness:
                 notifier.isLight ? Brightness.dark : Brightness.light,
           ));

@@ -6,7 +6,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/astronomy.dart';
 import '../engine/celtic_calendar.dart';
@@ -44,8 +43,6 @@ class SkyStrip extends StatefulWidget {
 
 class _SkyStripState extends State<SkyStrip> {
   late bool _expanded;
-  double? _lat;
-  double? _lon;
   Timer? _timer;
   DateTime _now = DateTime.now();
   static final _timeFmt = DateFormat('HH:mm');
@@ -55,13 +52,6 @@ class _SkyStripState extends State<SkyStrip> {
   void initState() {
     super.initState();
     _expanded = widget.initiallyExpanded;
-    SharedPreferences.getInstance().then((p) {
-      if (!mounted) return;
-      setState(() {
-        _lat = p.getDouble('sky_lat');
-        _lon = p.getDouble('sky_lon');
-      });
-    });
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
     });
@@ -83,8 +73,8 @@ class _SkyStripState extends State<SkyStrip> {
     final phase       = MoonPhaseCalculator.calculate(widget.date);
     final zodiac      = AstronomyEngine.zodiacForDate(widget.date);
     final bio         = AstronomyEngine.biodynamicForZodiac(zodiac);
-    final sun         = (_lat != null && _lon != null)
-        ? AstronomyEngine.sunTimesFor(widget.date, _lat!, _lon!)
+    final sun         = (settings.latitude != null && settings.longitude != null)
+        ? AstronomyEngine.sunTimesFor(widget.date, settings.latitude!, settings.longitude!)
         : null;
     final proximity   = AstronomyEngine.lunarProximityFraction(widget.date);
     final distKm      = AstronomyEngine.lunarDistanceKm(proximity);
@@ -94,7 +84,9 @@ class _SkyStripState extends State<SkyStrip> {
     final isSupermoon = proximity > 0.92;
 
     // Solar time value (updated every second via _timer) — only when location is known
-    final solarStr = _lon != null ? _fmtHms(_solarTime(_now, _lon!)) : '';
+    final solarStr = settings.longitude != null
+        ? _fmtHms(_solarTime(_now, settings.longitude!))
+        : null;
 
     // Celtic month name for expanded header.
     final cd         = gregorianToCeltic(widget.date);
@@ -135,7 +127,7 @@ class _SkyStripState extends State<SkyStrip> {
                           style: AppTextStyles.cinzel(size: 11, color: c.text),
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (settings.showClocks && widget.showSolarTime && _lon != null)
+                        if (settings.showClocks && widget.showSolarTime && solarStr != null)
                           Text(
                             'Solar time  \u00b7  ${solarStr.substring(0, 5)}',
                             style: AppTextStyles.cinzel(size: 11, color: c.gold),
@@ -218,7 +210,7 @@ class _SkyStripState extends State<SkyStrip> {
 
                       // 4b. Solar time (true sun)
                       if (settings.showClocks && widget.showSolarTime)
-                        _lon != null
+                        solarStr != null
                             ? _InstrumentRow(
                                 symbol: '\u23f2',
                                 text: 'Solar time (true sun)  \u00b7  $solarStr',
@@ -327,15 +319,12 @@ class _SkyStripState extends State<SkyStrip> {
       final pos = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.low),
       ).timeout(const Duration(seconds: 15));
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setDouble('sky_lat', pos.latitude);
-      await prefs.setDouble('sky_lon', pos.longitude);
       if (!mounted) return;
-      setState(() {
-        _lat = pos.latitude;
-        _lon = pos.longitude;
-      });
-      // Push the new location to the widget immediately — don't wait for the
+      await context.read<SkySettingsNotifier>().updateLocation(
+        pos.latitude,
+        pos.longitude,
+      );
+      // Push the new location to the home widget — don't wait for the
       // next app restart or background Workmanager tick.
       await HomeWidget.saveWidgetData<bool>  ('has_location',  true);
       await HomeWidget.saveWidgetData<double>('sky_lon',       pos.longitude);

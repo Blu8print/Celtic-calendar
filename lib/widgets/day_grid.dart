@@ -64,26 +64,24 @@ class DayGrid extends StatelessWidget {
     final today    = DateTime.now();
     final headers  = List.generate(7, (i) => _weekdays[(startDow + i) % 7]);
 
-    // Build all items for this month — events + festivals, sorted by Celtic day.
-    final monthEvents = [...events]
-      ..sort((a, b) => (a.celticDay ?? 0).compareTo(b.celticDay ?? 0));
-
-    // Convert festivals to _UpcomingItem — compute Celtic day on the fly.
+    // Build all items for this month — events + festivals.
     final monthFestivals = festivalsThisMonth
         .map((f) {
           final cd = gregorianToCeltic(f.gregorianDate);
           return _UpcomingItem.festival(f, cd.day ?? 1);
         })
-        .toList()
-      ..sort((a, b) => a.celticDay.compareTo(b.celticDay));
+        .toList();
 
-    // Events first (sorted by Celtic day), festivals appended last.
-    // Festivals are always available synchronously; keeping them last avoids
-    // a visual jump when the events stream emits after a month swipe.
-    final allUpcoming = [
-      ...monthEvents.map((e) => _UpcomingItem.event(e)),
+    final allItems = [
+      ...events.map((e) => _UpcomingItem.event(e)),
       ...monthFestivals,
     ];
+
+    final now = DateTime.now();
+    final upcoming = allItems.where((i) => !_isItemPast(i, now)).toList()
+      ..sort((a, b) => _itemSortKey(a).compareTo(_itemSortKey(b)));
+    final waned = allItems.where((i) => _isItemPast(i, now)).toList()
+      ..sort((a, b) => _itemSortKey(b).compareTo(_itemSortKey(a)));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -167,17 +165,38 @@ class DayGrid extends StatelessWidget {
                       weight: FontWeight.w600),
                 ),
               ),
-              if (allUpcoming.isEmpty)
+              if (upcoming.isEmpty && waned.isEmpty)
                 Padding(
                   padding: const EdgeInsets.all(14),
-                  child: Text('No upcoming events this month',
+                  child: Text('No events this month',
                       style: AppTextStyles.imFell(
                           size: 13, color: c.dim, italic: true)),
                 )
-              else
-                ...allUpcoming.map((item) => item.festival != null
+              else ...[
+                ...upcoming.map((item) => item.festival != null
                     ? _buildFestivalRow(context, c, item)
                     : _buildEventRow(context, c, item)),
+                if (upcoming.isNotEmpty && waned.isNotEmpty)
+                  Container(
+                    color: c.surface2,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 7),
+                    child: Text(
+                      'WANED',
+                      style: AppTextStyles.cinzel(
+                          size: 9,
+                          color: c.dim,
+                          letterSpacing: 1.0,
+                          weight: FontWeight.w600),
+                    ),
+                  ),
+                ...waned.map((item) => Opacity(
+                      opacity: 0.5,
+                      child: item.festival != null
+                          ? _buildFestivalRow(context, c, item)
+                          : _buildEventRow(context, c, item),
+                    )),
+              ],
             ],
           ),
         ),
@@ -421,6 +440,40 @@ class _DayCell extends StatelessWidget {
       ),
     );
   }
+}
+
+bool _isItemPast(_UpcomingItem item, DateTime now) {
+  if (item.festival != null) {
+    final d = item.festival!.gregorianDate.toLocal();
+    final endOfDay = DateTime(d.year, d.month, d.day).add(const Duration(days: 1));
+    return !now.isBefore(endOfDay);
+  }
+  final e = item.event!;
+  if (e.startMinutes == null) {
+    final d = e.gregorianDate;
+    final endOfDay = DateTime(d.year, d.month, d.day).add(const Duration(days: 1));
+    return !now.isBefore(endOfDay);
+  }
+  final endMin = e.startMinutes! + (e.durationMinutes ?? 60);
+  final endTime = DateTime(
+    e.gregorianDate.year, e.gregorianDate.month, e.gregorianDate.day,
+    endMin ~/ 60, endMin % 60,
+  );
+  return now.isAfter(endTime);
+}
+
+DateTime _itemSortKey(_UpcomingItem item) {
+  if (item.festival != null) {
+    return item.festival!.gregorianDate.toLocal();
+  }
+  final e = item.event!;
+  if (e.startMinutes == null) {
+    return DateTime(e.gregorianDate.year, e.gregorianDate.month, e.gregorianDate.day);
+  }
+  return DateTime(
+    e.gregorianDate.year, e.gregorianDate.month, e.gregorianDate.day,
+    e.startMinutes! ~/ 60, e.startMinutes! % 60,
+  );
 }
 
 Color _parseHex(String hex) {
