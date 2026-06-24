@@ -100,7 +100,7 @@ class _Page1 extends StatelessWidget {
               constraints: const BoxConstraints(maxWidth: 300),
               child: Text(
                 'A year of 364 days — plus one day that belongs to no month.',
-                style: AppTextStyles.imFell(size: 15, color: c.dim, italic: true),
+                style: AppTextStyles.imFell(size: 15, color: c.text, italic: true),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -111,7 +111,7 @@ class _Page1 extends StatelessWidget {
             // Caption
             Text(
               'Every month is exactly four weeks.\nEvery week always starts on the same day.',
-              style: AppTextStyles.imFell(size: 13, color: c.dim),
+              style: AppTextStyles.imFell(size: 13, color: c.text),
               textAlign: TextAlign.center,
             ),
           ],
@@ -141,7 +141,7 @@ class _MiniCalendar extends StatelessWidget {
                 width: 32,
                 child: Text(
                   'Wk ${week + 1}',
-                  style: AppTextStyles.cinzel(size: 9, color: c.dim),
+                  style: AppTextStyles.cinzel(size: 9, color: c.text),
                   textAlign: TextAlign.right,
                 ),
               ),
@@ -227,7 +227,7 @@ class _Page2 extends StatelessWidget {
             Text(
               mo.name,
               style: AppTextStyles.cinzel(
-                  size: 32, weight: FontWeight.w700, color: c.muted),
+                  size: 32, weight: FontWeight.w700, color: c.text),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
@@ -235,7 +235,7 @@ class _Page2 extends StatelessWidget {
             Text(
               mo.tree.toUpperCase(),
               style: AppTextStyles.cinzel(
-                  size: 12, color: c.dim, letterSpacing: 2),
+                  size: 12, color: c.text, letterSpacing: 2),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
@@ -258,7 +258,7 @@ class _Page2 extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 dateRange,
-                style: AppTextStyles.cinzel(size: 11, color: c.dim),
+                style: AppTextStyles.cinzel(size: 11, color: c.text),
               ),
             ],
             const SizedBox(height: 28),
@@ -277,13 +277,13 @@ class _Page2 extends StatelessWidget {
                     children: [
                       Text(pair.$1,
                           style: AppTextStyles.cinzel(
-                              size: 12, color: c.dim)),
+                              size: 12, color: c.text)),
                       Text('  ·  ',
                           style: AppTextStyles.cinzel(
                               size: 12, color: c.border)),
                       Text(pair.$2,
                           style: AppTextStyles.imFell(
-                              size: 12, color: c.dim, italic: true)),
+                              size: 12, color: c.text, italic: true)),
                     ],
                   ),
                 )),
@@ -336,7 +336,7 @@ class _Page3 extends StatelessWidget {
               child: Text(
                 'Roots Calendar lives alongside your existing calendars. '
                 'Your events appear here, rooted in the rhythm of the trees.',
-                style: AppTextStyles.imFell(size: 15, color: c.dim),
+                style: AppTextStyles.imFell(size: 15, color: c.text),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -357,7 +357,7 @@ class _Page3 extends StatelessWidget {
               child: Text(
                 "I'll set this up later",
                 style:
-                    AppTextStyles.imFell(size: 13, color: c.dim, italic: true),
+                    AppTextStyles.imFell(size: 13, color: c.text, italic: true),
               ),
             ),
           ],
@@ -386,7 +386,7 @@ class _ConnectCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(Icons.event_available_outlined, color: c.muted, size: 28),
+            Icon(Icons.event_available_outlined, color: c.text, size: 28),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -399,7 +399,7 @@ class _ConnectCard extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     'See your existing events in the Celtic calendar. Optional.',
-                    style: AppTextStyles.imFell(size: 12, color: c.dim),
+                    style: AppTextStyles.imFell(size: 12, color: c.text),
                   ),
                 ],
               ),
@@ -424,11 +424,11 @@ class _ConnectedCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.check_circle_outline, color: c.muted, size: 28),
+          Icon(Icons.check_circle_outline, color: c.text, size: 28),
           const SizedBox(width: 14),
           Text(
             'Connected',
-            style: AppTextStyles.cinzel(size: 14, color: c.muted),
+            style: AppTextStyles.cinzel(size: 14, color: c.text),
           ),
         ],
       ),
@@ -460,7 +460,7 @@ class _Page4 extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'You can change these any time in Settings.',
-              style: AppTextStyles.imFell(size: 13, color: c.dim, italic: true),
+              style: AppTextStyles.imFell(size: 13, color: c.text, italic: true),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 40),
@@ -471,7 +471,7 @@ class _Page4 extends StatelessWidget {
               child: Text(
                 'APPEARANCE',
                 style: AppTextStyles.cinzel(
-                    size: 10, color: c.dim, letterSpacing: 2),
+                    size: 10, color: c.text, letterSpacing: 2),
               ),
             ),
             const SizedBox(height: 12),
@@ -505,7 +505,7 @@ class _Page4 extends StatelessWidget {
               child: Text(
                 'MOON PHASES',
                 style: AppTextStyles.cinzel(
-                    size: 10, color: c.dim, letterSpacing: 2),
+                    size: 10, color: c.text, letterSpacing: 2),
               ),
             ),
             const SizedBox(height: 4),
@@ -513,7 +513,7 @@ class _Page4 extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 'Show moon symbols in the month grid.',
-                style: AppTextStyles.imFell(size: 13, color: c.dim, italic: true),
+                style: AppTextStyles.imFell(size: 13, color: c.text, italic: true),
               ),
             ),
             const SizedBox(height: 12),
@@ -620,7 +620,7 @@ class _MoonToggleRow extends StatelessWidget {
       child: Row(
         children: [
           Text(symbol,
-              style: AppTextStyles.cinzel(size: 16, color: c.dim)),
+              style: AppTextStyles.cinzel(size: 16, color: c.text)),
           const SizedBox(width: 12),
           Expanded(
             child: Text(label,
@@ -672,7 +672,7 @@ class _Page5 extends StatelessWidget {
                 'A living strip above the calendar shows astronomical data in real time. '
                 'Turn off anything you don\'t need.',
                 style:
-                    AppTextStyles.imFell(size: 14, color: c.dim, italic: true),
+                    AppTextStyles.imFell(size: 14, color: c.text, italic: true),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -682,7 +682,7 @@ class _Page5 extends StatelessWidget {
               child: Text(
                 'SKY PANEL',
                 style: AppTextStyles.cinzel(
-                    size: 10, color: c.dim, letterSpacing: 2),
+                    size: 10, color: c.text, letterSpacing: 2),
               ),
             ),
             const SizedBox(height: 12),
@@ -784,7 +784,7 @@ class _SkyToggleRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(subtitle,
                     style: AppTextStyles.imFell(
-                        size: 12, color: c.dim, italic: true)),
+                        size: 12, color: c.text, italic: true)),
               ],
             ),
           ),
@@ -828,7 +828,7 @@ class _NavOverlay extends StatelessWidget {
                 child: Text(
                   'Skip',
                   style: AppTextStyles.imFell(
-                      size: 13, color: c.dim, italic: true),
+                      size: 13, color: c.text, italic: true),
                 ),
               ),
             const Spacer(),

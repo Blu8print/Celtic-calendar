@@ -105,7 +105,7 @@ class _DayViewState extends State<DayView> {
             const SizedBox(height: 6),
             Text(
               '${DateFormat('MMMM d').format(gregDate)} · ${mo.name} Day ${cd.day}',
-              style: AppTextStyles.cinzel(size: 11, color: c.dim),
+              style: AppTextStyles.cinzel(size: 11, color: c.text),
             ),
             const SizedBox(height: 12),
             Text(f.description,
@@ -113,10 +113,10 @@ class _DayViewState extends State<DayView> {
                     size: 14, color: c.text, italic: true)),
             const SizedBox(height: 8),
             Text(f.flavour,
-                style: AppTextStyles.imFell(size: 13, color: c.muted)),
+                style: AppTextStyles.imFell(size: 13, color: c.text)),
             const SizedBox(height: 16),
             Text('Celtic Festival — read only',
-                style: AppTextStyles.cinzel(size: 9, color: c.dim,
+                style: AppTextStyles.cinzel(size: 9, color: c.text,
                     letterSpacing: 0.8)),
           ],
         ),
@@ -197,7 +197,7 @@ class _DayViewState extends State<DayView> {
                     ),
                     padding: const EdgeInsets.only(right: 4, top: 1),
                     child: Text('All\nday',
-                        style: AppTextStyles.cinzel(size: 7, color: c.dim),
+                        style: AppTextStyles.cinzel(size: 7, color: c.text),
                         textAlign: TextAlign.right),
                   ),
                   Expanded(
@@ -206,7 +206,7 @@ class _DayViewState extends State<DayView> {
                       child: (allDayEvs.isEmpty && widget.festivalsForDay.isEmpty)
                           ? Text('\u2014',
                               style: AppTextStyles.imFell(
-                                  size: 12, color: c.dim, italic: true))
+                                  size: 12, color: c.text, italic: true))
                           : Wrap(
                               spacing: 4, runSpacing: 2,
                               children: [
@@ -332,7 +332,7 @@ class _DayViewState extends State<DayView> {
                                             child: Text(
                                               '${h.toString().padLeft(2, '0')}:00',
                                               style: AppTextStyles.cinzel(
-                                                  size: 8, color: c.dim),
+                                                  size: 8, color: c.text),
                                             ),
                                           ),
                                         ),

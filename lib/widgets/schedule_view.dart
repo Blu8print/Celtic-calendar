@@ -76,7 +76,7 @@ class _ScheduleViewState extends State<ScheduleView> {
         padding: const EdgeInsets.all(32),
         child: Text(
           'No events this year',
-          style: AppTextStyles.imFell(size: 14, color: c.dim, italic: true),
+          style: AppTextStyles.imFell(size: 14, color: c.text, italic: true),
         ),
       );
     }
@@ -140,7 +140,7 @@ class _MonthDivider extends StatelessWidget {
       child: Text(
         '${mo.name.toUpperCase()} \u00b7 ${mo.tree.toUpperCase()} \u00b7 ${mo.keyword.toUpperCase()}',
         style: AppTextStyles.cinzel(
-            size: 9, color: c.dim, letterSpacing: 1.0, weight: FontWeight.w600),
+            size: 9, color: c.text, letterSpacing: 1.0, weight: FontWeight.w600),
       ),
     );
   }
@@ -197,7 +197,7 @@ class _DayBlock extends StatelessWidget {
                         width: 30,
                         child: Text('$celticDay',
                             style: AppTextStyles.cinzel(
-                                size: 18, weight: FontWeight.w700, color: c.muted),
+                                size: 18, weight: FontWeight.w700, color: c.text),
                             textAlign: TextAlign.center),
                       ),
                 const SizedBox(width: 10),
@@ -205,10 +205,10 @@ class _DayBlock extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(DateFormat('d MMM').format(gregDate),
-                        style: AppTextStyles.cinzel(size: 10, color: c.dim)),
+                        style: AppTextStyles.cinzel(size: 10, color: c.text)),
                     Text(month,
                         style: AppTextStyles.imFell(
-                            size: 11, color: c.dim, italic: true)),
+                            size: 11, color: c.text, italic: true)),
                   ],
                 ),
               ],
@@ -254,7 +254,7 @@ class _DayBlock extends StatelessWidget {
                               overflow: TextOverflow.ellipsis),
                           Text(timeStr,
                               style: AppTextStyles.cinzel(
-                                  size: 10, color: c.dim)),
+                                  size: 10, color: c.text)),
                         ],
                       ),
                     ),

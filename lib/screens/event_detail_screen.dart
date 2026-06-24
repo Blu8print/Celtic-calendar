@@ -211,7 +211,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.chevron_left),
-                color: c.muted,
+                color: c.text,
                 tooltip: 'Previous day',
                 onPressed: () => setState(
                     () => _date = _date.subtract(const Duration(days: 1))),
@@ -241,7 +241,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       Text(
                         'tap to jump',
                         style: AppTextStyles.imFell(
-                            size: 10, color: c.dim, italic: true),
+                            size: 10, color: c.text, italic: true),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -250,7 +250,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               ),
               IconButton(
                 icon: const Icon(Icons.chevron_right),
-                color: c.muted,
+                color: c.text,
                 tooltip: 'Next day',
                 onPressed: () => setState(
                     () => _date = _date.add(const Duration(days: 1))),
@@ -328,12 +328,12 @@ class _EventScreen extends StatelessWidget {
         title: Text(isRecurring ? 'Recurring event' : 'Delete event?',
             style: AppTextStyles.cinzel(size: 15, color: c.text)),
         content: Text(existing!.title,
-            style: AppTextStyles.imFell(size: 13, color: c.dim)),
+            style: AppTextStyles.imFell(size: 13, color: c.text)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text('Cancel',
-                style: AppTextStyles.cinzel(size: 12, color: c.muted)),
+                style: AppTextStyles.cinzel(size: 12, color: c.text)),
           ),
           if (isRecurring)
             TextButton(
@@ -438,13 +438,13 @@ class _EventTile extends StatelessWidget {
                   if (event.recurrenceRule != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 2, left: 4),
-                      child: Icon(Icons.repeat, size: 13, color: c.dim),
+                      child: Icon(Icons.repeat, size: 13, color: c.text),
                     ),
                   if (event.googleEventId != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 2, left: 4),
                       child: Icon(Icons.cloud_done_outlined,
-                          size: 15, color: c.muted),
+                          size: 15, color: c.text),
                     ),
                 ],
               ),
@@ -456,7 +456,7 @@ class _EventTile extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     event.description,
-                    style: AppTextStyles.imFell(size: 12, color: c.muted),
+                    style: AppTextStyles.imFell(size: 12, color: c.text),
                   ),
                 ),
               // Location.
@@ -497,9 +497,9 @@ class _TileDetail extends StatelessWidget {
       padding: const EdgeInsets.only(top: 4),
       child: Row(
         children: [
-          Icon(icon, size: 13, color: c.muted),
+          Icon(icon, size: 13, color: c.text),
           const SizedBox(width: 5),
-          Text(text, style: AppTextStyles.cinzel(size: 11, color: c.muted)),
+          Text(text, style: AppTextStyles.cinzel(size: 11, color: c.text)),
         ],
       ),
     );
@@ -518,12 +518,12 @@ class _LocationDetail extends StatelessWidget {
       padding: const EdgeInsets.only(top: 4),
       child: Row(
         children: [
-          Icon(Icons.place_outlined, size: 13, color: c.muted),
+          Icon(Icons.place_outlined, size: 13, color: c.text),
           const SizedBox(width: 5),
           Expanded(
             child: Text(
               location,
-              style: AppTextStyles.imFell(size: 12, color: c.muted),
+              style: AppTextStyles.imFell(size: 12, color: c.text),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -735,7 +735,7 @@ class _EventFormState extends State<_EventForm> {
                           children: [
                             Text('Every',
                                 style: AppTextStyles.cinzel(
-                                    size: 12, color: c.muted)),
+                                    size: 12, color: c.text)),
                             const SizedBox(width: 8),
                             IconButton(
                               icon: Icon(Icons.remove,
@@ -779,7 +779,7 @@ class _EventFormState extends State<_EventForm> {
                             const SizedBox(width: 4),
                             Text(unit,
                                 style: AppTextStyles.cinzel(
-                                    size: 12, color: c.muted)),
+                                    size: 12, color: c.text)),
                           ],
                         ),
                       ),
@@ -792,7 +792,7 @@ class _EventFormState extends State<_EventForm> {
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text('Cancel',
-                  style: AppTextStyles.cinzel(size: 12, color: c.muted)),
+                  style: AppTextStyles.cinzel(size: 12, color: c.text)),
             ),
             TextButton(
               onPressed: () =>
@@ -1097,19 +1097,19 @@ class _EventFormState extends State<_EventForm> {
               child: Row(
                 children: [
                   Icon(Icons.calendar_today_outlined,
-                      size: 18, color: c.muted),
+                      size: 18, color: c.text),
                   const SizedBox(width: 10),
                   Text(
                     _celticDateLabel,
                     style: AppTextStyles.cinzel(size: 13, color: c.text),
                   ),
                   const Spacer(),
-                  Icon(Icons.edit_outlined, size: 14, color: c.dim),
+                  Icon(Icons.edit_outlined, size: 14, color: c.text),
                 ],
               ),
             ),
           ),
-          Divider(color: c.border, height: 1),
+          Divider(color: c.muted, height: 1),
           const SizedBox(height: 16),
 
           // ── Title ───────────────────────────────────────────────────────
@@ -1171,7 +1171,7 @@ class _EventFormState extends State<_EventForm> {
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
               child: Row(
                 children: [
-                  Icon(Icons.repeat, size: 18, color: c.muted),
+                  Icon(Icons.repeat, size: 18, color: c.text),
                   const SizedBox(width: 10),
                   Text(_recurrenceLabel,
                       style: AppTextStyles.cinzel(size: 13, color: c.text)),
@@ -1198,10 +1198,10 @@ class _EventFormState extends State<_EventForm> {
                         _recurrenceRule = 'none';
                         _recurrenceEnd  = null;
                       }),
-                      child: Icon(Icons.close, size: 16, color: c.dim),
+                      child: Icon(Icons.close, size: 16, color: c.text),
                     ),
                   ] else
-                    Icon(Icons.chevron_right, size: 18, color: c.dim),
+                    Icon(Icons.chevron_right, size: 18, color: c.text),
                 ],
               ),
             ),
@@ -1217,7 +1217,7 @@ class _EventFormState extends State<_EventForm> {
               padding: const EdgeInsets.only(bottom: 6),
               child: Row(
                 children: [
-                  Icon(Icons.notifications_outlined, size: 18, color: c.muted),
+                  Icon(Icons.notifications_outlined, size: 18, color: c.text),
                   const SizedBox(width: 10),
                   DropdownButton<int>(
                     value: _kReminderOptions.any((o) => o.$1 == offset)
@@ -1241,7 +1241,7 @@ class _EventFormState extends State<_EventForm> {
                   const Spacer(),
                   GestureDetector(
                     onTap: () => setState(() => _reminders.removeAt(i)),
-                    child: Icon(Icons.close, size: 16, color: c.dim),
+                    child: Icon(Icons.close, size: 16, color: c.text),
                   ),
                 ],
               ),
@@ -1264,9 +1264,9 @@ class _EventFormState extends State<_EventForm> {
             style: AppTextStyles.imFell(size: 13, color: c.text),
             decoration: InputDecoration(
               hintText: 'Add location',
-              hintStyle: AppTextStyles.imFell(size: 13, color: c.dim),
+              hintStyle: AppTextStyles.imFell(size: 13, color: c.text),
               prefixIcon:
-                  Icon(Icons.place_outlined, size: 18, color: c.muted),
+                  Icon(Icons.place_outlined, size: 18, color: c.text),
             ),
             textCapitalization: TextCapitalization.sentences,
           ),
@@ -1282,9 +1282,9 @@ class _EventFormState extends State<_EventForm> {
                   style: AppTextStyles.imFell(size: 13, color: c.text),
                   decoration: InputDecoration(
                     hintText: 'Email address',
-                    hintStyle: AppTextStyles.imFell(size: 13, color: c.dim),
+                    hintStyle: AppTextStyles.imFell(size: 13, color: c.text),
                     prefixIcon: Icon(Icons.person_add_outlined,
-                        size: 18, color: c.muted),
+                        size: 18, color: c.text),
                   ),
                   keyboardType: TextInputType.emailAddress,
                   onSubmitted: (_) => _addAttendee(),
@@ -1327,11 +1327,11 @@ class _EventFormState extends State<_EventForm> {
             const SizedBox(height: 10),
             Row(
               children: [
-                Icon(Icons.cloud_done_outlined, size: 14, color: c.muted),
+                Icon(Icons.cloud_done_outlined, size: 14, color: c.text),
                 const SizedBox(width: 6),
                 Text(
                   'Will sync to Google Calendar',
-                  style: AppTextStyles.cinzel(size: 11, color: c.dim),
+                  style: AppTextStyles.cinzel(size: 11, color: c.text),
                 ),
               ],
             ),
@@ -1370,7 +1370,7 @@ class _FormLabel extends StatelessWidget {
       child: Text(
         text.toUpperCase(),
         style: AppTextStyles.cinzel(
-            size: 10, color: c.muted, letterSpacing: 1.5),
+            size: 10, color: c.text, letterSpacing: 1.5),
       ),
     );
   }
@@ -1392,14 +1392,14 @@ class _TimeRow extends StatelessWidget {
         onTap: onTap,
         child: Row(
           children: [
-            Icon(Icons.access_time, size: 18, color: c.muted),
+            Icon(Icons.access_time, size: 18, color: c.text),
             const SizedBox(width: 10),
             Text('All day',
-                style: AppTextStyles.cinzel(size: 13, color: c.muted)),
+                style: AppTextStyles.cinzel(size: 13, color: c.text)),
             const SizedBox(width: 6),
             Text(
               '(tap to set time)',
-              style: AppTextStyles.imFell(size: 11, color: c.dim, italic: true),
+              style: AppTextStyles.imFell(size: 11, color: c.text, italic: true),
             ),
           ],
         ),
@@ -1420,7 +1420,7 @@ class _TimeRow extends StatelessWidget {
         const SizedBox(width: 10),
         GestureDetector(
           onTap: onClear,
-          child: Icon(Icons.close, size: 16, color: c.muted),
+          child: Icon(Icons.close, size: 16, color: c.text),
         ),
       ],
     );
@@ -1443,7 +1443,7 @@ class _DurationRow extends StatelessWidget {
     final c = context.colors;
     return Row(
       children: [
-        Icon(Icons.timer_outlined, size: 18, color: c.muted),
+        Icon(Icons.timer_outlined, size: 18, color: c.text),
         const SizedBox(width: 10),
         DropdownButton<int>(
           value: _kDurations.any((d) => d.$1 == durationMinutes)
@@ -1462,7 +1462,7 @@ class _DurationRow extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           '→ ends ${endTime.format(context)}',
-          style: AppTextStyles.imFell(size: 12, color: c.muted),
+          style: AppTextStyles.imFell(size: 12, color: c.text),
         ),
       ],
     );
@@ -1492,7 +1492,7 @@ class _AttendeeChip extends StatelessWidget {
           const SizedBox(width: 5),
           GestureDetector(
             onTap: onRemove,
-            child: Icon(Icons.close, size: 14, color: c.dim),
+            child: Icon(Icons.close, size: 14, color: c.text),
           ),
         ],
       ),
@@ -1569,7 +1569,7 @@ class _FestivalTile extends StatelessWidget {
                         size: 14, weight: FontWeight.w600, color: barColor)),
               ),
               Text('Celtic Festival',
-                  style: AppTextStyles.cinzel(size: 9, color: c.dim,
+                  style: AppTextStyles.cinzel(size: 9, color: c.text,
                       letterSpacing: 0.5)),
             ],
           ),
@@ -1578,7 +1578,7 @@ class _FestivalTile extends StatelessWidget {
               style: AppTextStyles.imFell(size: 13, color: c.text, italic: true)),
           const SizedBox(height: 4),
           Text(f.flavour,
-              style: AppTextStyles.imFell(size: 12, color: c.muted)),
+              style: AppTextStyles.imFell(size: 12, color: c.text)),
         ],
       ),
     );
@@ -1597,11 +1597,11 @@ class _EmptyState extends StatelessWidget {
       padding: const EdgeInsets.only(top: 60),
       child: Column(
         children: [
-          Text('☽', style: AppTextStyles.cinzel(size: 40, color: c.dim)),
+          Text('☽', style: AppTextStyles.cinzel(size: 40, color: c.text)),
           const SizedBox(height: 12),
           Text(
             'No events on this day',
-            style: AppTextStyles.imFell(size: 14, color: c.muted, italic: true),
+            style: AppTextStyles.imFell(size: 14, color: c.text, italic: true),
           ),
         ],
       ),

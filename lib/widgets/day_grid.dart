@@ -94,7 +94,7 @@ class DayGrid extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Text(wd,
                           textAlign: TextAlign.center,
-                          style: AppTextStyles.cinzel(size: 9, color: c.dim)),
+                          style: AppTextStyles.cinzel(size: 9, color: c.text)),
                     ),
                   ))
               .toList(),
@@ -160,7 +160,7 @@ class DayGrid extends StatelessWidget {
                   'EVENTS THIS MONTH',
                   style: AppTextStyles.cinzel(
                       size: 9,
-                      color: c.dim,
+                      color: c.text,
                       letterSpacing: 1.0,
                       weight: FontWeight.w600),
                 ),
@@ -170,7 +170,7 @@ class DayGrid extends StatelessWidget {
                   padding: const EdgeInsets.all(14),
                   child: Text('No events this month',
                       style: AppTextStyles.imFell(
-                          size: 13, color: c.dim, italic: true)),
+                          size: 13, color: c.text, italic: true)),
                 )
               else ...[
                 ...upcoming.map((item) => item.festival != null
@@ -185,7 +185,7 @@ class DayGrid extends StatelessWidget {
                       'WANED',
                       style: AppTextStyles.cinzel(
                           size: 9,
-                          color: c.dim,
+                          color: c.text,
                           letterSpacing: 1.0,
                           weight: FontWeight.w600),
                     ),
@@ -237,9 +237,9 @@ class DayGrid extends StatelessWidget {
                 children: [
                   Text('${e.celticDay ?? ''}',
                       style: AppTextStyles.cinzel(
-                          size: 15, weight: FontWeight.w700, color: c.muted)),
+                          size: 15, weight: FontWeight.w700, color: c.text)),
                   Text(DateFormat('d/M').format(e.gregorianDate),
-                      style: AppTextStyles.cinzel(size: 8, color: c.dim)),
+                      style: AppTextStyles.cinzel(size: 8, color: c.text)),
                 ],
               ),
             ),
@@ -260,7 +260,7 @@ class DayGrid extends StatelessWidget {
                       style: AppTextStyles.imFell(size: 14, color: c.text),
                       overflow: TextOverflow.ellipsis),
                   Text(timeStr,
-                      style: AppTextStyles.cinzel(size: 10, color: c.dim)),
+                      style: AppTextStyles.cinzel(size: 10, color: c.text)),
                 ],
               ),
             ),
@@ -296,9 +296,9 @@ class DayGrid extends StatelessWidget {
                 children: [
                   Text('${item.celticDay}',
                       style: AppTextStyles.cinzel(
-                          size: 15, weight: FontWeight.w700, color: c.dim)),
+                          size: 15, weight: FontWeight.w700, color: c.text)),
                   Text(DateFormat('d/M').format(gregDate),
-                      style: AppTextStyles.cinzel(size: 8, color: c.dim)),
+                      style: AppTextStyles.cinzel(size: 8, color: c.text)),
                 ],
               ),
             ),
@@ -316,10 +316,10 @@ class DayGrid extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('${f.symbol}  ${f.name}',
-                      style: AppTextStyles.imFell(size: 14, color: c.dim),
+                      style: AppTextStyles.imFell(size: 14, color: c.text),
                       overflow: TextOverflow.ellipsis),
                   Text('Celtic Festival',
-                      style: AppTextStyles.cinzel(size: 10, color: c.dim)),
+                      style: AppTextStyles.cinzel(size: 10, color: c.text)),
                 ],
               ),
             ),

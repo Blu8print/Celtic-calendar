@@ -23,7 +23,7 @@ class EventSearchDelegate extends SearchDelegate<Event?> {
         shadowColor: c.border,
       ),
       inputDecorationTheme: InputDecorationTheme(
-        hintStyle: AppTextStyles.imFell(size: 14, color: c.dim, italic: true),
+        hintStyle: AppTextStyles.imFell(size: 14, color: c.text, italic: true),
         border: InputBorder.none,
       ),
       textTheme: Theme.of(context).textTheme.copyWith(
@@ -38,7 +38,7 @@ class EventSearchDelegate extends SearchDelegate<Event?> {
     return [
       if (query.isNotEmpty)
         IconButton(
-          icon: Icon(Icons.clear, color: c.muted),
+          icon: Icon(Icons.clear, color: c.text),
           onPressed: () => query = '',
         ),
     ];
@@ -48,7 +48,7 @@ class EventSearchDelegate extends SearchDelegate<Event?> {
   Widget buildLeading(BuildContext context) {
     final c = context.colors;
     return IconButton(
-      icon: Icon(Icons.arrow_back, color: c.muted),
+      icon: Icon(Icons.arrow_back, color: c.text),
       onPressed: () => close(context, null),
     );
   }
@@ -72,7 +72,7 @@ class EventSearchDelegate extends SearchDelegate<Event?> {
       child: Center(
         child: Text(
           'Type to search events',
-          style: AppTextStyles.imFell(size: 14, color: c.dim, italic: true),
+          style: AppTextStyles.imFell(size: 14, color: c.text, italic: true),
         ),
       ),
     );
@@ -93,13 +93,13 @@ class EventSearchDelegate extends SearchDelegate<Event?> {
             return Center(
               child: Text(
                 'No events found',
-                style: AppTextStyles.imFell(size: 14, color: c.dim, italic: true),
+                style: AppTextStyles.imFell(size: 14, color: c.text, italic: true),
               ),
             );
           }
           return ListView.separated(
             itemCount: results.length,
-            separatorBuilder: (_, __) => Divider(color: c.border, height: 1),
+            separatorBuilder: (_, __) => Divider(color: c.muted, height: 1),
             itemBuilder: (context, i) => _EventTile(
               event: results[i],
               onTap: () {
@@ -176,12 +176,12 @@ class _EventTile extends StatelessWidget {
                     Text(
                       '$celticLabel  ·  $gregLabel',
                       style:
-                          AppTextStyles.imFell(size: 11, color: c.muted, italic: true),
+                          AppTextStyles.imFell(size: 11, color: c.text, italic: true),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: c.dim, size: 18),
+              Icon(Icons.chevron_right, color: c.text, size: 18),
             ],
           ),
         ),

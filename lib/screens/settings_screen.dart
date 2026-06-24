@@ -67,7 +67,7 @@ class _GoogleAccountSection extends StatelessWidget {
               Text(
                 'Sign in to sync events with your Google Calendar.\n'
                 'No data passes through any intermediate server.',
-                style: AppTextStyles.imFell(size: 13, color: c.muted),
+                style: AppTextStyles.imFell(size: 13, color: c.text),
               ),
               const SizedBox(height: 12),
               ElevatedButton.icon(
@@ -93,7 +93,7 @@ class _GoogleAccountSection extends StatelessWidget {
             ] else ...[
               _InfoRow(label: 'Signed in as', value: gcal.userEmail ?? ''),
               const SizedBox(height: 12),
-              Divider(color: c.border, height: 1),
+              Divider(color: c.muted, height: 1),
               const SizedBox(height: 12),
 
               // ── Connection status badge ───────────────────────────────────
@@ -120,7 +120,7 @@ class _GoogleAccountSection extends StatelessWidget {
                       const SizedBox(width: 10),
                       Text(
                         'Syncing with Google Calendar…',
-                        style: AppTextStyles.cinzel(size: 12, color: c.muted),
+                        style: AppTextStyles.cinzel(size: 12, color: c.text),
                       ),
                     ],
                   ),
@@ -234,7 +234,7 @@ class _CelticYearScope extends StatelessWidget {
     final year = celticYearOf(now);
     return Text(
       'Syncing Celtic year $year (Dec 24 $year – Dec 23 ${year + 1})',
-      style: AppTextStyles.imFell(size: 12, color: c.dim, italic: true),
+      style: AppTextStyles.imFell(size: 12, color: c.text, italic: true),
     );
   }
 }
@@ -274,7 +274,7 @@ class _AppearanceSection extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           'Choose the look that suits you best.',
-          style: AppTextStyles.imFell(size: 12, color: c.dim, italic: true),
+          style: AppTextStyles.imFell(size: 12, color: c.text, italic: true),
         ),
       ],
     );
@@ -348,12 +348,12 @@ class _Section extends StatelessWidget {
           title.toUpperCase(),
           style: AppTextStyles.cinzel(
             size: 12,
-            color: c.muted,
+            color: c.text,
             letterSpacing: 2,
           ),
         ),
         const SizedBox(height: 4),
-        Divider(color: c.border, height: 1),
+        Divider(color: c.muted, height: 1),
         const SizedBox(height: 12),
         ...children,
       ],
@@ -454,10 +454,10 @@ class _SkySection extends StatelessWidget {
         const SizedBox(height: 12),
         TextButton.icon(
           onPressed: () => _requestAndStoreLocation(context),
-          icon: Icon(Icons.my_location_outlined, size: 14, color: c.muted),
+          icon: Icon(Icons.my_location_outlined, size: 14, color: c.text),
           label: Text(
             'Update location',
-            style: AppTextStyles.cinzel(size: 12, color: c.muted),
+            style: AppTextStyles.cinzel(size: 12, color: c.text),
           ),
           style: TextButton.styleFrom(
             padding: EdgeInsets.zero,
@@ -466,7 +466,7 @@ class _SkySection extends StatelessWidget {
         ),
         Text(
           'Used only for sunrise and sunset. No background location access.',
-          style: AppTextStyles.imFell(size: 12, color: c.dim, italic: true),
+          style: AppTextStyles.imFell(size: 12, color: c.text, italic: true),
         ),
       ],
     );
@@ -574,7 +574,7 @@ class _InfoRow extends StatelessWidget {
     final c = context.colors;
     return Row(
       children: [
-        Text(label, style: AppTextStyles.cinzel(size: 12, color: c.dim)),
+        Text(label, style: AppTextStyles.cinzel(size: 12, color: c.text)),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -641,7 +641,7 @@ class _SupportSection extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: Row(
               children: [
-                Icon(Icons.mail_outline, size: 16, color: c.muted),
+                Icon(Icons.mail_outline, size: 16, color: c.text),
                 const SizedBox(width: 10),
                 Text(
                   'support@blu8print.com',
@@ -654,7 +654,7 @@ class _SupportSection extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           'Questions, feedback, or bug reports — we\'d love to hear from you.',
-          style: AppTextStyles.imFell(size: 12, color: c.dim, italic: true),
+          style: AppTextStyles.imFell(size: 12, color: c.text, italic: true),
         ),
       ],
     );
@@ -688,7 +688,7 @@ class _DangerZoneSection extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           'Deletes all events and resets all settings. Cannot be undone.',
-          style: AppTextStyles.imFell(size: 12, color: c.dim, italic: true),
+          style: AppTextStyles.imFell(size: 12, color: c.text, italic: true),
         ),
       ],
     );
@@ -718,7 +718,7 @@ class _DangerZoneSection extends StatelessWidget {
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
               child: Text('Cancel',
-                  style: AppTextStyles.cinzel(size: 12, color: c.muted)),
+                  style: AppTextStyles.cinzel(size: 12, color: c.text)),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),

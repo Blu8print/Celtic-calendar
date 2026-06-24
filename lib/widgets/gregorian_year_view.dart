@@ -121,7 +121,7 @@ class _GregorianMonthCard extends StatelessWidget {
                       child: Text(
                         lbl,
                         textAlign: TextAlign.center,
-                        style: AppTextStyles.cinzel(size: 9, color: c.dim),
+                        style: AppTextStyles.cinzel(size: 9, color: c.text),
                       ),
                     ))
                 .toList(),

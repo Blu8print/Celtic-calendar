@@ -166,7 +166,7 @@ class AppTheme {
       ),
       textTheme: GoogleFonts.imFellEnglishTextTheme(base.textTheme).copyWith(
         bodyMedium: AppTextStyles.imFell(size: 14, color: c.text),
-        bodySmall: AppTextStyles.imFell(size: 12, color: c.muted),
+        bodySmall: AppTextStyles.imFell(size: 12, color: c.text),
       ),
       dividerColor: c.border,
       cardColor: c.surface,
@@ -182,8 +182,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: c.surface2,
-        hintStyle: AppTextStyles.imFell(color: c.dim, size: 14),
-        labelStyle: AppTextStyles.cinzel(size: 12, color: c.muted),
+        hintStyle: AppTextStyles.imFell(color: c.text, size: 14),
+        labelStyle: AppTextStyles.cinzel(size: 12, color: c.text),
         enabledBorder: OutlineInputBorder(
           borderSide: BorderSide(color: c.border),
           borderRadius: BorderRadius.circular(6),
@@ -213,7 +213,7 @@ class AppTheme {
         backgroundColor: c.surface,
         foregroundColor: c.text,
         elevation: 0,
-        iconTheme: IconThemeData(color: c.muted),
+        iconTheme: IconThemeData(color: c.text),
         titleTextStyle: AppTextStyles.cinzel(
           size: 15,
           color: c.text,
@@ -223,7 +223,7 @@ class AppTheme {
       ),
       textTheme: GoogleFonts.imFellEnglishTextTheme(base.textTheme).copyWith(
         bodyMedium: AppTextStyles.imFell(size: 14, color: c.text),
-        bodySmall: AppTextStyles.imFell(size: 12, color: c.muted),
+        bodySmall: AppTextStyles.imFell(size: 12, color: c.text),
       ),
       dividerColor: c.border,
       cardColor: c.surface,
@@ -239,8 +239,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: c.surface,
-        hintStyle: AppTextStyles.imFell(color: c.dim, size: 14),
-        labelStyle: AppTextStyles.cinzel(size: 12, color: c.muted),
+        hintStyle: AppTextStyles.imFell(color: c.text, size: 14),
+        labelStyle: AppTextStyles.cinzel(size: 12, color: c.text),
         enabledBorder: OutlineInputBorder(
           borderSide: BorderSide(color: c.border),
           borderRadius: BorderRadius.circular(6),

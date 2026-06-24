@@ -185,7 +185,7 @@ class _WeekViewState extends State<WeekView> {
                             children: [
                               Text(wdName,
                                   style: AppTextStyles.cinzel(
-                                      size: 9, color: c.dim, letterSpacing: 0.4)),
+                                      size: 9, color: c.text, letterSpacing: 0.4)),
                               const SizedBox(height: 2),
                               isToday
                                   ? Container(
@@ -201,7 +201,7 @@ class _WeekViewState extends State<WeekView> {
                                       style: AppTextStyles.cinzel(
                                           size: 10, color: c.text)),
                               Text(DateFormat('d/M').format(gregDate),
-                                  style: AppTextStyles.cinzel(size: 8, color: c.dim)),
+                                  style: AppTextStyles.cinzel(size: 8, color: c.text)),
                             ],
                           ),
                         ),
@@ -228,7 +228,7 @@ class _WeekViewState extends State<WeekView> {
                       child: Padding(
                         padding: const EdgeInsets.only(right: 4, top: 2),
                         child: Text('All\nday',
-                            style: AppTextStyles.cinzel(size: 7, color: c.dim),
+                            style: AppTextStyles.cinzel(size: 7, color: c.text),
                             textAlign: TextAlign.right),
                       ),
                     ),
@@ -336,7 +336,7 @@ class _WeekViewState extends State<WeekView> {
                                         child: Text(
                                           '${h.toString().padLeft(2, '0')}:00',
                                           style: AppTextStyles.cinzel(
-                                              size: 8, color: c.dim),
+                                              size: 8, color: c.text),
                                         ),
                                       ),
                                     ),
@@ -464,7 +464,7 @@ class _EventBlock extends StatelessWidget {
               overflow: TextOverflow.clip),
           if ((event.durationMinutes ?? 60) > 29)
             Text(ts,
-                style: AppTextStyles.imFell(size: 7.5, color: c.muted),
+                style: AppTextStyles.imFell(size: 7.5, color: c.text),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1),
         ],

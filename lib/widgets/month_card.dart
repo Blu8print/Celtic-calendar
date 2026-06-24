@@ -54,7 +54,7 @@ class MonthCard extends StatelessWidget {
               'Month $m of 13',
               style: AppTextStyles.cinzel(
                 size: 11,
-                color: c.muted,
+                color: c.text,
                 letterSpacing: 2.2,
               ),
             ),
@@ -72,7 +72,7 @@ class MonthCard extends StatelessWidget {
               'The ${mo.tree}'.toUpperCase(),
               style: AppTextStyles.cinzel(
                 size: 11,
-                color: c.muted,
+                color: c.text,
                 letterSpacing: 1.5,
               ),
             ),
@@ -88,7 +88,7 @@ class MonthCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               dateRange,
-              style: AppTextStyles.cinzel(size: 10, color: c.dim),
+              style: AppTextStyles.cinzel(size: 10, color: c.text),
             ),
           ],
         ),
@@ -104,7 +104,7 @@ class MonthCard extends StatelessWidget {
                 'UPCOMING',
                 style: AppTextStyles.cinzel(
                   size: 9,
-                  color: c.dim,
+                  color: c.text,
                   letterSpacing: 1.5,
                 ),
               ),
@@ -114,7 +114,7 @@ class MonthCard extends StatelessWidget {
                   'No events ahead',
                   style: AppTextStyles.imFell(
                     size: 11,
-                    color: c.dim,
+                    color: c.text,
                     italic: true,
                   ),
                 )
@@ -151,7 +151,7 @@ class MonthCard extends StatelessWidget {
               'Day out of time',
               style: AppTextStyles.cinzel(
                 size: 11,
-                color: c.muted,
+                color: c.text,
                 letterSpacing: 2,
               ),
             ),
@@ -165,7 +165,7 @@ class MonthCard extends StatelessWidget {
               'The Nameless Day'.toUpperCase(),
               style: AppTextStyles.cinzel(
                 size: 11,
-                color: c.muted,
+                color: c.text,
                 letterSpacing: 1.5,
               ),
             ),
@@ -181,7 +181,7 @@ class MonthCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               _dateFmt.format(yd),
-              style: AppTextStyles.cinzel(size: 10, color: c.dim),
+              style: AppTextStyles.cinzel(size: 10, color: c.text),
             ),
           ],
         ),
@@ -230,7 +230,7 @@ class _EventCard extends StatelessWidget {
                       children: [
                         Text(
                           'Day ${event.celticDay} · ${_dateFmt.format(event.gregorianDate)}',
-                          style: AppTextStyles.cinzel(size: 10, color: c.muted),
+                          style: AppTextStyles.cinzel(size: 10, color: c.text),
                         ),
                         const SizedBox(height: 1),
                         Text(

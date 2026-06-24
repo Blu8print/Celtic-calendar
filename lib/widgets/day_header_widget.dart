@@ -107,7 +107,7 @@ class _CompactHeader extends StatelessWidget {
             style: AppTextStyles.cinzel(
               size: 26,
               weight: FontWeight.w700,
-              color: c.muted,
+              color: c.text,
             ),
           ),
           const SizedBox(width: 12),
@@ -129,7 +129,7 @@ class _CompactHeader extends StatelessWidget {
                 RichText(
                   text: TextSpan(
                     style: AppTextStyles.imFell(
-                        size: 11, color: c.dim, italic: true),
+                        size: 11, color: c.text, italic: true),
                     children: [
                       TextSpan(text: '$gregStr · '),
                       TextSpan(
@@ -201,7 +201,7 @@ class _FullHeader extends StatelessWidget {
                       'CELTIC TREE CALENDAR · DAY',
                       style: AppTextStyles.cinzel(
                         size: 10,
-                        color: c.dim,
+                        color: c.text,
                         letterSpacing: 1.2,
                       ),
                     ),
@@ -216,7 +216,7 @@ class _FullHeader extends StatelessWidget {
                           style: AppTextStyles.cinzel(
                             size: 38,
                             weight: FontWeight.w700,
-                            color: c.muted,
+                            color: c.text,
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -242,7 +242,7 @@ class _FullHeader extends StatelessWidget {
                         Text(
                           celticMonth.tree,
                           style: AppTextStyles.imFell(
-                              size: 13, color: c.dim, italic: true),
+                              size: 13, color: c.text, italic: true),
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -282,7 +282,7 @@ class _FullHeader extends StatelessWidget {
             ),
             child: Text(
               DateFormat.yMMMMEEEEd().format(gregorianDate),
-              style: AppTextStyles.imFell(size: 12, color: c.dim),
+              style: AppTextStyles.imFell(size: 12, color: c.text),
             ),
           ),
         ],
@@ -339,7 +339,7 @@ class _LiveClockState extends State<_LiveClock> {
           style: AppTextStyles.cinzel(
             size: widget.fontSize,
             weight: FontWeight.w700,
-            color: c.muted,
+            color: c.text,
             letterSpacing: 0.03 * widget.fontSize,
           ),
         );
@@ -452,7 +452,7 @@ class _SectionLabel extends StatelessWidget {
         label,
         style: AppTextStyles.cinzel(
           size: 10,
-          color: c.dim,
+          color: c.text,
           letterSpacing: 1.2,
         ),
       ),
@@ -502,7 +502,7 @@ class _AllDayTile extends StatelessWidget {
                   Text(
                     'All day',
                     style: AppTextStyles.cinzel(
-                        size: 9, color: c.dim, letterSpacing: 0.6),
+                        size: 9, color: c.text, letterSpacing: 0.6),
                   ),
                 ],
               ),
@@ -562,7 +562,7 @@ class _TimedTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     ts,
-                    style: AppTextStyles.imFell(size: 11, color: c.dim),
+                    style: AppTextStyles.imFell(size: 11, color: c.text),
                   ),
                 ],
               ),
@@ -590,7 +590,7 @@ class _EmptyState extends StatelessWidget {
             Text(
               'No events today',
               style: AppTextStyles.imFell(
-                  size: 13, color: c.dim, italic: true),
+                  size: 13, color: c.text, italic: true),
             ),
             const SizedBox(height: 12),
             GestureDetector(

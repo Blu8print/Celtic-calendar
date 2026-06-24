@@ -29,6 +29,7 @@ class HomeView extends StatefulWidget {
   final DateTime selectedDate;
   final List<Event> events;
   final void Function(DateTime) onDayTap;
+  final void Function(int direction)? onMonthSwipe;
 
   const HomeView({
     super.key,
@@ -37,6 +38,7 @@ class HomeView extends StatefulWidget {
     required this.selectedDate,
     required this.events,
     required this.onDayTap,
+    this.onMonthSwipe,
   });
 
   @override
@@ -106,17 +108,30 @@ class _HomeViewState extends State<HomeView> {
           const SizedBox(height: 16),
           _DataGrid(sun: sun, distKm: distKm, bio: bio, c: c),
           const SizedBox(height: 20),
-          _HomeCalGrid(
-            selectedDate: sel,
-            today: today,
-            events: widget.events,
-            onDayTap: widget.onDayTap,
-            c: c,
+          GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onHorizontalDragEnd: widget.onMonthSwipe == null ? null : (details) {
+              final v = details.primaryVelocity ?? 0;
+              if (v < -300) widget.onMonthSwipe!( 1);
+              if (v >  300) widget.onMonthSwipe!(-1);
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _HomeCalGrid(
+                  selectedDate: sel,
+                  today: today,
+                  events: widget.events,
+                  onDayTap: widget.onDayTap,
+                  c: c,
+                ),
+                const SizedBox(height: 16),
+                _MoonPhaseStrip(date: sel, c: c, southernHemisphere: sky.latitude != null && sky.latitude! < 0),
+                const SizedBox(height: 20),
+                _EventsList(events: widget.events, onDayTap: widget.onDayTap, c: c),
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
-          _MoonPhaseStrip(date: sel, c: c, southernHemisphere: sky.latitude != null && sky.latitude! < 0),
-          const SizedBox(height: 20),
-          _EventsList(events: widget.events, onDayTap: widget.onDayTap, c: c),
           const SizedBox(height: 80),
         ],
       ),
@@ -845,7 +860,7 @@ class _MoonPhaseStrip extends StatelessWidget {
             'MOON PHASES THIS MONTH',
             style: AppTextStyles.cinzel(
                 size: 9,
-                color: c.muted,
+                color: c.text,
                 letterSpacing: 0.12,
                 weight: FontWeight.w600),
           ),
@@ -857,7 +872,7 @@ class _MoonPhaseStrip extends StatelessWidget {
               return Column(
                 children: [
                   Opacity(
-                    opacity: active ? 1.0 : 0.40,
+                    opacity: active ? 1.0 : 0.65,
                     child: SizedBox(
                       width: 28,
                       height: 28,
@@ -870,7 +885,7 @@ class _MoonPhaseStrip extends StatelessWidget {
                     _dateFmt.format(p.date),
                     style: AppTextStyles.cinzel(
                         size: 8,
-                        color: active ? c.gold : c.muted,
+                        color: active ? c.gold : c.text,
                         letterSpacing: 0.06),
                   ),
                 ],
@@ -912,19 +927,19 @@ class _EventsList extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(child: Divider(color: c.border, height: 1)),
+            Expanded(child: Divider(color: c.muted, height: 1)),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
                 'EVENTS THIS MONTH',
                 style: AppTextStyles.cinzel(
                     size: 9,
-                    color: c.muted,
+                    color: c.text,
                     letterSpacing: 0.16,
                     weight: FontWeight.w600),
               ),
             ),
-            Expanded(child: Divider(color: c.border, height: 1)),
+            Expanded(child: Divider(color: c.muted, height: 1)),
           ],
         ),
         const SizedBox(height: 14),
@@ -935,7 +950,7 @@ class _EventsList extends StatelessWidget {
               'No events this month',
               textAlign: TextAlign.center,
               style: AppTextStyles.imFell(
-                  size: 13, color: c.dim, italic: true),
+                  size: 13, color: c.muted, italic: true),
             ),
           )
         else

@@ -195,6 +195,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
     });
   }
 
+  void _homeSwipeMonth(int direction) {
+    setState(() {
+      final cd = gregorianToCeltic(_selectedDate);
+      if (cd.isYearDay || cd.isLeapDay) {
+        _selectedDate = _selectedDate.add(Duration(days: direction));
+        return;
+      }
+      int newMonth = cd.month! + direction;
+      int newYear  = cd.celticYear;
+      if (newMonth < 1) { newYear--; newMonth = 13; }
+      else if (newMonth > 13) { newYear++; newMonth = 1; }
+      _selectedDate = celticToGregorian(newYear, newMonth, cd.day!);
+    });
+  }
+
   void _nextPeriod() {
     setState(() {
       switch (_curView) {
@@ -463,7 +478,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         shadowColor: c.border,
         leading: Builder(builder: (ctx) => IconButton(
           icon: const Icon(Icons.menu),
-          color: c.muted,
+          color: c.text,
           onPressed: () => Scaffold.of(ctx).openDrawer(),
           tooltip: 'Menu',
         )),
@@ -483,7 +498,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.chevron_left),
-            color: c.muted,
+            color: c.text,
             onPressed: _prevPeriod,
             tooltip: 'Previous',
           ),
@@ -496,11 +511,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
             child: Text('Today',
                 style: AppTextStyles.cinzel(
-                    size: 11, color: c.muted, letterSpacing: 0.5)),
+                    size: 11, color: c.text, letterSpacing: 0.5)),
           ),
           IconButton(
             icon: const Icon(Icons.chevron_right),
-            color: c.muted,
+            color: c.text,
             onPressed: _nextPeriod,
             tooltip: 'Next',
           ),
@@ -555,6 +570,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               selectedDate:  _selectedDate,
               events:        allEvents,
               onDayTap:      _openDay,
+              onMonthSwipe:  _homeSwipeMonth,
             );
           }
 
@@ -752,21 +768,21 @@ class _AppDrawer extends StatelessWidget {
                       style: AppTextStyles.cinzel(
                           size: 15,
                           weight: FontWeight.w700,
-                          color: c.muted,
+                          color: c.text,
                           letterSpacing: 0.5)),
                   const SizedBox(height: 3),
                   Text('Celtic Tree Calendar \u00b7 13 months',
                       style: AppTextStyles.imFell(
-                          size: 12, color: c.dim, italic: true)),
+                          size: 12, color: c.text, italic: true)),
                 ],
               ),
             ),
             // Search
             ListTile(
-              leading: Icon(Icons.search, color: c.muted, size: 20),
+              leading: Icon(Icons.search, color: c.text, size: 20),
               title: Text('Search events…',
                   style: AppTextStyles.imFell(
-                      size: 13, color: c.dim, italic: true)),
+                      size: 13, color: c.text, italic: true)),
               dense: true,
               onTap: () async {
                 Navigator.pop(context);
@@ -778,7 +794,7 @@ class _AppDrawer extends StatelessWidget {
                 );
               },
             ),
-            Divider(color: c.border, height: 1),
+            Divider(color: c.muted, height: 1),
 
             // View section
             _DrawerSection(label: 'View', colors: c),
@@ -822,12 +838,12 @@ class _AppDrawer extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   children: [
-                    Icon(Icons.settings_outlined, size: 18, color: c.dim),
+                    Icon(Icons.settings_outlined, size: 18, color: c.text),
                     const SizedBox(width: 12),
                     Text('Settings',
                         style: AppTextStyles.cinzel(size: 13, color: c.gold2)),
                     const Spacer(),
-                    Icon(Icons.chevron_right, size: 18, color: c.dim),
+                    Icon(Icons.chevron_right, size: 18, color: c.text),
                   ],
                 ),
               ),
@@ -853,7 +869,7 @@ class _DrawerSection extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Text(label.toUpperCase(),
           style: AppTextStyles.cinzel(
-              size: 9, color: c.dim, letterSpacing: 1.2, weight: FontWeight.w600)),
+              size: 9, color: c.text, letterSpacing: 1.2, weight: FontWeight.w600)),
     );
   }
 }
@@ -929,7 +945,7 @@ class _MonthBtn extends StatelessWidget {
             SizedBox(
               width: 20,
               child: Text('${mo.number}',
-                  style: AppTextStyles.cinzel(size: 10, color: c.dim),
+                  style: AppTextStyles.cinzel(size: 10, color: c.text),
                   textAlign: TextAlign.right),
             ),
             const SizedBox(width: 10),
@@ -943,12 +959,12 @@ class _MonthBtn extends StatelessWidget {
                           color: isActive ? c.muted : c.gold2,
                           weight: isActive ? FontWeight.w700 : FontWeight.w400)),
                   Text(range,
-                      style: AppTextStyles.cinzel(size: 9, color: c.dim)),
+                      style: AppTextStyles.cinzel(size: 9, color: c.text)),
                 ],
               ),
             ),
             Text(mo.keyword,
-                style: AppTextStyles.imFell(size: 11, color: c.dim, italic: true)),
+                style: AppTextStyles.imFell(size: 11, color: c.text, italic: true)),
             const SizedBox(width: 6),
             if (containsToday)
               Container(
@@ -996,7 +1012,7 @@ class _MonthBtnYD extends StatelessWidget {
             Expanded(
               child: Text('Between the worlds',
                   style: AppTextStyles.imFell(
-                      size: 11, color: c.dim, italic: true),
+                      size: 11, color: c.text, italic: true),
                   overflow: TextOverflow.ellipsis),
             ),
             if (containsToday)

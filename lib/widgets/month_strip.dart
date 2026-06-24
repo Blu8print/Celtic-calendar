@@ -147,7 +147,7 @@ class _StripChip extends StatelessWidget {
           children: [
             Text(
               number,
-              style: AppTextStyles.cinzel(size: 9, color: c.dim),
+              style: AppTextStyles.cinzel(size: 9, color: c.text),
             ),
             const SizedBox(height: 2),
             Text(

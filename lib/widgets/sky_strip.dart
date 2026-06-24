@@ -139,7 +139,7 @@ class _SkyStripState extends State<SkyStrip> {
                   AnimatedRotation(
                     turns: _expanded ? 0.5 : 0.0,
                     duration: const Duration(milliseconds: 200),
-                    child: Icon(Icons.expand_more, size: 16, color: c.dim),
+                    child: Icon(Icons.expand_more, size: 16, color: c.text),
                   ),
                 ],
               ),
@@ -162,7 +162,7 @@ class _SkyStripState extends State<SkyStrip> {
                         child: Text(
                           '$monthLabel  \u00b7  $dateLabel',
                           style: AppTextStyles.cinzel(
-                              size: 9, color: c.dim, letterSpacing: 1.4),
+                              size: 9, color: c.text, letterSpacing: 1.4),
                         ),
                       ),
 
@@ -343,7 +343,7 @@ class _InstrumentRow extends StatelessWidget {
             width: 22,
             child: Text(
               symbol,
-              style: AppTextStyles.cinzel(size: 13, color: c.dim),
+              style: AppTextStyles.cinzel(size: 13, color: c.text),
               textAlign: TextAlign.center,
             ),
           ),
@@ -404,7 +404,7 @@ class _TapRow extends StatelessWidget {
               width: 22,
               child: Text(
                 symbol,
-                style: AppTextStyles.cinzel(size: 13, color: c.dim),
+                style: AppTextStyles.cinzel(size: 13, color: c.text),
                 textAlign: TextAlign.center,
               ),
             ),
