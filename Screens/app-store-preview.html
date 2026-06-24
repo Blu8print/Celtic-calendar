@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roots Calendar — App Store Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #070e06;
+      --surface: #0f1a0e;
+      --surface2:#172615;
+      --gold:    #c9a84c;
+      --gold2:   #e8cc88;
+      --cream:   #eee0bc;
+      --muted:   #527048;
+      --text:    #c0d8b8;
+      --dim:     #3a5030;
+      --border:  #1e3019;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IM Fell English', serif;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      padding: 80px 24px 60px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    header .app-icon {
+      width: 96px;
+      height: 96px;
+      border-radius: 22px;
+      background: #2a4a22;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    header h1 {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: clamp(28px, 5vw, 48px);
+      color: var(--gold2);
+      letter-spacing: 0.04em;
+      margin-bottom: 12px;
+    }
+
+    header .tagline {
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      font-size: clamp(16px, 2.5vw, 22px);
+      color: var(--cream);
+      opacity: 0.85;
+      max-width: 560px;
+      margin: 0 auto 32px;
+      line-height: 1.6;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .meta-item {
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .meta-item strong {
+      display: block;
+      color: var(--gold);
+      font-size: 13px;
+      margin-bottom: 2px;
+    }
+
+    /* ── Description ── */
+    .description {
+      max-width: 720px;
+      margin: 72px auto;
+      padding: 0 24px;
+      text-align: center;
+    }
+
+    .description h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    .description p {
+      font-size: clamp(16px, 2vw, 19px);
+      line-height: 1.8;
+      color: var(--cream);
+      opacity: 0.9;
+    }
+
+    .description p + p {
+      margin-top: 16px;
+    }
+
+    /* ── Screenshot sections ── */
+    .screens {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px 120px;
+    }
+
+    .section-label {
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--dim);
+      text-align: center;
+      margin-bottom: 72px;
+    }
+
+    .screen-block {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px 80px;
+      align-items: center;
+      margin-bottom: 120px;
+    }
+
+    .screen-block.reverse {
+      direction: rtl;
+    }
+
+    .screen-block.reverse > * {
+      direction: ltr;
+    }
+
+    .phone-frame {
+      position: relative;
+      display: flex;
+      justify-content: center;
+    }
+
+    .phone-frame img {
+      width: 100%;
+      max-width: 320px;
+      border-radius: 40px;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.06),
+        0 24px 80px rgba(0,0,0,0.6),
+        0 8px 24px rgba(0,0,0,0.4);
+      display: block;
+    }
+
+    .screen-copy {
+      padding: 16px 0;
+    }
+
+    .screen-number {
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+      opacity: 0.7;
+    }
+
+    .screen-copy h3 {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: clamp(20px, 2.5vw, 30px);
+      color: var(--gold2);
+      line-height: 1.25;
+      margin-bottom: 20px;
+    }
+
+    .screen-copy p {
+      font-size: clamp(15px, 1.5vw, 18px);
+      line-height: 1.85;
+      color: var(--cream);
+      opacity: 0.82;
+    }
+
+    .screen-copy .highlight {
+      font-style: italic;
+      color: var(--gold);
+      opacity: 1;
+    }
+
+    .feature-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 24px;
+    }
+
+    .pill {
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 5px 14px;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      width: 1px;
+      height: 80px;
+      background: linear-gradient(to bottom, transparent, var(--gold), transparent);
+      margin: 0 auto 80px;
+      opacity: 0.3;
+    }
+
+    /* ── Full-width feature banner ── */
+    .feature-banner {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 64px 48px;
+      text-align: center;
+      margin-bottom: 120px;
+    }
+
+    .feature-banner .symbol {
+      font-size: 32px;
+      margin-bottom: 20px;
+      color: var(--gold);
+    }
+
+    .feature-banner h3 {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: clamp(18px, 2.5vw, 28px);
+      color: var(--gold2);
+      margin-bottom: 16px;
+    }
+
+    .feature-banner p {
+      font-size: clamp(14px, 1.4vw, 17px);
+      color: var(--cream);
+      opacity: 0.8;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.8;
+    }
+
+    /* ── Keywords grid ── */
+    .months-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      margin: 48px 0;
+    }
+
+    .month-chip {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+
+    .month-chip .name {
+      font-family: 'Cinzel', serif;
+      font-size: 13px;
+      color: var(--gold);
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .month-chip .tree {
+      font-size: 12px;
+      color: var(--muted);
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .month-chip .keyword {
+      font-style: italic;
+      font-size: 12px;
+      color: var(--text);
+      opacity: 0.6;
+    }
+
+    /* ── CTA ── */
+    .cta-section {
+      text-align: center;
+      padding: 80px 24px 100px;
+      border-top: 1px solid var(--border);
+    }
+
+    .cta-section h2 {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: clamp(22px, 3vw, 36px);
+      color: var(--gold2);
+      margin-bottom: 16px;
+    }
+
+    .cta-section p {
+      font-style: italic;
+      font-size: clamp(15px, 1.8vw, 19px);
+      color: var(--cream);
+      opacity: 0.75;
+      margin-bottom: 40px;
+    }
+
+    .store-badge {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--gold);
+      border-radius: 12px;
+      padding: 14px 36px;
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      letter-spacing: 0.1em;
+      color: var(--gold2);
+      text-decoration: none;
+      cursor: default;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .screen-block, .screen-block.reverse {
+        grid-template-columns: 1fr;
+        direction: ltr;
+        gap: 40px;
+      }
+
+      .phone-frame img {
+        max-width: 260px;
+        margin: 0 auto;
+      }
+
+      .screen-copy {
+        text-align: center;
+      }
+
+      .feature-pills {
+        justify-content: center;
+      }
+
+      .feature-banner {
+        padding: 40px 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════ HEADER ══════════════ -->
+  <header>
+    <div class="app-icon">🌿</div>
+    <h1>Roots Calendar</h1>
+    <p class="tagline">Experience time through the Celtic Tree Calendar — thirteen months, each named after a sacred tree and a teaching.</p>
+    <div class="meta-row">
+      <div class="meta-item"><strong>Free</strong>Download</div>
+      <div class="meta-item"><strong>iOS &amp; Android</strong>Platform</div>
+      <div class="meta-item"><strong>4+</strong>Age Rating</div>
+      <div class="meta-item"><strong>Offline</strong>No Account Required</div>
+    </div>
+  </header>
+
+  <!-- ══════════════ DESCRIPTION ══════════════ -->
+  <section class="description">
+    <h2>App Description</h2>
+    <p>Roots Calendar is a <strong>Celtic Tree Calendar app</strong> — 13 months of 28 days, each named after a sacred tree with its own teaching. Experience time differently.</p>
+    <p>Navigate your days as seasons with purpose: plan events, track the moon, and live in sync with the natural rhythm that guided Celtic peoples for thousands of years. Works fully offline. Your data never leaves your device.</p>
+  </section>
+
+  <!-- ══════════════ SCREENSHOTS ══════════════ -->
+  <section class="screens">
+
+    <p class="section-label">App Store Screenshots &amp; Copy</p>
+
+    <!-- Screen 1: Month View Light -->
+    <div class="screen-block">
+      <div class="phone-frame">
+        <img src="month-view.jpg" alt="Month View — Light mode" />
+      </div>
+      <div class="screen-copy">
+        <p class="screen-number">Screenshot 01</p>
+        <h3>Your calendar, rooted in nature.</h3>
+        <p>
+          Thirteen months. Each named after a sacred tree. Navigate your events through the rhythm of the Celtic year — <span class="highlight">Saille, the Willow month, carries the teaching of Intuition.</span>
+        </p>
+        <p>
+          Every month is exactly 28 days, every week begins on the same day of the year. A calendar that actually makes sense.
+        </p>
+        <div class="feature-pills">
+          <span class="pill">28-day months</span>
+          <span class="pill">Today highlighted</span>
+          <span class="pill">Event list below</span>
+          <span class="pill">Moon phases</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Screen 2: Dark Mode Month View -->
+    <div class="screen-block reverse">
+      <div class="phone-frame">
+        <img src="dark-mode-month-view.jpg" alt="Month View — Dark mode" />
+      </div>
+      <div class="screen-copy">
+        <p class="screen-number">Screenshot 02</p>
+        <h3>Beautiful in light. Stunning in dark.</h3>
+        <p>
+          Switch between light and dark themes — the forest aesthetic shines in both. Moon phase symbols appear directly on the calendar grid.
+        </p>
+        <p>
+          <span class="highlight">Gold dots mark your events. Full and new moons are marked with symbols.</span> Everything you need, nothing you don't.
+        </p>
+        <div class="feature-pills">
+          <span class="pill">Light &amp; dark mode</span>
+          <span class="pill">Moon symbol overlays</span>
+          <span class="pill">Event indicators</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Screen 3: Menu / 13 months -->
+    <div class="screen-block">
+      <div class="phone-frame">
+        <img src="menu-view.jpg" alt="Navigation menu with all 13 Celtic months" />
+      </div>
+      <div class="screen-copy">
+        <p class="screen-number">Screenshot 03</p>
+        <h3>13 trees. 13 teachings. One year.</h3>
+        <p>
+          From <span class="highlight">Beth (Birch · New Beginnings)</span> on December 24th, through to Ruis (Elder · Transition) — every month is a chapter in the year's story.
+        </p>
+        <p>
+          Switch between Month, Week, 3-Day, Day, Schedule, and 12-Month views. Navigate the entire Celtic year at a glance.
+        </p>
+        <div class="feature-pills">
+          <span class="pill">6 calendar views</span>
+          <span class="pill">All 13 months listed</span>
+          <span class="pill">Gregorian date ranges</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Screen 4: Add Event -->
+    <div class="screen-block reverse">
+      <div class="phone-frame">
+        <img src="setting-view.jpg" alt="New Event screen with Celtic date" />
+      </div>
+      <div class="screen-copy">
+        <p class="screen-number">Screenshot 04</p>
+        <h3>Add events in Celtic time.</h3>
+        <p>
+          Every event you create is rooted in its Celtic date — <span class="highlight">Saille · Day 18 · Willow.</span> Set a title, add a time, repeat it, set notifications, add a location, and invite others.
+        </p>
+        <p>
+          Your events are stored entirely on your device. No account needed, no data leaves your phone.
+        </p>
+        <div class="feature-pills">
+          <span class="pill">Celtic date shown</span>
+          <span class="pill">Repeating events</span>
+          <span class="pill">Notifications</span>
+          <span class="pill">Invite guests</span>
+          <span class="pill">100% offline</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Screen 5: Sky Panel -->
+    <div class="screen-block">
+      <div class="phone-frame">
+        <img src="13-month-calendar-app-settings.webp" alt="Sky Panel — astronomical data settings" />
+      </div>
+      <div class="screen-copy">
+        <p class="screen-number">Screenshot 05</p>
+        <h3>The sky above the forest.</h3>
+        <p>
+          A <span class="highlight">living strip above your calendar</span> shows real-time astronomical data. Choose exactly what you want to see — turn off anything you don't need.
+        </p>
+        <p>
+          Moon phase &amp; illumination · Zodiac sign · Biodynamic sowing indicator · Sunrise &amp; sunset times · True solar time · Moon distance &amp; supermoon alerts · Countdown to next solstice or equinox.
+        </p>
+        <div class="feature-pills">
+          <span class="pill">Moon phase</span>
+          <span class="pill">Zodiac sign</span>
+          <span class="pill">Sowing indicator</span>
+          <span class="pill">Solar time</span>
+          <span class="pill">Sunrise &amp; sunset</span>
+          <span class="pill">Next solstice</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Screen 6: Onboarding concept explainer -->
+    <div class="screen-block reverse">
+      <div class="phone-frame">
+        <img src="roots-13-month-calendar-screenshot.webp" alt="Onboarding — Thirteen months, twenty-eight days each" />
+      </div>
+      <div class="screen-copy">
+        <p class="screen-number">Screenshot 06</p>
+        <h3>A year that finally makes sense.</h3>
+        <p>
+          Thirteen months. Twenty-eight days each. <span class="highlight">Every month is exactly four weeks — every week always starts on the same day.</span>
+        </p>
+        <p>
+          364 days accounted for, plus one Year Day that belongs to no month — a day outside of time to rest, reflect, and begin again.
+        </p>
+        <div class="feature-pills">
+          <span class="pill">13 × 28 days</span>
+          <span class="pill">Year Day</span>
+          <span class="pill">Leap year support</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Screen 7: Google Calendar Sync -->
+    <div class="screen-block">
+      <div class="phone-frame">
+        <img src="celtic-time-calendar-google-sync.webp" alt="Google Calendar sync onboarding screen" />
+      </div>
+      <div class="screen-copy">
+        <p class="screen-number">Screenshot 07</p>
+        <h3>Your life, in Celtic time.</h3>
+        <p>
+          Roots Calendar lives alongside your existing calendars. <span class="highlight">Connect Google Calendar to see your events rooted in the rhythm of the trees.</span>
+        </p>
+        <p>
+          Sync is entirely optional. The app works fully offline — and when you do connect Google, everything flows device-to-Google directly, with nothing in between.
+        </p>
+        <div class="feature-pills">
+          <span class="pill">Google Calendar sync</span>
+          <span class="pill">Optional &amp; offline-first</span>
+          <span class="pill">No server in between</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Full-width: Privacy / values banner -->
+    <div class="feature-banner">
+      <div class="symbol">⟡</div>
+      <h3>Your data stays on your device.</h3>
+      <p>
+        No account required. No subscription. No server. Roots Calendar stores all your events locally using SQLite — they never leave your phone unless you choose to sync with your own Google Calendar.
+      </p>
+    </div>
+
+    <!-- Full-width: All 13 months reference -->
+    <div class="feature-banner">
+      <div class="symbol">🌳</div>
+      <h3>The thirteen sacred trees</h3>
+      <p style="margin-bottom: 32px;">Each month in the Celtic Tree Calendar carries a name, a tree, and a teaching — handed down through the Beth-Luis-Nion tradition.</p>
+      <div class="months-grid">
+        <div class="month-chip"><span class="name">Beth</span><span class="tree">Birch</span><span class="keyword">New Beginnings</span></div>
+        <div class="month-chip"><span class="name">Luis</span><span class="tree">Rowan</span><span class="keyword">Protection</span></div>
+        <div class="month-chip"><span class="name">Nion</span><span class="tree">Ash</span><span class="keyword">Connection</span></div>
+        <div class="month-chip"><span class="name">Fearn</span><span class="tree">Alder</span><span class="keyword">Guidance</span></div>
+        <div class="month-chip"><span class="name">Saille</span><span class="tree">Willow</span><span class="keyword">Intuition</span></div>
+        <div class="month-chip"><span class="name">Huath</span><span class="tree">Hawthorn</span><span class="keyword">Cleansing</span></div>
+        <div class="month-chip"><span class="name">Duir</span><span class="tree">Oak</span><span class="keyword">Strength</span></div>
+        <div class="month-chip"><span class="name">Tinne</span><span class="tree">Holly</span><span class="keyword">Balance</span></div>
+        <div class="month-chip"><span class="name">Coll</span><span class="tree">Hazel</span><span class="keyword">Wisdom</span></div>
+        <div class="month-chip"><span class="name">Muin</span><span class="tree">Vine</span><span class="keyword">Harvest</span></div>
+        <div class="month-chip"><span class="name">Gort</span><span class="tree">Ivy</span><span class="keyword">Perseverance</span></div>
+        <div class="month-chip"><span class="name">Ngetal</span><span class="tree">Reed</span><span class="keyword">Healing</span></div>
+        <div class="month-chip"><span class="name">Ruis</span><span class="tree">Elder</span><span class="keyword">Transition</span></div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ══════════════ CTA ══════════════ -->
+  <section class="cta-section">
+    <h2>Available on the App Store &amp; Google Play</h2>
+    <p>Free to download. No account. No subscription.</p>
+    <span class="store-badge">Download Roots Calendar</span>
+  </section>
+
+</body>
+</html>

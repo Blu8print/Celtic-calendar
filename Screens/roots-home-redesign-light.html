@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Roots Calendar — Home Redesign (Light)</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;500;600;700&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet"/>
+<style>
+  /* ── Light Palette ──────────────────────────────────────── */
+  :root {
+    --bg:        #f2ebe0;
+    --surface:   #faf6ef;
+    --surface2:  #fffcf7;
+    --surface3:  #f0e9dc;
+    --gold:      #a8761e;
+    --gold2:     #c9973a;
+    --gold3:     #e8cc88;
+    --cream:     #2a1f0e;
+    --muted:     #7a6e5c;
+    --text:      #1e2d18;
+    --dim:       #b8a890;
+    --border:    #ddd0bb;
+    --border2:   #c8b898;
+    --error:     #a04030;
+    --sage:      #4a7040;
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #e8e0d0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 32px 16px 48px;
+    font-family: 'Cinzel', serif;
+  }
+
+  /* ── Phone Shell ────────────────────────────────────────── */
+  .phone {
+    width: 390px;
+    min-height: 844px;
+    background: var(--bg);
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    border: 1.5px solid var(--border);
+    box-shadow:
+      0 0 0 6px #dbd3c5,
+      0 40px 80px rgba(0,0,0,0.22),
+      0 0 80px rgba(168, 118, 30, 0.08);
+  }
+
+  /* ── Scrollable Content ─────────────────────────────────── */
+  .scroll-area {
+    height: 100%;
+    overflow-y: auto;
+    padding-bottom: 80px;
+    scrollbar-width: none;
+  }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  /* ── Status Bar ─────────────────────────────────────────── */
+  .status-bar {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    font-size: 11px;
+    font-family: 'Cinzel', serif;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Top Navigation ─────────────────────────────────────── */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 22px 14px;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .menu-icon {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .menu-icon span {
+    display: block;
+    width: 20px;
+    height: 1.5px;
+    background: var(--muted);
+    border-radius: 2px;
+  }
+
+  .month-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--text);
+    text-transform: uppercase;
+  }
+
+  .header-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nav-arrow {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .nav-arrow:hover { background: var(--surface3); }
+
+  .today-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--gold);
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    cursor: pointer;
+    background: var(--surface2);
+  }
+
+  /* ── Main Content ───────────────────────────────────────── */
+  main {
+    padding: 20px 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  /* ── Moon Hero Card ─────────────────────────────────────── */
+  .moon-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 28px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+  }
+
+  .moon-card::before {
+    content: '';
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 160px;
+    height: 160px;
+    background: radial-gradient(circle, rgba(168,118,30,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ── Moon Container ─────────────────────────────────────── */
+  .moon-container {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    margin-bottom: 20px;
+  }
+
+  .moon-glow {
+    position: absolute;
+    inset: -16px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(168,118,30,0.14) 0%, transparent 65%);
+    animation: moonPulse 4s ease-in-out infinite;
+  }
+
+  @keyframes moonPulse {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50%       { opacity: 1;   transform: scale(1.05); }
+  }
+
+  .moon-svg {
+    width: 130px;
+    height: 130px;
+    filter: drop-shadow(0 2px 12px rgba(168,118,30,0.22));
+  }
+
+  .moon-phase-label {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+
+  .illumination-badge {
+    display: inline-block;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: var(--gold);
+    background: rgba(168,118,30,0.10);
+    border: 1px solid rgba(168,118,30,0.28);
+    border-radius: 20px;
+    padding: 4px 14px;
+    margin-bottom: 22px;
+    text-transform: uppercase;
+  }
+
+  .moon-stats {
+    display: flex;
+    gap: 28px;
+    align-items: center;
+  }
+
+  .stat-divider {
+    width: 1px;
+    height: 36px;
+    background: var(--border);
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .stat-label {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .stat-value {
+    font-family: 'Cinzel', serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  /* ── Data Grid ──────────────────────────────────────────── */
+  .data-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .data-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  .data-card-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--surface3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .data-card-label {
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+
+  .data-card-value {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  /* ── Calendar Section ───────────────────────────────────── */
+  .calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 16px;
+  }
+
+  .calendar-title {
+    font-family: 'Cinzel', serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .calendar-subtitle {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .celtic-month-tag {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+
+  .ogham-letter {
+    font-size: 22px;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .celtic-name {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.1em;
+  }
+
+  .celtic-keyword {
+    font-family: 'IM Fell English', serif;
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .calendar-grid-wrap {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  }
+
+  .day-headers {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--surface3);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .day-header {
+    text-align: center;
+    padding: 8px 0;
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+  }
+
+  .cal-day {
+    position: relative;
+    height: 52px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid rgba(200,184,152,0.4);
+    border-right: 1px solid rgba(200,184,152,0.4);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .cal-day:nth-child(7n) { border-right: none; }
+  .cal-day:nth-last-child(-n+7) { border-bottom: none; }
+  .cal-day:hover { background: var(--surface3); }
+
+  .cal-day-number {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .cal-day-greg {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  .cal-day.today {
+    background: rgba(168,118,30,0.06);
+  }
+
+  .today-circle {
+    width: 38px;
+    height: 38px;
+    background: var(--gold);
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 12px rgba(168,118,30,0.35);
+  }
+
+  .today-circle .cal-day-number {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .today-circle .cal-day-greg {
+    color: rgba(255,255,255,0.7);
+    font-size: 8px;
+    margin-top: 0;
+  }
+
+  .event-dot {
+    position: absolute;
+    bottom: 5px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--gold);
+  }
+
+  .event-dot.sage { background: var(--sage); }
+  .event-dot.red  { background: var(--error); }
+
+  /* ── Moon Phase Strip ───────────────────────────────────── */
+  .phase-strip {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  .phase-strip-label {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .phase-icons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .phase-mini {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .phase-mini svg {
+    width: 22px;
+    height: 22px;
+    opacity: 0.45;
+  }
+
+  .phase-mini.active svg { opacity: 1; }
+
+  .phase-mini-date {
+    font-family: 'Cinzel', serif;
+    font-size: 8px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  .phase-mini.active .phase-mini-date { color: var(--gold); }
+
+  /* ── Events Section ─────────────────────────────────────── */
+  .section-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .divider-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .divider-label {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .event-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 16px;
+  }
+
+  .event-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+  }
+  .event-card:hover {
+    border-color: rgba(168,118,30,0.4);
+    box-shadow: 0 3px 14px rgba(168,118,30,0.1);
+  }
+
+  .event-date-col {
+    text-align: center;
+    padding-right: 14px;
+    border-right: 1px solid var(--border);
+    min-width: 40px;
+    flex-shrink: 0;
+  }
+
+  .event-day-num {
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .event-day-greg {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .event-body { flex: 1; }
+
+  .event-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .event-title {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .event-arrow {
+    color: var(--dim);
+    font-size: 16px;
+  }
+
+  .event-time-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .event-indicator {
+    width: 3px;
+    height: 16px;
+    border-radius: 2px;
+    background: var(--sage);
+    flex-shrink: 0;
+  }
+  .event-indicator.gold  { background: var(--gold); }
+  .event-indicator.gold2 { background: var(--gold2); }
+
+  .event-time {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  /* ── FAB ────────────────────────────────────────────────── */
+  .fab {
+    width: 52px;
+    height: 52px;
+    background: var(--gold);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(168,118,30,0.38);
+    cursor: pointer;
+    font-size: 22px;
+    color: #fff;
+    font-weight: 300;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .fab:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 24px rgba(168,118,30,0.5);
+  }
+
+  /* ── Bottom Navigation ──────────────────────────────────── */
+  .bottom-nav {
+    position: sticky;
+    bottom: 0;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: 76px;
+    padding: 0 8px 10px;
+    z-index: 50;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
+  }
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s;
+    flex: 1;
+    position: relative;
+  }
+  .nav-item:hover { background: var(--surface3); }
+
+  .nav-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav-label {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .nav-item.active .nav-label { color: var(--gold); }
+
+  .nav-item.active::after {
+    content: '';
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--gold);
+    position: absolute;
+    bottom: 6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="scroll-area">
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span style="display:flex;gap:6px;align-items:center;">
+        <svg width="15" height="11" viewBox="0 0 15 11" fill="none">
+          <rect x="0" y="4" width="3" height="7" rx="1" fill="#b8a890"/>
+          <rect x="4" y="2.5" width="3" height="8.5" rx="1" fill="#b8a890"/>
+          <rect x="8" y="1" width="3" height="10" rx="1" fill="#b8a890"/>
+          <rect x="12" y="0" width="3" height="11" rx="1" fill="#1e2d18"/>
+        </svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+          <path d="M8 2.5C9.8 2.5 11.4 3.2 12.6 4.3L14 2.9C12.4 1.4 10.3 0.5 8 0.5C5.7 0.5 3.6 1.4 2 2.9L3.4 4.3C4.6 3.2 6.2 2.5 8 2.5Z" fill="#b8a890"/>
+          <path d="M8 5.5C9.1 5.5 10.1 5.9 10.8 6.6L12.2 5.2C11.1 4.2 9.6 3.5 8 3.5C6.4 3.5 4.9 4.2 3.8 5.2L5.2 6.6C5.9 5.9 6.9 5.5 8 5.5Z" fill="#b8a890"/>
+          <circle cx="8" cy="9.5" r="1.5" fill="#1e2d18"/>
+        </svg>
+      </span>
+    </div>
+
+    <!-- Header -->
+    <header>
+      <div class="header-left">
+        <div class="menu-icon">
+          <span></span><span></span><span></span>
+        </div>
+        <h1 class="month-title">Duir</h1>
+      </div>
+      <div class="header-nav">
+        <div class="nav-arrow">
+          <svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M7 1L1 7L7 13" stroke="#7a6e5c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="today-btn">Today</div>
+        <div class="nav-arrow">
+          <svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M1 1L7 7L1 13" stroke="#7a6e5c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>
+    </header>
+
+    <main>
+
+      <!-- Moon Hero Card -->
+      <section class="moon-card">
+        <div class="moon-container">
+          <div class="moon-glow"></div>
+          <svg class="moon-svg" viewBox="0 0 130 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="moonBaseL" cx="45%" cy="40%" r="55%">
+                <stop offset="0%"   stop-color="#fdf0c8"/>
+                <stop offset="40%"  stop-color="#d4a840"/>
+                <stop offset="100%" stop-color="#8a5e18"/>
+              </radialGradient>
+              <radialGradient id="craterGradL" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="rgba(0,0,0,0.12)"/>
+                <stop offset="100%" stop-color="transparent"/>
+              </radialGradient>
+              <clipPath id="moonClipL">
+                <circle cx="65" cy="65" r="54"/>
+              </clipPath>
+            </defs>
+            <circle cx="65" cy="65" r="54" fill="url(#moonBaseL)"/>
+            <!-- Shadow for waxing gibbous — dark ellipse left side -->
+            <ellipse cx="44" cy="65" rx="34" ry="54" fill="rgba(242,235,224,0.82)" clip-path="url(#moonClipL)"/>
+            <!-- Craters -->
+            <circle cx="78" cy="48" r="7" fill="url(#craterGradL)"/>
+            <circle cx="85" cy="72" r="5" fill="url(#craterGradL)"/>
+            <circle cx="62" cy="82" r="4" fill="url(#craterGradL)"/>
+            <circle cx="72" cy="38" r="3" fill="url(#craterGradL)"/>
+            <circle cx="92" cy="55" r="3.5" fill="url(#craterGradL)"/>
+            <!-- Terminator glow -->
+            <ellipse cx="44" cy="65" rx="34" ry="54" fill="none" stroke="rgba(168,118,30,0.2)" stroke-width="2" clip-path="url(#moonClipL)"/>
+          </svg>
+        </div>
+
+        <h2 class="moon-phase-label">Waxing Gibbous</h2>
+        <span class="illumination-badge">84% Illuminated</span>
+
+        <div class="moon-stats">
+          <div class="stat">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="9" cy="9" r="7.5" stroke="#7a6e5c" stroke-width="1.2"/>
+              <path d="M9 5.5V9L11.5 11.5" stroke="#7a6e5c" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+            <span class="stat-label">Solar Time</span>
+            <span class="stat-value">05:24</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="9" cy="9" r="7.5" stroke="#7a6e5c" stroke-width="1.2"/>
+              <path d="M9 3.5V5M9 13V14.5M3.5 9H5M13 9H14.5" stroke="#7a6e5c" stroke-width="1.2" stroke-linecap="round"/>
+              <circle cx="9" cy="9" r="1.5" fill="#7a6e5c"/>
+            </svg>
+            <span class="stat-label">Sign</span>
+            <span class="stat-value">Sagittarius</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Data Grid -->
+      <section class="data-grid">
+        <div class="data-card">
+          <div class="data-card-icon">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M9 3V6M4.4 5.4L6.5 7.5M13.6 5.4L11.5 7.5" stroke="#a8761e" stroke-width="1.3" stroke-linecap="round"/>
+              <path d="M2 13H16" stroke="#a8761e" stroke-width="1.3" stroke-linecap="round"/>
+              <path d="M4 11C4 8.8 6.2 7 9 7C11.8 7 14 8.8 14 11" stroke="#a8761e" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="data-card-label">Sunrise</div>
+            <div class="data-card-value">05:26</div>
+          </div>
+        </div>
+
+        <div class="data-card">
+          <div class="data-card-icon">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M2 10H16" stroke="#a8761e" stroke-width="1.3" stroke-linecap="round"/>
+              <path d="M4 8C4 5.8 6.2 4 9 4C11.8 4 14 5.8 14 8" stroke="#a8761e" stroke-width="1.3" stroke-linecap="round"/>
+              <path d="M9 13V15M5.5 11.5L4 13M12.5 11.5L14 13" stroke="#a8761e" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="data-card-label">Sunset</div>
+            <div class="data-card-value">22:04</div>
+          </div>
+        </div>
+
+        <div class="data-card">
+          <div class="data-card-icon">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M11 3.5C11 3.5 8 5 8 9C8 13 11 14.5 11 14.5C6.5 14.5 3 12.1 3 9C3 5.9 6.5 3.5 11 3.5Z" stroke="#a8761e" stroke-width="1.2" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="data-card-label">Distance</div>
+            <div class="data-card-value">389,412 km</div>
+          </div>
+        </div>
+
+        <div class="data-card">
+          <div class="data-card-icon">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M9 15V8" stroke="#a8761e" stroke-width="1.3" stroke-linecap="round"/>
+              <path d="M9 8C9 8 4 7 3 3C6.5 2 10.5 4 9 8Z" stroke="#a8761e" stroke-width="1.2" stroke-linejoin="round"/>
+              <path d="M9 11C9 11 13 9.5 15 6C12 5 9 7 9 11Z" stroke="#a8761e" stroke-width="1.2" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="data-card-label">Tree</div>
+            <div class="data-card-value">Oak · Duir</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Calendar Section -->
+      <section>
+        <div class="calendar-header">
+          <h3 class="calendar-title">June 2026</h3>
+          <span class="calendar-subtitle">Month VII · Day 10</span>
+        </div>
+
+        <div class="celtic-month-tag">
+          <span class="ogham-letter">ᚇ</span>
+          <div>
+            <div class="celtic-name">Duir · Oak</div>
+            <div class="celtic-keyword">Strength &amp; Protection</div>
+          </div>
+          <span style="color:var(--muted);font-size:11px;margin-left:auto;">Jun 10 – Jul 7</span>
+        </div>
+
+        <div class="calendar-grid-wrap">
+          <div class="day-headers">
+            <div class="day-header">Mo</div>
+            <div class="day-header">Tu</div>
+            <div class="day-header">We</div>
+            <div class="day-header">Th</div>
+            <div class="day-header">Fr</div>
+            <div class="day-header">Sa</div>
+            <div class="day-header">Su</div>
+          </div>
+          <div class="cal-grid">
+            <!-- Offset: Duir starts Jun 10 (Tue), so Mon slot is empty -->
+            <div class="cal-day" style="opacity:0.2;">
+              <span class="cal-day-number" style="color:var(--dim);">—</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">1</span>
+              <span class="cal-day-greg">10</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">2</span>
+              <span class="cal-day-greg">11</span>
+              <div class="event-dot sage"></div>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">3</span>
+              <span class="cal-day-greg">12</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">4</span>
+              <span class="cal-day-greg">13</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">5</span>
+              <span class="cal-day-greg">14</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">6</span>
+              <span class="cal-day-greg">15</span>
+              <div class="event-dot" style="background:var(--gold2);"></div>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">7</span>
+              <span class="cal-day-greg">16</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">8</span>
+              <span class="cal-day-greg">17</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">9</span>
+              <span class="cal-day-greg">18</span>
+            </div>
+            <!-- TODAY: Day 10, Jun 19 -->
+            <div class="cal-day today">
+              <div class="today-circle">
+                <span class="cal-day-number">10</span>
+                <span class="cal-day-greg">19</span>
+              </div>
+              <div class="event-dot" style="background:var(--gold);bottom:3px;"></div>
+            </div>
+            <!-- Day 11: Jun 20 — Summer Solstice -->
+            <div class="cal-day">
+              <span class="cal-day-number">11</span>
+              <span class="cal-day-greg">20</span>
+              <div class="event-dot" style="background:var(--gold2);"></div>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">12</span>
+              <span class="cal-day-greg">21</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">13</span>
+              <span class="cal-day-greg">22</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">14</span>
+              <span class="cal-day-greg">23</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">15</span>
+              <span class="cal-day-greg">24</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">16</span>
+              <span class="cal-day-greg">25</span>
+              <div class="event-dot sage"></div>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">17</span>
+              <span class="cal-day-greg">26</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">18</span>
+              <span class="cal-day-greg">27</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">19</span>
+              <span class="cal-day-greg">28</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">20</span>
+              <span class="cal-day-greg">29</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">21</span>
+              <span class="cal-day-greg">30</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">22</span>
+              <span class="cal-day-greg" style="font-size:8px;">Jul 1</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">23</span>
+              <span class="cal-day-greg">2</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">24</span>
+              <span class="cal-day-greg">3</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">25</span>
+              <span class="cal-day-greg">4</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">26</span>
+              <span class="cal-day-greg">5</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">27</span>
+              <span class="cal-day-greg">6</span>
+            </div>
+            <div class="cal-day">
+              <span class="cal-day-number">28</span>
+              <span class="cal-day-greg">7</span>
+            </div>
+            <!-- Padding cells -->
+            <div class="cal-day" style="opacity:0.15;"><span class="cal-day-number" style="color:var(--dim);">—</span></div>
+            <div class="cal-day" style="opacity:0.15;"><span class="cal-day-number" style="color:var(--dim);">—</span></div>
+            <div class="cal-day" style="opacity:0.15;"><span class="cal-day-number" style="color:var(--dim);">—</span></div>
+            <div class="cal-day" style="opacity:0.15;"><span class="cal-day-number" style="color:var(--dim);">—</span></div>
+            <div class="cal-day" style="opacity:0.15;"><span class="cal-day-number" style="color:var(--dim);">—</span></div>
+            <div class="cal-day" style="opacity:0.15;"><span class="cal-day-number" style="color:var(--dim);">—</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Moon Phase Strip -->
+      <section>
+        <div class="phase-strip">
+          <div class="phase-strip-label">Moon phases this month</div>
+          <div class="phase-icons">
+
+            <!-- New Moon -->
+            <div class="phase-mini">
+              <svg viewBox="0 0 22 22" fill="none">
+                <circle cx="11" cy="11" r="9" fill="#ddd0bb" stroke="#c8b898" stroke-width="1"/>
+              </svg>
+              <span class="phase-mini-date">Jun 10</span>
+            </div>
+
+            <!-- First Quarter -->
+            <div class="phase-mini">
+              <svg viewBox="0 0 22 22" fill="none">
+                <circle cx="11" cy="11" r="9" fill="#ddd0bb" stroke="#c8b898" stroke-width="1"/>
+                <path d="M11 2C15.97 2 20 6.03 20 11C20 15.97 15.97 20 11 20V2Z" fill="#a8761e"/>
+              </svg>
+              <span class="phase-mini-date">Jun 17</span>
+            </div>
+
+            <!-- Full Moon — active -->
+            <div class="phase-mini active">
+              <svg viewBox="0 0 22 22" fill="none">
+                <defs>
+                  <radialGradient id="fullMoonL" cx="40%" cy="35%" r="60%">
+                    <stop offset="0%" stop-color="#fdf0c8"/>
+                    <stop offset="100%" stop-color="#c9973a"/>
+                  </radialGradient>
+                </defs>
+                <circle cx="11" cy="11" r="9" fill="url(#fullMoonL)"/>
+              </svg>
+              <span class="phase-mini-date">Jun 25</span>
+            </div>
+
+            <!-- Last Quarter -->
+            <div class="phase-mini">
+              <svg viewBox="0 0 22 22" fill="none">
+                <circle cx="11" cy="11" r="9" fill="#ddd0bb" stroke="#c8b898" stroke-width="1"/>
+                <path d="M11 2C6.03 2 2 6.03 2 11C2 15.97 6.03 20 11 20V2Z" fill="#a8761e"/>
+              </svg>
+              <span class="phase-mini-date">Jul 2</span>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- Events This Month -->
+      <section>
+        <div class="section-divider">
+          <div class="divider-line"></div>
+          <span class="divider-label">Events this month</span>
+          <div class="divider-line"></div>
+        </div>
+
+        <div class="event-list">
+          <div class="event-card">
+            <div class="event-date-col">
+              <div class="event-day-num">10</div>
+              <div class="event-day-greg">19/6</div>
+            </div>
+            <div class="event-body">
+              <div class="event-title-row">
+                <span class="event-title">New Moon ritual</span>
+                <span class="event-arrow">›</span>
+              </div>
+              <div class="event-time-row">
+                <div class="event-indicator gold"></div>
+                <span class="event-time">20:00 – 21:00</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="event-card">
+            <div class="event-date-col">
+              <div class="event-day-num">11</div>
+              <div class="event-day-greg">20/6</div>
+            </div>
+            <div class="event-body">
+              <div class="event-title-row">
+                <span class="event-title">Summer Solstice</span>
+                <span class="event-arrow">›</span>
+              </div>
+              <div class="event-time-row">
+                <div class="event-indicator gold2"></div>
+                <span class="event-time" style="font-style:italic;font-family:'IM Fell English',serif;">Alban Hefin — All Day</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="event-card">
+            <div class="event-date-col">
+              <div class="event-day-num">17</div>
+              <div class="event-day-greg">26/6</div>
+            </div>
+            <div class="event-body">
+              <div class="event-title-row">
+                <span class="event-title">Oak meditation</span>
+                <span class="event-arrow">›</span>
+              </div>
+              <div class="event-time-row">
+                <div class="event-indicator"></div>
+                <span class="event-time">07:30 – 08:30</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- FAB -->
+    <div style="display:flex;justify-content:flex-end;padding:0 20px;margin-top:-12px;position:relative;z-index:30;">
+      <div class="fab">+</div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+
+      <div class="nav-item active">
+        <div class="nav-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M11 2L2 9V20H8V14H14V20H20V9L11 2Z" stroke="#a8761e" stroke-width="1.4" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="nav-label">Home</span>
+      </div>
+
+      <div class="nav-item">
+        <div class="nav-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <rect x="2.5" y="4.5" width="17" height="16" rx="2" stroke="#7a6e5c" stroke-width="1.3"/>
+            <path d="M2.5 9.5H19.5" stroke="#7a6e5c" stroke-width="1.3"/>
+            <path d="M7 2.5V6.5M15 2.5V6.5" stroke="#7a6e5c" stroke-width="1.3" stroke-linecap="round"/>
+            <rect x="5.5" y="12" width="3" height="3" rx="0.5" fill="#7a6e5c"/>
+            <rect x="9.5" y="12" width="3" height="3" rx="0.5" fill="#7a6e5c"/>
+            <rect x="13.5" y="12" width="3" height="3" rx="0.5" fill="#7a6e5c"/>
+          </svg>
+        </div>
+        <span class="nav-label">Calendar</span>
+      </div>
+
+      <div class="nav-item">
+        <div class="nav-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M3 6H19M3 11H14M3 16H11" stroke="#7a6e5c" stroke-width="1.3" stroke-linecap="round"/>
+            <circle cx="17" cy="16" r="3.5" stroke="#7a6e5c" stroke-width="1.3"/>
+            <path d="M17 14.5V16L18 17" stroke="#7a6e5c" stroke-width="1.1" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="nav-label">Schedule</span>
+      </div>
+
+      <div class="nav-item">
+        <div class="nav-icon">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <rect x="2" y="2" width="8" height="8" rx="1.5" stroke="#7a6e5c" stroke-width="1.3"/>
+            <rect x="12" y="2" width="8" height="8" rx="1.5" stroke="#7a6e5c" stroke-width="1.3"/>
+            <rect x="2" y="12" width="8" height="8" rx="1.5" stroke="#7a6e5c" stroke-width="1.3"/>
+            <rect x="12" y="12" width="8" height="8" rx="1.5" stroke="#7a6e5c" stroke-width="1.3"/>
+          </svg>
+        </div>
+        <span class="nav-label">12 Month</span>
+      </div>
+
+    </nav>
+
+  </div>
+</div>
+
+</body>
+</html>
