@@ -5,6 +5,7 @@ class MoonPhase {
   final String name;
   final String symbol;
   final double illumination; // 0.0–1.0
+  final double age;          // days since last new moon, 0–29.53
   final bool isFullMoon;
   final bool isNewMoon;
 
@@ -12,6 +13,7 @@ class MoonPhase {
     required this.name,
     required this.symbol,
     required this.illumination,
+    required this.age,
     required this.isFullMoon,
     required this.isNewMoon,
   });
@@ -85,6 +87,7 @@ class MoonPhaseCalculator {
       name: name,
       symbol: symbol,
       illumination: illumination,
+      age: age,
       isFullMoon: isFullMoon,
       isNewMoon: isNewMoon,
     );

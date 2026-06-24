@@ -2,14 +2,13 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:home_widget/home_widget.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../engine/astronomy.dart';
 import '../engine/celtic_calendar.dart';
 import '../engine/moon_phase.dart';
+import '../services/location_helper.dart';
 import '../theme/app_theme.dart';
 import '../theme/sky_settings_notifier.dart';
 
@@ -305,35 +304,8 @@ class _SkyStripState extends State<SkyStrip> {
     return '$hh:$mm:$ss';
   }
 
-  Future<void> _requestLocation(BuildContext context) async {
-    LocationPermission perm = await Geolocator.checkPermission();
-    if (perm == LocationPermission.denied) {
-      perm = await Geolocator.requestPermission();
-    }
-    if (perm == LocationPermission.denied ||
-        perm == LocationPermission.deniedForever) return;
-    try {
-      // Don't use timeLimit inside LocationSettings — the geolocator package
-      // throws it via an internal zone, bypassing try/catch. Use Dart's own
-      // .timeout() instead so the exception is catchable normally.
-      final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.low),
-      ).timeout(const Duration(seconds: 15));
-      if (!mounted) return;
-      await context.read<SkySettingsNotifier>().updateLocation(
-        pos.latitude,
-        pos.longitude,
-      );
-      // Push the new location to the home widget — don't wait for the
-      // next app restart or background Workmanager tick.
-      await HomeWidget.saveWidgetData<bool>  ('has_location',  true);
-      await HomeWidget.saveWidgetData<double>('sky_lon',       pos.longitude);
-      await HomeWidget.saveWidgetData<double>('user_longitude', pos.longitude);
-      await HomeWidget.updateWidget(androidName: 'RootsDayWidget');
-    } catch (e) {
-      debugPrint('_requestLocation failed: $e');
-    }
-  }
+  Future<void> _requestLocation(BuildContext context) =>
+      LocationHelper.requestAndSave(context);
 }
 
 // ── Badge data holder ──────────────────────────────────────────────────────────

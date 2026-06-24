@@ -581,7 +581,8 @@ class _EventFormState extends State<_EventForm> {
   String           _color           = '#c9a84c';
   bool             _saving          = false;
   String?          _titleError;
-  String           _recurrenceRule  = 'none';
+  String           _recurrenceRule     = 'none';
+  int              _recurrenceInterval = 1;
   DateTime?        _recurrenceEnd;
   List<int>        _reminders       = [];
 
@@ -610,7 +611,9 @@ class _EventFormState extends State<_EventForm> {
         } catch (_) {}
       }
       if (e.recurrenceRule != null) {
-        _recurrenceRule = e.recurrenceRule!;
+        final (baseRule, interval) = _parseRule(e.recurrenceRule!);
+        _recurrenceRule     = baseRule;
+        _recurrenceInterval = interval;
         // Fallback: 1 year from event date; overwritten once series is loaded.
         _recurrenceEnd = DateTime(
           e.gregorianDate.year + 1,
@@ -657,8 +660,15 @@ class _EventFormState extends State<_EventForm> {
 
   String get _recurrenceLabel {
     switch (_recurrenceRule) {
-      case 'daily':   return 'Daily';
-      case 'weekly':  return 'Weekly (${DateFormat('EEEE').format(_selectedDate)})';
+      case 'daily':
+        return _recurrenceInterval == 1
+            ? 'Daily'
+            : 'Every $_recurrenceInterval days';
+      case 'weekly':
+        final day = DateFormat('EEEE').format(_selectedDate);
+        return _recurrenceInterval == 1
+            ? 'Weekly ($day)'
+            : 'Every $_recurrenceInterval weeks ($day)';
       case 'monthly': return 'Monthly';
       case 'yearly':  return 'Yearly';
       default:        return 'Does not repeat';
@@ -675,44 +685,132 @@ class _EventFormState extends State<_EventForm> {
       'Monthly',
       'Yearly',
     ];
-    final picked = await showDialog<String>(
+
+    String localRule     = _recurrenceRule;
+    int    localInterval = _recurrenceInterval;
+
+    final result = await showDialog<(String, int)>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: c.surface,
-        title: Text('Repeat',
-            style: AppTextStyles.cinzel(size: 15, color: c.text)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(
-            options.length,
-            (i) => ListTile(
-              dense: true,
-              leading: Icon(
-                _recurrenceRule == options[i]
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_unchecked,
-                size: 20,
-                color: _recurrenceRule == options[i] ? c.gold : c.dim,
-              ),
-              title: Text(labels[i],
-                  style: AppTextStyles.cinzel(size: 13, color: c.text)),
-              onTap: () => Navigator.pop(ctx, options[i]),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          backgroundColor: c.surface,
+          title: Text('Repeat',
+              style: AppTextStyles.cinzel(size: 15, color: c.text)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(options.length, (i) {
+                final isSelected = localRule == options[i];
+                final needsStepper =
+                    isSelected && (options[i] == 'daily' || options[i] == 'weekly');
+                final maxInterval = options[i] == 'daily' ? 90 : 52;
+                final unit        = options[i] == 'daily'
+                    ? (localInterval == 1 ? 'day' : 'days')
+                    : (localInterval == 1 ? 'week' : 'weeks');
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ListTile(
+                      dense: true,
+                      leading: Icon(
+                        isSelected
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_unchecked,
+                        size: 20,
+                        color: isSelected ? c.gold : c.dim,
+                      ),
+                      title: Text(labels[i],
+                          style: AppTextStyles.cinzel(
+                              size: 13, color: c.text)),
+                      onTap: () => setLocal(() {
+                        if (localRule != options[i]) localInterval = 1;
+                        localRule = options[i];
+                      }),
+                    ),
+                    if (needsStepper)
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            left: 52, bottom: 10, right: 8),
+                        child: Row(
+                          children: [
+                            Text('Every',
+                                style: AppTextStyles.cinzel(
+                                    size: 12, color: c.muted)),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              icon: Icon(Icons.remove,
+                                  size: 16,
+                                  color: localInterval > 1
+                                      ? c.gold
+                                      : c.dim),
+                              onPressed: localInterval > 1
+                                  ? () =>
+                                      setLocal(() => localInterval--)
+                                  : null,
+                              constraints: const BoxConstraints(
+                                  minWidth: 32, minHeight: 32),
+                              padding: EdgeInsets.zero,
+                            ),
+                            SizedBox(
+                              width: 32,
+                              child: Text(
+                                '$localInterval',
+                                textAlign: TextAlign.center,
+                                style: AppTextStyles.cinzel(
+                                    size: 15,
+                                    weight: FontWeight.w600,
+                                    color: c.text),
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.add,
+                                  size: 16,
+                                  color: localInterval < maxInterval
+                                      ? c.gold
+                                      : c.dim),
+                              onPressed: localInterval < maxInterval
+                                  ? () =>
+                                      setLocal(() => localInterval++)
+                                  : null,
+                              constraints: const BoxConstraints(
+                                  minWidth: 32, minHeight: 32),
+                              padding: EdgeInsets.zero,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(unit,
+                                style: AppTextStyles.cinzel(
+                                    size: 12, color: c.muted)),
+                          ],
+                        ),
+                      ),
+                  ],
+                );
+              }),
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Cancel',
+                  style: AppTextStyles.cinzel(size: 12, color: c.muted)),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.pop(ctx, (localRule, localInterval)),
+              child: Text('Done',
+                  style: AppTextStyles.cinzel(size: 12, color: c.gold)),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel',
-                style: AppTextStyles.cinzel(size: 12, color: c.muted)),
-          ),
-        ],
       ),
     );
-    if (picked != null && mounted) {
+
+    if (result != null && mounted) {
+      final (pickedRule, pickedInterval) = result;
       setState(() {
-        _recurrenceRule = picked;
-        if (picked != 'none') {
+        _recurrenceRule     = pickedRule;
+        _recurrenceInterval = pickedRule == 'none' ? 1 : pickedInterval;
+        if (pickedRule != 'none') {
           _recurrenceEnd ??= DateTime(
             _selectedDate.year + 1,
             _selectedDate.month,
@@ -739,17 +837,39 @@ class _EventFormState extends State<_EventForm> {
   List<DateTime> _expandRecurrence(DateTime start, String rule, DateTime end) {
     final dates = <DateTime>[];
     var cur = start;
+    final (baseRule, interval) = _parseRule(rule);
     while (!cur.isAfter(end) && dates.length < 500) {
       dates.add(cur);
-      cur = switch (rule) {
-        'daily'   => cur.add(const Duration(days: 1)),
-        'weekly'  => cur.add(const Duration(days: 7)),
+      cur = switch (baseRule) {
+        'daily'   => cur.add(Duration(days: interval)),
+        'weekly'  => cur.add(Duration(days: 7 * interval)),
         'monthly' => _addOneMonth(cur),
         'yearly'  => DateTime(cur.year + 1, cur.month, cur.day),
         _         => end.add(const Duration(days: 1)),
       };
     }
     return dates;
+  }
+
+  /// Parses the stored rule string into (baseRule, interval).
+  /// e.g. "3:days" → ('daily', 3), "weekly" → ('weekly', 1).
+  static (String, int) _parseRule(String rule) {
+    final parts = rule.split(':');
+    if (parts.length == 2) {
+      final n    = int.tryParse(parts[0]);
+      final unit = parts[1];
+      if (n != null && n > 0) {
+        return (unit == 'days' ? 'daily' : 'weekly', n);
+      }
+    }
+    return (rule, 1);
+  }
+
+  /// Encodes (baseRule, interval) back into the stored string.
+  /// e.g. ('daily', 3) → "3:days", ('daily', 1) → "daily".
+  static String _encodeRule(String rule, int interval) {
+    if (interval <= 1 || (rule != 'daily' && rule != 'weekly')) return rule;
+    return '$interval:${rule == 'daily' ? 'days' : 'weeks'}';
   }
 
   /// Adds exactly one month, clamping the day to the last day of the target
@@ -847,8 +967,9 @@ class _EventFormState extends State<_EventForm> {
 
       if (widget.existing == null && _recurrenceRule != 'none') {
         // Expand into individual instances linked by a shared recurrenceId.
-        final seriesId = const Uuid().v4();
-        final dates    = _expandRecurrence(_selectedDate, _recurrenceRule, _recurrenceEnd!);
+        final seriesId   = const Uuid().v4();
+        final encodedRule = _encodeRule(_recurrenceRule, _recurrenceInterval);
+        final dates       = _expandRecurrence(_selectedDate, encodedRule, _recurrenceEnd!);
         for (final d in dates) {
           final cd      = gregorianToCeltic(d);
           final dateUtc = DateTime.utc(d.year, d.month, d.day);
@@ -866,7 +987,7 @@ class _EventFormState extends State<_EventForm> {
             durationMinutes: Value(dm),
             attendees:       Value(att),
             location:        Value(loc),
-            recurrenceRule:  Value(_recurrenceRule),
+            recurrenceRule:  Value(encodedRule),
             recurrenceId:    Value(seriesId),
             reminders:       Value(remindersJson),
           ));

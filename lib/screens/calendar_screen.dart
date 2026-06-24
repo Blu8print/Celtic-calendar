@@ -21,13 +21,14 @@ import '../widgets/time_grid_shared.dart';
 import '../widgets/gregorian_year_view.dart';
 import '../widgets/schedule_view.dart';
 import '../widgets/week_view.dart';
+import '../widgets/home_view.dart';
 import '../widgets/sky_strip.dart';
 import '../widgets/year_day_card.dart';
 import 'event_detail_screen.dart';
 import 'event_search_delegate.dart';
 import 'settings_screen.dart';
 
-enum CalendarView { month, threeDay, week, day, schedule, greg12 }
+enum CalendarView { home, month, threeDay, week, day, schedule, greg12 }
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -43,7 +44,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
   late int _curDay;    // 1-28 within the Celtic month
   late int _curWeek;   // 0-3  within the Celtic month
   late int _gregYear;  // Gregorian year for the 12-month view
-  CalendarView _curView = CalendarView.month;
+  CalendarView _curView = CalendarView.home;
+  DateTime _selectedDate = DateTime.now();
   GoogleCalendarService? _gcal;
   String? _lastShownError;
   Timer? _syncTimer;
@@ -112,6 +114,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   void _jumpToToday() {
     final today = DateTime.now();
+    _selectedDate = today;
     _gregYear = today.year;
     _curYear = celticYearOf(today);
     final info = gregorianToCeltic(today);
@@ -186,6 +189,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
           _curWeek = (_curDay - 1) ~/ 7;
         case CalendarView.greg12:
           _gregYear--;
+        case CalendarView.home:
+          _selectedDate = _selectedDate.subtract(const Duration(days: 1));
       }
     });
   }
@@ -244,6 +249,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
           _curWeek = (_curDay - 1) ~/ 7;
         case CalendarView.greg12:
           _gregYear++;
+        case CalendarView.home:
+          _selectedDate = _selectedDate.add(const Duration(days: 1));
       }
     });
   }
@@ -303,6 +310,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
     if (_curMonth == null) return 'Year Day';
     final mo = celticMonths[_curMonth! - 1];
     switch (_curView) {
+      case CalendarView.home:
+        final cd = gregorianToCeltic(_selectedDate);
+        final weekday = DateFormat('EEE').format(_selectedDate);
+        if (cd.isYearDay) return '$weekday · Year Day';
+        if (cd.isLeapDay) return '$weekday · Leap Day';
+        return '$weekday · ${cd.day} ${cd.monthData!.name}';
       case CalendarView.month:
         return mo.name;
       case CalendarView.threeDay:
@@ -322,6 +335,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   String get _periodKeyword {
     if (_curView == CalendarView.greg12) return 'Gregorian Calendar';
+    if (_curView == CalendarView.home) {
+      final cd = gregorianToCeltic(_selectedDate);
+      if (cd.isYearDay || cd.isLeapDay) return 'Between the worlds';
+      final mo = celticMonths[cd.month! - 1];
+      return '${mo.tree} \u00b7 ${mo.keyword}';
+    }
     if (_curMonth == null) return 'Between the worlds';
     final mo = celticMonths[_curMonth! - 1];
     return '${mo.tree} \u00b7 ${mo.keyword}';
@@ -331,6 +350,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
     setState(() => _timeGridScale = s);
     SharedPreferences.getInstance()
         .then((p) => p.setDouble('time_grid_scale', s));
+  }
+
+  int get _bottomIndex => switch (_curView) {
+    CalendarView.home                                              => 0,
+    CalendarView.month || CalendarView.threeDay ||
+    CalendarView.week  || CalendarView.day                        => 1,
+    CalendarView.schedule                                         => 2,
+    CalendarView.greg12                                           => 3,
+  };
+
+  void _onNavTap(int i) {
+    switch (i) {
+      case 0: _setView(CalendarView.home);
+      case 1: _setView(CalendarView.month);
+      case 2: _setView(CalendarView.schedule);
+      case 3: _setView(CalendarView.greg12);
+    }
   }
 
   // ─── Event helpers ────────────────────────────────────────────────────────────
@@ -473,10 +509,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
       // ── FAB ─────────────────────────────────────────────────────────────
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openDay(_fabDate(), addEvent: true),
-        backgroundColor: c.muted,
-        foregroundColor: c.surface,
+        backgroundColor: c.gold,
+        foregroundColor: c.bg,
         shape: const CircleBorder(),
         child: const Icon(Icons.add),
+      ),
+      // ── Bottom navigation ────────────────────────────────────────────────
+      bottomNavigationBar: _BottomNav(
+        currentIndex: _bottomIndex,
+        onTap: _onNavTap,
       ),
       // ── Body ────────────────────────────────────────────────────────────
       body: SafeArea(
@@ -503,6 +544,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 color: context.colors.gold,
                 strokeWidth: 2,
               ),
+            );
+          }
+
+          // Home dashboard
+          if (_curView == CalendarView.home) {
+            return HomeView(
+              celticYear:    _curYear,
+              celticMonth:   _curMonth,
+              selectedDate:  _selectedDate,
+              events:        allEvents,
+              onDayTap:      _openDay,
             );
           }
 
@@ -953,6 +1005,109 @@ class _MonthBtnYD extends StatelessWidget {
                 decoration: BoxDecoration(
                     color: c.muted, shape: BoxShape.circle),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Bottom Navigation Bar ──────────────────────────────────────────────────────
+
+class _BottomNav extends StatelessWidget {
+  final int currentIndex;
+  final void Function(int) onTap;
+
+  const _BottomNav({required this.currentIndex, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Container(
+      decoration: BoxDecoration(
+        color: c.surface,
+        border: Border(top: BorderSide(color: c.border)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 60,
+          child: Row(
+            children: [
+              _NavItem(
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home_rounded,
+                label: 'Home',
+                active: currentIndex == 0,
+                onTap: () => onTap(0),
+              ),
+              _NavItem(
+                icon: Icons.calendar_today_outlined,
+                activeIcon: Icons.calendar_today,
+                label: 'Calendar',
+                active: currentIndex == 1,
+                onTap: () => onTap(1),
+              ),
+              _NavItem(
+                icon: Icons.format_list_bulleted,
+                activeIcon: Icons.format_list_bulleted,
+                label: 'Schedule',
+                active: currentIndex == 2,
+                onTap: () => onTap(2),
+              ),
+              _NavItem(
+                icon: Icons.grid_view_outlined,
+                activeIcon: Icons.grid_view,
+                label: '12 Month',
+                active: currentIndex == 3,
+                onTap: () => onTap(3),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              active ? activeIcon : icon,
+              size: 22,
+              color: active ? c.gold : c.muted,
+            ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: AppTextStyles.cinzel(
+                size: 9,
+                color: active ? c.gold : c.muted,
+                letterSpacing: 0.5,
+              ),
+            ),
           ],
         ),
       ),

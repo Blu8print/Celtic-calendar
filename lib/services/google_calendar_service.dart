@@ -32,7 +32,7 @@ class GoogleCalendarService extends ChangeNotifier {
       '994680507449-c3pkq1is9vpo7ioohnu5r6j56b4hi3ne.apps.googleusercontent.com';
   static const _redirectUri =
       'com.googleusercontent.apps.994680507449-c3pkq1is9vpo7ioohnu5r6j56b4hi3ne:/oauth2redirect';
-  static const _scopes = ['https://www.googleapis.com/auth/calendar'];
+  static const _scopes = ['https://www.googleapis.com/auth/calendar.events'];
 
   static const _kAccessToken  = 'gcal_access_token';
   static const _kRefreshToken = 'gcal_refresh_token';
